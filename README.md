@@ -2,11 +2,7 @@
 
 Code to calculate the expected flux from axion-photon and axion-electron conversion inside the Sun.
 
----
-
 ## Results
-
----
 
 ## Installation
 
@@ -17,4 +13,4 @@ Example for how to install the code on Mac OS:
 * Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`
 * Do `mkdir build; cd build/` in the project directory
 * In most cases `cmake ..` and then `make` should build everything
-* Do `./bin/solaraxion` in the project folder to run a test
+* Do `./bin/test_axionflux` in the project folder to run a test

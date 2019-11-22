@@ -11,14 +11,22 @@ int main() {
   std::cout << "Setting up the Solar model took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
 
-  double test_compton = s.Gamma_P_Compton (3.0, 0.3, 1);
+  //for (double erg = 1.0; erg < 8.5; erg += 0.2)
+  //{
+
+  //};
+
+  double test_compton = s.Gamma_P_Compton (1.5, 0.1, 1);
   std::cout << "Test Gamma_Compton value: " << test_compton << std::endl;
 
-  double test_ee = s.Gamma_P_ee (3.0, 0.3);
+  double test_ee = s.Gamma_P_ee (1.5, 0.1);
   std::cout << "Test Gamma_bremsstrahlung value: " << test_ee << std::endl;
 
-  double test_element = s.Gamma_P_element (3.0, 0.3, 1);
+  double test_element = s.Gamma_P_element (1.5, 0.1, 1);
   std::cout << "Test element value: " << test_element << std::endl;
+
+  double test_ff = s.Gamma_P_ff_full(1.5, 0.1, 1);
+  std::cout << "Test ff full value: " << test_ff << std::endl;
 
   std::cout << "Finished testing!" << std::endl;
   return 0;

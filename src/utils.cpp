@@ -156,12 +156,13 @@ SolarModel::SolarModel(std::string file)
     std::map<std::pair<int,int>, gsl_spline*> temp2;
 
     for (int j = 0; j < 197; j++){
-      std::string op_filename = "data/opacity_tables/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[iz][0])+"_"+std::to_string(op_grid[iz][1])+".dat";
+      std::string op_filename = "data/opacity_tables/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
       ASCIItableReader op_data = ASCIItableReader(op_filename);
 
       // Determine the number of interpolated mass values.
       int op_pts = op_data[0].size();
-      auto pr = std::make_pair(op_grid[iz][0], op_grid[iz][1]);
+      auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
+      //std::cout << pr.first << " " << pr.second << std::endl;
       temp1[pr] = gsl_interp_accel_alloc();
       temp2[pr] = gsl_spline_alloc (gsl_interp_linear, op_pts);
       const double* omega = &op_data[0][0];
@@ -333,29 +334,32 @@ double SolarModel::Gamma_P_Compton (double omega, double r, int iz) {
 
 // Read off interpolated elements
 double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
-  auto pr = std::make_pair(ite,jne);
-  return gsl_spline_eval(opacity_lin_interp[iz][pr], log(u), opacity_acc[iz][pr]);
+  auto key = std::make_pair(ite,jne);
+  return gsl_spline_eval(opacity_lin_interp[iz].at(key), log(u), opacity_acc[iz].at(key));
 };
   //double result = interp1d(np.log(s[:,0]),s[:,1],bounds_error=False,fill_value=0,kind='linear')(np.log(u))
 //  re
 //}
 
 double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
-  double temperature = temperature_in_keV(r);
+  // Need tempeature in Kelvin
+  double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
-  int ite = 40.0*log10(temperature);
-  int jne = 4.0*log10(ne);
+  double ite = 40.0*log10(temperature);
+  double jne = 4.0*log10(ne);
   int ite2 = int(ceil(20.0*log10(temperature))*2);
-  int ite1 = int(ite2 - 2);
-  double u1 = omega*1.160e7/pow(10,double(ite1)/40.0);
-  double u2 = omega*1.160e7/pow(10,double(ite2)/40.0);
+  int ite1 = ite2 - 2;
+  // Need omega in Kelvin
+  double u1 = omega/(1.0e-3*K2eV*pow(10,double(ite1)/40.0));
+  double u2 = omega/(1.0e-3*K2eV*pow(10,double(ite2)/40.0));
   int jne2 = int(ceil(log10(ne)*2)*2);
-  int jne1 = int(jne2 - 2);
+  int jne1 = jne2 - 2;
   double t1 = (ite-double(ite1))/2.0;
   double t2 = (jne-double(jne1))/2.0;
-  double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,iz)\
-                + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,iz)\
-                + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,iz)\
+  std::cout << "Test: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
+  double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,iz)
+                + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,iz)
+                + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,iz)
                 + t1*t2*op_grid_interp_erg(u2,ite2,jne2,iz);
   return result;
 };
