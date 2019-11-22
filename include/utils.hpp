@@ -1,0 +1,113 @@
+#ifndef __utils_hpp__
+#define __utils_hpp__
+
+#include <iostream>
+#include <stdlib.h>
+#include <fstream>
+#include <vector>
+#include <map>
+#include <sstream>
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_spline.h>
+#include <gsl/gsl_integration.h>
+
+#include "constants.hpp"
+
+void terminate_with_error(std::string err_string)
+{
+  std::cerr << err_string << std::endl;
+  exit(EXIT_FAILURE);
+};
+
+const double abs_prec = 1.0e-1, rel_prec = 1.0e-6;
+const int method = 5;
+struct integrand_params {double u; double y;};
+
+const int op_grid [197][2] = {{150,54}, {150,56}, {152,54}, {152,56}, {160,64}, {160,66}, {162,64}, {162,66}, {164,66}, {164,68}, {166,66}, {166,68}, {166,70}, {168,68}, {168,70}, {168,72}, {168,74}, {170,70}, {170,72}, {170,74}, {172,72}, {172,74}, {172,76}, {174,74}, {174,76}, {174,78}, {176,74}, {176,76}, {176,78}, {178,76}, {178,78}, {180,76}, {180,78}, {180,80}, {182,78}, {182,80}, {184,78}, {184,80}, {186,78}, {186,80}, {186,82}, {188,80}, {188,82}, {190,80}, {190,82}, {190,84}, {192,80}, {192,82}, {192,84}, {194,80}, {194,82}, {194,84}, {196,80}, {196,82}, {196,84}, {198,82}, {198,84}, {198,86}, {200,82}, {200,84}, {200,86}, {202,82}, {202,84}, {202,86}, {204,82}, {204,84}, {204,86}, {206,82}, {206,84}, {206,86}, {208,84}, {208,86}, {208,88}, {210,84}, {210,86}, {210,88}, {212,84}, {212,86}, {212,88}, {214,84}, {214,86}, {214,88}, {216,84}, {216,86}, {216,88}, {218,86}, {218,88}, {220,86}, {220,88}, {220,90}, {222,86}, {222,88}, {222,90}, {224,86}, {224,88}, {224,90}, {226,86}, {226,88}, {226,90}, {228,86}, {228,88}, {228,90}, {230,86}, {230,88}, {230,90}, {232,88}, {232,90}, {232,92}, {234,88}, {234,90}, {234,92}, {236,88}, {236,90}, {236,92}, {238,88}, {238,90}, {238,92}, {240,88}, {240,90}, {240,92}, {242,88}, {242,90}, {242,92}, {244,90}, {244,92}, {246,90}, {246,92}, {246,94}, {248,90}, {248,92}, {248,94}, {250,90}, {250,92}, {250,94}, {252,90}, {252,92}, {252,94}, {254,90}, {254,92}, {254,94}, {256,90}, {256,92}, {256,94}, {256,96}, {258,92}, {258,94}, {258,96}, {260,92}, {260,94}, {260,96}, {260,98}, {262,92}, {262,94}, {262,96}, {262,98}, {264,94}, {264,96}, {264,98}, {266,94}, {266,96}, {266,98}, {266,100}, {268,96}, {268,98}, {268,100}, {270,96}, {270,98}, {270,100}, {270,102}, {272,96}, {272,98}, {272,100}, {272,102}, {274,98}, {274,100}, {274,102}, {276,98}, {276,100}, {276,102}, {278,100}, {278,102}, {278,104}, {280,100}, {280,102}, {280,104}, {282,100}, {282,102}, {282,104}, {284,100}, {284,102}, {284,104}, {286,102}, {286,104}, {286,106}, {288,102}, {288,104}, {288,106}};
+const std::string op_elements_simple [15] = {"C", "N", "O", "Ne", "Na", "Mg", "Al", "Si", "S", "Ar", "Ca", "Cr", "Mn", "Fe", "Ni"};
+const std::vector<std::vector<int>> op_elements = {{9,10}, {11,12}, {13,14,15}, {16}, {17}, {18}, {19}, {20}, {22}, {24}, {26}, {30}, {31}, {32}, {34}};
+
+class ASCIItableReader {
+  public:
+    ASCIItableReader(std::string filename) {
+      read(filename);
+    };
+    ASCIItableReader() {};  // Dummy initializer
+    ~ASCIItableReader() {}
+
+    int read(std::string filename);
+    void setcolnames(std::vector<std::string> names);
+
+    template <typename... Args>
+    void setcolnames(std::string name, Args... args)
+    {
+      std::vector<std::string> vec;
+      vec.push_back(name);
+      setcolnames(vec, args...);
+    }
+    template <typename... Args>
+    void setcolnames(std::vector<std::string> vec, std::string name, Args... args)
+    {
+      vec.push_back(name);
+      setcolnames(vec, args...);
+    }
+
+    void prepend_data (double datum, int i)
+    {
+      data[i].insert(data[i].begin(), datum);
+    };
+
+    const std::vector<double> & operator[] (int i) { return data[i]; };
+    const std::vector<double> & operator[] (std::string name) { return data[colnames[name]]; };
+    int getncol() { return data.size(); }
+    int getnrow() { return data[0].size(); }
+
+  private:
+    std::vector<std::vector<double> > data;
+    std::map<std::string, int> colnames;
+};
+
+
+// SolarModel class: Provides a container to store a (tabulated) Solar model and functions to return its properties.
+class SolarModel
+{
+  public:
+    SolarModel();
+    SolarModel(std::string file);
+    ~SolarModel();
+    SolarModel& operator=(SolarModel&&);
+    // Delete copy constructor and assignment operator to avoid shallow copies
+    SolarModel(const SolarModel&) = delete;
+    SolarModel operator=(const SolarModel&) = delete;
+    // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
+    double r_lo, r_hi;
+    // Routine to return the screening parameter kappa^2 (kappa^-1 = Debye-Hueckel radius).
+    double kappa_squared(double r);
+    // Routine to return the temperature in keV.
+    double temperature_in_keV(double r);
+    // ...
+    double z2_n_iz(double r, int iz);
+    // ...
+    double n_e(double r);
+    // Routine to return the plasma frequency squared.
+    double omega_pl_squared(double r);
+    // ...
+    double Gamma_P_ff_full(double omega, double r, int iz);
+    double Gamma_P_ee(double omega, double r);
+    double Gamma_P_Compton (double omega, double r, int iz);
+    double op_grid_interp_erg (double u, int ite, int jne, int iz);
+    double opacity_table_interpolator (double omega, double r, int iz);
+    double opacity (double omega, double r, int iz);
+    double Gamma_P_element (double omega, double r, int iz);
+  private:
+    ASCIItableReader data;
+    gsl_interp_accel *accel[4];
+    gsl_spline *linear_interp[4];
+    std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc;
+    std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp;
+    std::vector<gsl_interp_accel*> n_iz_acc;
+    std::vector<gsl_spline*> n_iz_lin_interp;
+};
+
+#endif // defined __utils_hpp__
