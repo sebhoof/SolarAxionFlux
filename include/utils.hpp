@@ -20,7 +20,7 @@ void terminate_with_error(std::string err_string)
   exit(EXIT_FAILURE);
 };
 
-const double abs_prec = 1.0e-1, rel_prec = 1.0e-6;
+const double abs_prec = 1.0e-3, rel_prec = 1.0e-6;
 const int method = 5;
 struct integrand_params {double u; double y;};
 
@@ -89,6 +89,8 @@ class SolarModel
     // ...
     double z2_n_iz(double r, int iz);
     // ...
+    double rho_iz(double r, int iz);
+    // ...
     double n_e(double r);
     // Routine to return the plasma frequency squared.
     double omega_pl_squared(double r);
@@ -106,8 +108,10 @@ class SolarModel
     gsl_spline *linear_interp[4];
     std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc;
     std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp;
-    std::vector<gsl_interp_accel*> n_iz_acc;
-    std::vector<gsl_spline*> n_iz_lin_interp;
+    std::vector<gsl_interp_accel*> rho_iz_acc;
+    std::vector<gsl_spline*> rho_iz_lin_interp;
+    std::vector<gsl_interp_accel*> z2_n_iz_acc;
+    std::vector<gsl_spline*> z2_n_iz_lin_interp;
 };
 
 #endif // defined __utils_hpp__
