@@ -217,7 +217,7 @@ double SolarModel::kappa_squared(double r)
 // Routine to return the number density times Z^2 of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::z2_n_iz(double r, int iz) { return gsl_spline_eval(z2_n_iz_lin_interp[iz], r, z2_n_iz_acc[iz]); }
 
-// Routine to return the mass density of ion iz in the zone around the distance r from the centre of the Sun.
+// Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::rho_iz(double r, int iz) { return gsl_spline_eval(rho_iz_lin_interp[iz], r, rho_iz_acc[iz]); }
 
 // Routine to return the electron density in the zone around the distance r from the centre of the Sun.
@@ -365,7 +365,7 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   int jne1 = jne2 - 2;
   double t1 = (ite-double(ite1))/2.0;
   double t2 = (jne-double(jne1))/2.0;
-  std::cout << "Test: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
+  //std::cout << "Test: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
   double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,iz)
                 + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,iz)
                 + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,iz)
@@ -374,7 +374,7 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
 };
 
 double SolarModel::opacity (double omega, double r, int iz) {
-  const double prefactor4 = a_Bohr*a_Bohr*(1.0e6*gev2cm);
+  const double prefactor4 = a_Bohr*a_Bohr/(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   return rho_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*gsl_expm1(-u);
 };
