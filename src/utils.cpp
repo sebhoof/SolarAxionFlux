@@ -119,7 +119,7 @@ SolarModel::SolarModel(std::string file)
         dens += data[*it][i];
       };
       z2_n_iz[j].push_back(z2_n*rhorel);
-      rho_iz[j].push_back(atomic_mass_unit*dens*rhorel);
+      rho_iz[j].push_back(dens*rhorel);
     };
     #ifdef DEBUG_MODE
       printf("%5.4f %1.6e %1.6e %1.6e\n", data["radius"][i], temperature[i], kss, wpls);
