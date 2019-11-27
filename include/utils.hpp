@@ -14,11 +14,7 @@
 
 #include "constants.hpp"
 
-void terminate_with_error(std::string err_string)
-{
-  std::cerr << err_string << std::endl;
-  exit(EXIT_FAILURE);
-};
+void terminate_with_error(std::string err_string);
 
 const double abs_prec = 1.0e-3, rel_prec = 1.0e-6;
 const int method = 5;
@@ -97,11 +93,12 @@ class SolarModel
     // ...
     double Gamma_P_ff_full(double omega, double r, int iz);
     double Gamma_P_ee(double omega, double r);
-    double Gamma_P_Compton (double omega, double r, int iz);
+    double Gamma_P_Compton (double omega, double r);
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double opacity_table_interpolator (double omega, double r, int iz);
     double opacity (double omega, double r, int iz);
     double Gamma_P_element (double omega, double r, int iz);
+    double Gamma_P_Primakoff (double omega, double r);
   private:
     ASCIItableReader data;
     gsl_interp_accel *accel[4];

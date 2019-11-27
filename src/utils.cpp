@@ -1,5 +1,9 @@
 #include "utils.hpp"
 
+void terminate_with_error(std::string err_string) {
+  std::cerr << err_string << std::endl;
+  exit(EXIT_FAILURE);
+};
 
 // ASCII Table Reader by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
@@ -313,29 +317,25 @@ double aux_function(double u, double y) {
 
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823]
-// In 1/second??
 double SolarModel::Gamma_P_ff_full(double omega, double r, int iz) {
-  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * alpha_EM*alpha_EM*1.0e-13*1.0e-13* pow(1.0e6*gev2cm,5)*2.99792458e10;
+  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*1.0e-13,2) * pow(1.0e6*gev2cm,6);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*1.0e6*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_e(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
 }
 
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
-// In 1/second??
 double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
-  const double prefactor2 = (4.0*sqrt(pi)/3.0) * alpha_EM*alpha_EM*1.0e-13*1.0e-13 *pow(1.0e6*gev2cm,5)*2.99792458e10;
+  const double prefactor2 = (4.0*sqrt(pi)/3.0) * pow(alpha_EM*1.0e-13,2) * pow(1.0e6*gev2cm,6);
   double u = omega/temperature_in_keV(r);
   double y = sqrt(kappa_squared(r)/(1.0e6*m_electron*temperature_in_keV(r)));
   return prefactor2 * n_e(r)*n_e(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
 }
 
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
-// In 1/s??
-// Conversion factor *13.937??
-double SolarModel::Gamma_P_Compton (double omega, double r, int iz) {
-  const double prefactor3 = alpha_EM*1.0e-13*1.0e-13/(3.0*1.0e6*m_electron*1.0e6*m_electron);
+double SolarModel::Gamma_P_Compton (double omega, double r) {
+  const double prefactor3 = (alpha_EM/3.0) * pow(1.0e-13/(1.0e6*m_electron),2) * pow(1.0e6*gev2cm,3);
   double u = omega/temperature_in_keV(r);
   double v = omega/(1.0e6*m_electron);
   return prefactor3 * v*v*n_e(r)/gsl_expm1(u);
@@ -374,18 +374,37 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
 };
 
 double SolarModel::opacity (double omega, double r, int iz) {
+  const double prefactor4 = a_Bohr*a_Bohr*(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   return rho_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*gsl_expm1(-u);
 };
 
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
-  const double prefactor4 = 0.5*1.0e-13*1.0e-13*4.0*pi/alpha_EM;
+  const double prefactor5 = 0.5*1.0e-13*1.0e-13*4.0*pi/alpha_EM;
   double u = omega/temperature_in_keV(r);
   double result = 0.0;
   if (u < 17.5) {
     double v = omega/(1.0e6*m_electron);
-    result = prefactor4*v*v*opacity(omega,r,iz)/gsl_expm1(u);
+    result = prefactor5*v*v*opacity(omega,r,iz)/gsl_expm1(u);
   };
 
   return result;
 }
+
+double SolarModel::Gamma_P_Primakoff (double erg, double r) {
+  // N.B. gagg = 10^-16 keV^-1 = 10^-19 eV^-1
+  const double prefactor6 = 1.0e-16*1.0e-16/(32.0*pi*alpha_EM);
+
+  // Get kappa_s^2, omega_plasma^2 and the temperature.
+  double ks_sq = kappa_squared(r);
+  double w_pl_sq = omega_pl_squared(r);
+  double T_in_keV = temperature_in_keV(r);
+
+  // Calculate the flux.
+  double x = 4.0*(erg*erg)/ks_sq;
+  double y = w_pl_sq/(erg*erg);
+  double energy_factor = sqrt(1.0 - y)/gsl_expm1(erg/T_in_keV);
+  double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
+
+  return  prefactor6*energy_factor*rate;
+};
