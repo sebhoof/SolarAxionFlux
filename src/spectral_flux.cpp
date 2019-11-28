@@ -6,7 +6,7 @@ double integrand_Primakoff(double r, void * params) {
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
 
-  return erg*erg*(sol->Gamma_P_Primakoff(erg, r));
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Primakoff(erg, r));
 }
 
 double integrand_Compton(double r, void * params) {
@@ -15,7 +15,7 @@ double integrand_Compton(double r, void * params) {
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
 
-  return erg*erg*(sol->Gamma_P_Compton(erg, r));
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Compton(erg, r));
 }
 
 double integrand_element(double r, void * params) {
@@ -25,13 +25,14 @@ double integrand_element(double r, void * params) {
   int iz = (p->iz);
   SolarModel* sol = (p->sol);
 
-  return erg*erg*(sol->Gamma_P_element(erg, r, iz));
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_element(erg, r, iz));
 }
 
 
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz) {
   // = Rsol [in keV^-1] / (2 pi^2 d^2 [in m^2]) * 1; express 1 as 1/(year*keV)
-  const double factor = pow(radius_sol/(1.0e7*gev2cm),3)/(2.0*pi*pi*pow(distance_sol,2)) / (1.0e6*hbar/(60.0*60.0*24.0*365.0));
+  // Better: per cm^2 per s per keV?
+  const double factor = pow(radius_sol/(1.0e4*gev2cm),3) / (pow(distance_sol,2) * (1.0e6*hbar/(60.0*60.0*24.0*365.0)));
   double flux;
 
   gsl_function f;

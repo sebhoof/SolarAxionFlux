@@ -393,7 +393,7 @@ double SolarModel::Gamma_P_element (double omega, double r, int iz) {
 
 double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   // N.B. gagg = 10^-16 keV^-1 = 10^-19 eV^-1
-  const double prefactor6 = 1.0e-16*1.0e-16/(32.0*pi*alpha_EM);
+  const double prefactor6 = 1.0e-16*1.0e-16/(32.0*pi);
 
   // Get kappa_s^2, omega_plasma^2 and the temperature.
   double ks_sq = kappa_squared(r);
@@ -402,9 +402,8 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
 
   // Calculate the flux.
   double x = 4.0*(erg*erg)/ks_sq;
-  double y = w_pl_sq/(erg*erg);
-  double energy_factor = sqrt(1.0 - y)/gsl_expm1(erg/T_in_keV);
+  double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
   double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
 
-  return  prefactor6*energy_factor*rate;
+  return  prefactor6*phase_factor*rate;
 };

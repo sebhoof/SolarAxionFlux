@@ -15,7 +15,7 @@ int main() {
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
 
   std::vector<double> ergs;
-  for (double erg = 1.0; erg < 8.5; erg += 0.2) { ergs.push_back(erg); };
+  for (double erg = 0.3; erg < 9.2; erg += 0.2) { ergs.push_back(erg); };
 
   double test_compton = s.Gamma_P_Compton (1.5, 0.1);
   std::cout << "Test Gamma_Compton value: " << test_compton << std::endl;
@@ -32,8 +32,11 @@ int main() {
   double test_pri = s.Gamma_P_Primakoff(1.5, 0.1);
   std::cout << "Test Primakoff value: " << test_pri << std::endl;
 
-  std::cout << "Get Primakoff spectrum..." << std::endl;
+  std::cout << "Compute Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(ergs, s);
+
+  std::cout << "Compute Compton spectrum..." << std::endl;
+  calculate_spectral_flux_Compton(ergs, s);
 
   std::cout << "Finished testing!" << std::endl;
   return 0;
