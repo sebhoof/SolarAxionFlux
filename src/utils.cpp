@@ -63,8 +63,8 @@ SolarModel::SolarModel(std::string file)
   std::vector<double> kappa_s_sq;
   std::vector<double> w_pl_sq;
   std::vector<double> n_e;
-  std::vector<std::vector<double>> rho_iz (15);
-  std::vector<std::vector<double>> z2_n_iz (15);
+  std::vector<std::vector<double>> n_iz (n_op_elements);
+  std::vector<std::vector<double>> z2_n_iz (n_op_elements);
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
   const double factor = 4.0*pi*alpha_EM*gsl_pow_3(1.0E+6*gev2cm)/((1.0E+9*eV2g)*atomic_mass_unit);
   // Atomic weight of species i (exact weight if isotope is known OR estimate from average solar abundance from data if available OR estimate from natural terrestrial abundance).
@@ -109,17 +109,18 @@ SolarModel::SolarModel(std::string file)
     w_pl_sq.push_back(factor*ne*data["rho"][i]/(1.0E+6*m_electron));
     double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     n_e.push_back(ne*rhorel);
-    for (int j = 0; j < 15; j++)
+    for (int k = 0; k < n_op_elements; k++)
     {
       double z2_n = 0.0;
-      double dens = 0.0;
-      for (auto it = op_elements[j].begin(); it != op_elements[j].end(); ++it)
+      double n = 0.0;
+      for (auto it = op_elements[k].begin(); it != op_elements[k].end(); ++it)
       {
-        z2_n += Z_vals[*it-6]*Z_vals[*it-6]*data[*it][i]/A_vals[*it-6];
-        dens += data[*it][i];
+        int j = *it;
+        n += data[j+6][i]/A_vals[j];
+        z2_n += Z_vals[j]*Z_vals[j]*data[j+6][i]/A_vals[j];
       };
-      z2_n_iz[j].push_back(z2_n*rhorel);
-      rho_iz[j].push_back(dens*rhorel);
+      z2_n_iz[k].push_back(z2_n*rhorel);
+      n_iz[k].push_back(n*rhorel);
     };
     #ifdef DEBUG_MODE
       printf("%5.4f %1.6e %1.6e %1.6e\n", data["radius"][i], temperature[i], kss, wpls);
@@ -151,15 +152,15 @@ SolarModel::SolarModel(std::string file)
   //logger() << LogTags::debug << "Entries in model file: " << pts << " for solar radius in [" << data["radius"][0] << ", " << data["radius"][pts-1] << "]." << EOM;
 
   // Do opacities
-  for (int iz = 0; iz < 15; iz++) {
+  for (int iz = 0; iz < n_op_elements; iz++) {
     z2_n_iz_acc.push_back( gsl_interp_accel_alloc() );
     z2_n_iz_lin_interp.push_back( gsl_spline_alloc(gsl_interp_linear, pts) );
     const double* z2_n_iz_vals = &z2_n_iz[iz][0];
     gsl_spline_init (z2_n_iz_lin_interp[iz], radius, z2_n_iz_vals, pts);
-    rho_iz_acc.push_back( gsl_interp_accel_alloc() );
-    rho_iz_lin_interp.push_back( gsl_spline_alloc(gsl_interp_linear, pts) );
-    const double* rho_iz_vals = &rho_iz[iz][0];
-    gsl_spline_init (rho_iz_lin_interp[iz], radius, rho_iz_vals, pts);
+    n_iz_acc.push_back( gsl_interp_accel_alloc() );
+    n_iz_lin_interp.push_back( gsl_spline_alloc(gsl_interp_linear, pts) );
+    const double* n_iz_vals = &n_iz[iz][0];
+    gsl_spline_init (n_iz_lin_interp[iz], radius, n_iz_vals, pts);
 
     std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
     std::map<std::pair<int,int>, gsl_spline*> temp2;
@@ -198,10 +199,12 @@ SolarModel& SolarModel::operator=(SolarModel &&model)
 // Class destructor
 SolarModel::~SolarModel()
 {
-  for (auto interp : linear_interp)
-    gsl_spline_free (interp);
-  for (auto acc : accel)
-    gsl_interp_accel_free (acc);
+  for (auto interp : linear_interp) { gsl_spline_free (interp); };
+  for (auto interp : n_iz_lin_interp) { gsl_spline_free (interp); };
+  for (auto interp : z2_n_iz_lin_interp) { gsl_spline_free (interp); };
+  for (auto acc : accel) { gsl_interp_accel_free (acc); };
+  for (auto acc : n_iz_acc) { gsl_interp_accel_free (acc); };
+  for (auto acc : z2_n_iz_acc) { gsl_interp_accel_free (acc); };
 }
 
 // Routine to return the temperature (in keV) of the zone around the distance r from the centre of the Sun.
@@ -218,7 +221,7 @@ double SolarModel::kappa_squared(double r)
 double SolarModel::z2_n_iz(double r, int iz) { return gsl_spline_eval(z2_n_iz_lin_interp[iz], r, z2_n_iz_acc[iz]); }
 
 // Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
-double SolarModel::rho_iz(double r, int iz) { return gsl_spline_eval(rho_iz_lin_interp[iz], r, rho_iz_acc[iz]); }
+double SolarModel::n_iz(double r, int iz) { return gsl_spline_eval(n_iz_lin_interp[iz], r, n_iz_acc[iz]); }
 
 // Routine to return the electron density in the zone around the distance r from the centre of the Sun.
 double SolarModel::n_e(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
@@ -315,10 +318,11 @@ double aux_function(double u, double y) {
   return result;
 }
 
+// TODO: For compatability, introduce a function that does not depend on iz; this then sums all contrib for any opacity code.
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823]
-double SolarModel::Gamma_P_ff_full(double omega, double r, int iz) {
-  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*1.0e-13,2) * pow(1.0e6*gev2cm,6);
+double SolarModel::Gamma_P_ff(double omega, double r, int iz) {
+  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*1.0e-13,2) * gsl_pow_6(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*1.0e6*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_e(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
@@ -327,7 +331,7 @@ double SolarModel::Gamma_P_ff_full(double omega, double r, int iz) {
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
-  const double prefactor2 = (4.0*sqrt(pi)/3.0) * pow(alpha_EM*1.0e-13,2) * pow(1.0e6*gev2cm,6);
+  const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*1.0e-13) * gsl_pow_6(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   double y = sqrt(kappa_squared(r)/(1.0e6*m_electron*temperature_in_keV(r)));
   return prefactor2 * n_e(r)*n_e(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
@@ -351,7 +355,7 @@ double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
 //}
 
 double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
-  // Need tempeature in Kelvin
+  // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
   double ite = 40.0*log10(temperature);
@@ -365,22 +369,25 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   int jne1 = jne2 - 2;
   double t1 = (ite-double(ite1))/2.0;
   double t2 = (jne-double(jne1))/2.0;
-  //std::cout << "Test: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
-  double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,iz)
-                + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,iz)
-                + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,iz)
-                + t1*t2*op_grid_interp_erg(u2,ite2,jne2,iz);
+  double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,iz) + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,iz)
+                + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,iz) + t1*t2*op_grid_interp_erg(u2,ite2,jne2,iz);
+
+  if (result < 0) {
+    std::cout << "ERROR! Negative opacity!" << std::endl;
+    std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
+    std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,iz) << " " << op_grid_interp_erg(u1,ite2,jne2,iz) << " | " << result << std::endl;
+  };
   return result;
 };
 
 double SolarModel::opacity (double omega, double r, int iz) {
-  const double prefactor4 = a_Bohr*a_Bohr/(1.0e6*gev2cm);
-  double u = omega/temperature_in_keV(r);
-  return rho_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*gsl_expm1(-u);
+  const double prefactor4 = a_Bohr*a_Bohr*(1.0e6*gev2cm);
+  //double u = omega/temperature_in_keV(r);
+  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*(1.0 - exp(-omega/temperature_in_keV(r)));
 };
 
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
-  const double prefactor5 = 0.5*1.0e-13*1.0e-13*4.0*pi/alpha_EM;
+  const double prefactor5 = 0.5*1.0e-13*1.0e-13/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double result = 0.0;
   if (u < 17.5) {
