@@ -28,6 +28,7 @@ double integrand_element(double r, void * params) {
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_element(erg, r, iz));
 }
 
+// Includes FF flux and ee contribution
 double integrand_all_ff(double r, void * params) {
   // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
@@ -37,7 +38,7 @@ double integrand_all_ff(double r, void * params) {
   double sum = 0.0;
   for (int iz = 0; iz < n_op_elements; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
 
-  return 0.5*gsl_pow_2(r*erg/pi)*sum;
+  return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
 }
 
 double integrand_all_axionelectron(double r, void * params) {
