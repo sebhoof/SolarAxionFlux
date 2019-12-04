@@ -36,7 +36,7 @@ double integrand_all_ff(double r, void * params) {
   SolarModel* sol = (p->sol);
 
   double sum = 0.0;
-  for (int iz = 0; iz < n_op_elements; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
+  for (int iz = 0; iz < 2; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
 
   return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
 }
