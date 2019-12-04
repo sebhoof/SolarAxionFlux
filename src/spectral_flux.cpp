@@ -49,7 +49,11 @@ double integrand_all_axionelectron(double r, void * params) {
   double u = erg/(sol->temperature_in_keV(r));
 
   double element_contrib = 0.0;
-  for (int iz = 0; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
+  // Add H, He contributions from ff approximation
+  for (int iz = 0; iz < 2; iz++) { element_contrib += sol->Gamma_P_ff(erg, r, iz); };
+  // Add opacity terms all non-H or He elements (metals)
+  for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
+
   double partial_compton_contrib = 0.5*(1.0 - 1.0/gsl_expm1(u))*(sol->Gamma_P_Compton(erg, r));
 
   return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + partial_compton_contrib + sol->Gamma_P_ee(erg, r));
