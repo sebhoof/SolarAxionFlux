@@ -63,6 +63,7 @@ SolarModel::SolarModel(std::string file)
   std::vector<double> kappa_s_sq;
   std::vector<double> w_pl_sq;
   std::vector<double> n_e;
+  std::vector<double> n_e_Raff;
   std::vector<std::vector<double>> n_iz (n_op_elements);
   std::vector<std::vector<double>> z2_n_iz (n_op_elements);
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
@@ -98,6 +99,7 @@ SolarModel::SolarModel(std::string file)
   {
     double sum = 0.0;
     double ne = 0.0;
+      double ne_Raff = 0.5 * (1 + data["XH1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
     temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);
     for (int j = 0; j < 29; j++)
     {
@@ -109,6 +111,8 @@ SolarModel::SolarModel(std::string file)
     w_pl_sq.push_back(factor*ne*data["rho"][i]/(1.0E+6*m_electron));
     double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     n_e.push_back(ne*rhorel);
+    n_e_Raff.push_back(ne_Raff);
+
     for (int k = 0; k < n_op_elements; k++)
     {
       double z2_n = 0.0;
@@ -143,6 +147,10 @@ SolarModel::SolarModel(std::string file)
   linear_interp[3] = gsl_spline_alloc (gsl_interp_linear, pts);
   const double* n_e_vals = &n_e[0];
   gsl_spline_init (linear_interp[3], radius, n_e_vals, pts);
+  accel[4] = gsl_interp_accel_alloc ();
+  linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
+  const double* n_e_vals_Raff = &n_e_Raff[0];
+  gsl_spline_init (linear_interp[4], radius, n_e_vals_Raff, pts);
   //accel[4] = gsl_interp_accel_alloc ();
   //linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
   //const double* density_vals = &density[0];
@@ -226,8 +234,13 @@ double SolarModel::n_iz(double r, int iz) { return gsl_spline_eval(n_iz_lin_inte
 // Routine to return the electron density in the zone around the distance r from the centre of the Sun.
 double SolarModel::n_e(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
 
+// Routine to return the electron density in the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) in the zone around the distance r from the centre of the Sun.
+double SolarModel::n_e_Raff(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
+
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return gsl_spline_eval(linear_interp[2], r, accel[2]); }
+double SolarModel::omega_pl_squared_Raff(double r) {
+    return 4.0*pi*alpha_EM/m_electron*n_e_Raff(r)*gsl_pow_3(gev2cm)*1.0E+18; }
 
 /* //Old integrand function
 double integrand1(double t, void * params) {
@@ -325,7 +338,7 @@ double SolarModel::Gamma_P_ff(double omega, double r, int iz) {
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*1.0e-13,2) * gsl_pow_6(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*1.0e6*m_electron*temperature_in_keV(r)));
-  return prefactor1 * n_e(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
+  return prefactor1 * n_e_Raff(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
 }
 
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
@@ -334,7 +347,7 @@ double SolarModel::Gamma_P_ee(double omega, double r) {
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*1.0e-13) * gsl_pow_6(1.0e6*gev2cm);
   double u = omega/temperature_in_keV(r);
   double y = sqrt(kappa_squared(r)/(1.0e6*m_electron*temperature_in_keV(r)));
-  return prefactor2 * n_e(r)*n_e(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
+  return prefactor2 * n_e_Raff(r)*n_e_Raff(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
 }
 
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
@@ -342,7 +355,7 @@ double SolarModel::Gamma_P_Compton (double omega, double r) {
   const double prefactor3 = (alpha_EM/3.0) * pow(1.0e-13/(1.0e6*m_electron),2) * pow(1.0e6*gev2cm,3);
   double u = omega/temperature_in_keV(r);
   double v = omega/(1.0e6*m_electron);
-  return prefactor3 * v*v*n_e(r)/gsl_expm1(u);
+  return prefactor3 * v*v*n_e_Raff(r)/gsl_expm1(u);
 }
 
 // Read off interpolated elements
@@ -404,7 +417,7 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
 
   // Get kappa_s^2, omega_plasma^2 and the temperature.
   double ks_sq = kappa_squared(r);
-  double w_pl_sq = omega_pl_squared(r);
+  double w_pl_sq = omega_pl_squared_Raff(r);
   double T_in_keV = temperature_in_keV(r);
 
   // Calculate the flux.

@@ -36,7 +36,7 @@ int main() {
   std::vector<double> javis_masses = javis_data[0];
   calculate_spectral_flux_axionelectron(javis_masses, s);
   auto t5 = std::chrono::high_resolution_clock::now();
-  std::cout << "# Calculating the full axion-electron spectrum for 23,577 mass values took "
+  std::cout << "# Calculating the full axion-electron spectrum (23,577 energy) values took "
             << std::chrono::duration_cast<std::chrono::minutes>(t5-t4).count() << " minutes." << std::endl;
 
   std::cout << "# Finished testing!" << std::endl;

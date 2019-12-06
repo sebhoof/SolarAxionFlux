@@ -86,7 +86,7 @@ void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*i
     integration_params p = {ergs[i], &s, iz};
     f.params = &p;
     gsl_integration_qag (&f, s.r_lo, s.r_hi, abs_prec1, rel_prec1, 1e6, method1, w, &result, &error);
-    std::cout << ergs[i] << " " << factor*result << std::endl;
+    //std::cout << ergs[i] << " " << factor*result << std::endl;
   };
 
   gsl_integration_workspace_free (w);

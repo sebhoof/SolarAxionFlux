@@ -107,10 +107,13 @@ class SolarModel
     double z2_n_iz(double r, int iz);
     // ...
     double n_iz(double r, int iz);
-    // ...
+    // Raffelt approximation
     double n_e(double r);
+    double n_e_Raff(double r);
     // Routine to return the plasma frequency squared.
     double omega_pl_squared(double r);
+    double omega_pl_squared_Raff(double r);
+
     // ...
     double Gamma_P_ff(double omega, double r, int iz);
     double Gamma_P_ee(double omega, double r);
@@ -122,8 +125,8 @@ class SolarModel
     double Gamma_P_Primakoff (double omega, double r);
   private:
     ASCIItableReader data;
-    gsl_interp_accel *accel[4];
-    gsl_spline *linear_interp[4];
+    gsl_interp_accel *accel[5];
+    gsl_spline *linear_interp[5];
     std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc;
     std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp;
     std::vector<gsl_interp_accel*> n_iz_acc;
