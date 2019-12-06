@@ -73,7 +73,7 @@ double integrand_all_axionelectron(double r, void * params) {
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz) {
   // = Rsol [in keV^-1] / (2 pi^2 d^2 [in m^2]) * 1; express 1 as 1/(year*keV)
   // Better: per cm^2 per s per keV?
-  const double factor = pow(radius_sol/(1.0e4*gev2cm),3) / (pow(distance_sol,2) * (1.0e6*hbar/(60.0*60.0*24.0*365.0)));
+  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / (pow(distance_sol,2) * (1.0e6*hbar/(60.0*60.0*24.0*365.0)));
   // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1.
   // Integrate function *1/norm and rescale result *norm at the end
 
