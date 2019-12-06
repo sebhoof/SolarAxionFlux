@@ -105,6 +105,7 @@ class SolarModel
     double temperature_in_keV(double r);
     // ...
     double z2_n_iz(double r, int iz);
+    double z2_n(double r);
     // ...
     double n_iz(double r, int iz);
     // Raffelt approximation
@@ -116,6 +117,7 @@ class SolarModel
 
     // ...
     double Gamma_P_ff(double omega, double r, int iz);
+    double Gamma_P_ff(double omega, double r);
     double Gamma_P_ee(double omega, double r);
     double Gamma_P_Compton (double omega, double r);
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
@@ -125,8 +127,8 @@ class SolarModel
     double Gamma_P_Primakoff (double omega, double r);
   private:
     ASCIItableReader data;
-    gsl_interp_accel *accel[5];
-    gsl_spline *linear_interp[5];
+    gsl_interp_accel *accel[3];
+    gsl_spline *linear_interp[3];
     std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc;
     std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp;
     std::vector<gsl_interp_accel*> n_iz_acc;

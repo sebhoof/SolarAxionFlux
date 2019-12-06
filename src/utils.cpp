@@ -137,20 +137,12 @@ SolarModel::SolarModel(std::string file)
   gsl_spline_init (linear_interp[0], radius, temp_vals, pts);
   accel[1] = gsl_interp_accel_alloc ();
   linear_interp[1] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* kappa_squared_vals = &kappa_s_sq[0];
-  gsl_spline_init (linear_interp[1], radius, kappa_squared_vals, pts);
+  const double* n_e_vals = &n_e[0];
+  gsl_spline_init (linear_interp[1], radius, n_e_vals, pts);
   accel[2] = gsl_interp_accel_alloc ();
   linear_interp[2] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* omega_pl_squared_vals = &w_pl_sq[0];
-  gsl_spline_init (linear_interp[2], radius, omega_pl_squared_vals, pts);
-  accel[3] = gsl_interp_accel_alloc ();
-  linear_interp[3] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* n_e_vals = &n_e[0];
-  gsl_spline_init (linear_interp[3], radius, n_e_vals, pts);
-  accel[4] = gsl_interp_accel_alloc ();
-  linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
   const double* n_e_vals_Raff = &n_e_Raff[0];
-  gsl_spline_init (linear_interp[4], radius, n_e_vals_Raff, pts);
+  gsl_spline_init (linear_interp[2], radius, n_e_vals_Raff, pts);
   //accel[4] = gsl_interp_accel_alloc ();
   //linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
   //const double* density_vals = &density[0];
@@ -222,25 +214,29 @@ double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_
 double SolarModel::kappa_squared(double r)
 {
   // Interpolated value, directly from the Solar model.
-  return gsl_spline_eval(linear_interp[1], r, accel[1]);
+  return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_e(r))*gsl_pow_3(gev2cm)*1.0E+18;
 }
 
 // Routine to return the number density times Z^2 of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::z2_n_iz(double r, int iz) { return gsl_spline_eval(z2_n_iz_lin_interp[iz], r, z2_n_iz_acc[iz]); }
-
+double SolarModel::z2_n(double r){
+    double sum = 0.0;
+    for (int iz = 0; iz < n_op_elements; iz++) {sum+=SolarModel::z2_n_iz(r,iz);}
+    return sum;
+}
 // Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::n_iz(double r, int iz) { return gsl_spline_eval(n_iz_lin_interp[iz], r, n_iz_acc[iz]); }
 
 // Routine to return the electron density in the zone around the distance r from the centre of the Sun.
-double SolarModel::n_e(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
+double SolarModel::n_e(double r) { return gsl_spline_eval(linear_interp[1], r, accel[1]); }
 
 // Routine to return the electron density in the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) in the zone around the distance r from the centre of the Sun.
-double SolarModel::n_e_Raff(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
+double SolarModel::n_e_Raff(double r) { return gsl_spline_eval(linear_interp[2], r, accel[2]); }
 
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
-double SolarModel::omega_pl_squared(double r) { return gsl_spline_eval(linear_interp[2], r, accel[2]); }
+double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_e(r)*gsl_pow_3(gev2cm)*1.0E+12; }
 double SolarModel::omega_pl_squared_Raff(double r) {
-    return 4.0*pi*alpha_EM/m_electron*n_e_Raff(r)*gsl_pow_3(gev2cm)*1.0E+18; }
+    return 4.0*pi*alpha_EM/m_electron*n_e_Raff(r)*gsl_pow_3(gev2cm)*1.0E+12; }
 
 /* //Old integrand function
 double integrand1(double t, void * params) {
@@ -340,6 +336,13 @@ double SolarModel::Gamma_P_ff(double omega, double r, int iz) {
   double y_red = sqrt(kappa_squared(r)/(2.0*1.0e6*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_e_Raff(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
 }
+double SolarModel::Gamma_P_ff(double omega, double r) {
+  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*1.0e-13,2) * gsl_pow_6(1.0e6*gev2cm);
+  double u = omega/temperature_in_keV(r);
+  double y_red = sqrt(kappa_squared(r)/(2.0*1.0e6*m_electron*temperature_in_keV(r)));
+  return prefactor1 * n_e_Raff(r)*z2_n(r)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(1.0e6*m_electron,3.5));
+}
+
 
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ee(double omega, double r) {
