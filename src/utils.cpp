@@ -64,6 +64,7 @@ SolarModel::SolarModel(std::string file)
   std::vector<double> w_pl_sq;
   std::vector<double> n_e;
   std::vector<double> n_e_Raff;
+  std::vector<double> z2_n_Raff;
   std::vector<std::vector<double>> n_iz (n_op_elements);
   std::vector<std::vector<double>> z2_n_iz (n_op_elements);
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
@@ -99,7 +100,8 @@ SolarModel::SolarModel(std::string file)
   {
     double sum = 0.0;
     double ne = 0.0;
-      double ne_Raff = 0.5 * (1 + data["XH1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
+    double ne_Raff = 0.5 * (1 + data["XH1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
+    // TO DO: z2_n
     temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);
     for (int j = 0; j < 29; j++)
     {
@@ -112,6 +114,7 @@ SolarModel::SolarModel(std::string file)
     double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     n_e.push_back(ne*rhorel);
     n_e_Raff.push_back(ne_Raff);
+    z2_n_Raff.push_back(data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9));
     for (int k = 0; k < n_op_elements; k++)
     {
       double z2_n = 0.0;
@@ -142,6 +145,10 @@ SolarModel::SolarModel(std::string file)
   linear_interp[2] = gsl_spline_alloc (gsl_interp_linear, pts);
   const double* n_e_vals_Raff = &n_e_Raff[0];
   gsl_spline_init (linear_interp[2], radius, n_e_vals_Raff, pts);
+  accel[3] = gsl_interp_accel_alloc ();
+  linear_interp[3] = gsl_spline_alloc (gsl_interp_linear, pts);
+  const double* z2_n_vals_Raff = &z2_n_Raff[0];
+  gsl_spline_init (linear_interp[3], radius, z2_n_vals_Raff, pts);
   //accel[4] = gsl_interp_accel_alloc ();
   //linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
   //const double* density_vals = &density[0];
@@ -215,6 +222,12 @@ double SolarModel::kappa_squared(double r)
   // Interpolated value, directly from the Solar model.
   return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_e(r))*gsl_pow_3(keV2cm);
 }
+double SolarModel::kappa_squared_Raff(double r)
+{
+  // Interpolated value, directly from the Solar model.
+  return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n_Raff(r)+n_e_Raff(r))*gsl_pow_3(keV2cm);
+}
+
 
 // Routine to return the number density times Z^2 of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::z2_n_iz(double r, int iz) { return gsl_spline_eval(z2_n_iz_lin_interp[iz], r, z2_n_iz_acc[iz]); }
@@ -223,6 +236,7 @@ double SolarModel::z2_n(double r){
     for (int iz = 0; iz < n_op_elements; iz++) {sum+=SolarModel::z2_n_iz(r,iz);}
     return sum;
 }
+double SolarModel::z2_n_Raff(double r){return gsl_spline_eval(linear_interp[3], r, accel[3]);}
 // Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
 double SolarModel::n_iz(double r, int iz) { return gsl_spline_eval(n_iz_lin_interp[iz], r, n_iz_acc[iz]); }
 
@@ -332,14 +346,14 @@ double aux_function(double u, double y) {
 double SolarModel::Gamma_P_ff(double omega, double r, int iz) {
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*g_aee,2) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
-  double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
+  double y_red = sqrt(kappa_squared_Raff(r)/(2.0*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_e_Raff(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 double SolarModel::Gamma_P_ff(double omega, double r) {
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*g_aee,2) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
-  double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
-  return prefactor1 * n_e_Raff(r)*z2_n(r)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
+  double y_red = sqrt(kappa_squared_Raff(r)/(2.0*m_electron*temperature_in_keV(r)));
+  return prefactor1 * n_e_Raff(r)*z2_n_Raff(r)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
 
@@ -348,7 +362,7 @@ double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
-  double y = sqrt(kappa_squared(r)/(m_electron*temperature_in_keV(r)));
+  double y = sqrt(kappa_squared_Raff(r)/(m_electron*temperature_in_keV(r)));
   return prefactor2 * n_e_Raff(r)*n_e_Raff(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
@@ -418,7 +432,7 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   const double prefactor6 = g_agg*g_agg/(32.0*pi);
 
   // Get kappa_s^2, omega_plasma^2 and the temperature.
-  double ks_sq = kappa_squared(r);
+  double ks_sq = kappa_squared_Raff(r);
   double w_pl_sq = omega_pl_squared_Raff(r);
   double T_in_keV = temperature_in_keV(r);
 

@@ -101,11 +101,13 @@ class SolarModel
     double r_lo, r_hi;
     // Routine to return the screening parameter kappa^2 (kappa^-1 = Debye-Hueckel radius).
     double kappa_squared(double r);
+    double kappa_squared_Raff(double r);
     // Routine to return the temperature in keV.
     double temperature_in_keV(double r);
     // ...
     double z2_n_iz(double r, int iz);
     double z2_n(double r);
+    double z2_n_Raff(double r);
     // ...
     double n_iz(double r, int iz);
     // Raffelt approximation
@@ -127,8 +129,8 @@ class SolarModel
     double Gamma_P_Primakoff (double omega, double r);
   private:
     ASCIItableReader data;
-    gsl_interp_accel *accel[3];
-    gsl_spline *linear_interp[3];
+    gsl_interp_accel *accel[4];
+    gsl_spline *linear_interp[4];
     std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc;
     std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp;
     std::vector<gsl_interp_accel*> n_iz_acc;
