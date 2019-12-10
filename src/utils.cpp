@@ -100,8 +100,7 @@ SolarModel::SolarModel(std::string file)
   {
     double sum = 0.0;
     double ne = 0.0;
-    double ne_Raff = 0.5 * (1 + data["XH1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
-    // TO DO: z2_n
+    double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
     temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);
     for (int j = 0; j < 29; j++)
     {

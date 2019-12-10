@@ -16,10 +16,11 @@ int main() {
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
 
   std::vector<double> ergs;
-  for (double erg = 0.3; erg < 10.1; erg += 0.1) { ergs.push_back(erg); };
+  for (double erg = 0.3; erg < 10.1; erg += 0.02) { ergs.push_back(erg); };
 
   std::cout << "# Compute Primakoff spectrum..." << std::endl;
-  calculate_spectral_flux_Primakoff(ergs, s);
+  std::string saveas="primakoff";
+  calculate_spectral_flux_Primakoff(ergs, s, saveas);
 
   std::cout << "# Compute Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(ergs, s);
@@ -28,7 +29,7 @@ int main() {
   //calculate_spectral_flux_weightedCompton(ergs, s);
 
   std::cout << "# Compute FF spectrum..." << std::endl;
-  calculate_spectral_flux_all_ff(ergs, s);
+  calculate_spectral_flux_all_ff(ergs, s,"all_ff");
 
   auto t4 = std::chrono::high_resolution_clock::now();
   std::cout << "# Compute full axion-electron spectrum..." << std::endl;
@@ -37,7 +38,7 @@ int main() {
   std:: vector<double> test_ergs;
   int n_test_values = 1000;
   for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
-  calculate_spectral_flux_axionelectron(test_ergs, s);
+  calculate_spectral_flux_axionelectron(test_ergs, s,"all_gaee");
   auto t5 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (23,577 energy) values took "
             << std::chrono::duration_cast<std::chrono::minutes>(t5-t4).count() << " minutes." << std::endl;
