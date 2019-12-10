@@ -9,7 +9,7 @@ int main() {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
-  std::string solar_model_name = "data/SolarModel_AGSS09ph.dat";
+  std::string solar_model_name = "data/SolarModel_AGSS09met_old.dat";
   SolarModel s (solar_model_name);
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
@@ -19,8 +19,7 @@ int main() {
   for (double erg = 0.3; erg < 10.1; erg += 0.02) { ergs.push_back(erg); };
 
   std::cout << "# Compute Primakoff spectrum..." << std::endl;
-  std::string saveas="primakoff";
-  calculate_spectral_flux_Primakoff(ergs, s, saveas);
+  calculate_spectral_flux_Primakoff(ergs, s, "primakoff");
 
   std::cout << "# Compute Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(ergs, s);
@@ -30,7 +29,10 @@ int main() {
 
   std::cout << "# Compute FF spectrum..." << std::endl;
   calculate_spectral_flux_all_ff(ergs, s,"all_ff");
-
+    std::cout << "Comparison of Debye scale squared:" << std::endl;
+  for (double r=0;r<0.95;r+=0.01){
+      std::cout << s.kappa_squared(r) << "  " << s.kappa_squared_Raff(r) << std::endl;
+  }
   auto t4 = std::chrono::high_resolution_clock::now();
   std::cout << "# Compute full axion-electron spectrum..." << std::endl;
   ASCIItableReader javis_data("results/2013_redondo_all.dat");

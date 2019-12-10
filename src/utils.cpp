@@ -218,13 +218,11 @@ double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_
 // Routine to return the screening paramter kappa^2 in units of keV^2 (kappa^-1 = Debye-Hueckel radius).
 double SolarModel::kappa_squared(double r)
 {
-  // Interpolated value, directly from the Solar model.
   return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_e(r))*gsl_pow_3(keV2cm);
 }
 double SolarModel::kappa_squared_Raff(double r)
 {
-  // Interpolated value, directly from the Solar model.
-  return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n_Raff(r)+n_e_Raff(r))*gsl_pow_3(keV2cm);
+  return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n_Raff(r)+n_e_Raff(r))*gsl_pow_3(keV2cm); //*1.28 roughly off by this factor compared to redondo result
 }
 
 

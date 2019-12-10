@@ -16,6 +16,9 @@ ref2 = np.genfromtxt("2013_redondo_compton.dat")
 compton = interpolate.interp1d(ref2[:,0], ref2[:,1], bounds_error=False, fill_value=0)
 ref3 = np.genfromtxt("2013_redondo_FF.dat")
 ref4 = np.genfromtxt("2013_redondo_all.dat")
+#compton fit
+omega=np.linspace(0,10,1000)
+plt.plot(omega,2.0e-2*50*omega**2.45*np.exp(-0.829*omega))
 
 plt.plot(ref1[:,0], ref1[:,1]/1.0e20, 'r-', label=r'Primakoff')
 plt.plot(ref2[:,0], 0.5*ref2[:,1]/1.0e20, 'b-', label=r'Compton')

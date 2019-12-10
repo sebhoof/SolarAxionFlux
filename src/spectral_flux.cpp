@@ -46,8 +46,8 @@ double integrand_all_ff(double r, void * params) {
   SolarModel* sol = (p->sol);
 
   double sum = 0.0;
-  sum += sol->Gamma_P_ff(erg, r);
-  //for (int iz = 0; iz < 2; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
+  //sum += sol->Gamma_P_ff(erg, r);
+  for (int iz = 0; iz < 2; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
   return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
 }
 
@@ -60,8 +60,8 @@ double integrand_all_axionelectron(double r, void * params) {
 
   double element_contrib = 0.0;
   // Add H, He contributions from ff approximation
-    element_contrib += sol->Gamma_P_ff(erg, r);
-  //for (int iz = 0; iz < 2; iz++) { element_contrib += sol->Gamma_P_ff(erg, r, iz); };
+  //  element_contrib += sol->Gamma_P_ff(erg, r);
+  for (int iz = 0; iz < 2; iz++) { element_contrib += sol->Gamma_P_ff(erg, r, iz); };
   // Add opacity terms all non-H or He elements (metals)
   for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
 
