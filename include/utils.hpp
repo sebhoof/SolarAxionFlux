@@ -92,6 +92,7 @@ class SolarModel
 {
   public:
     SolarModel();
+    SolarModel(std::string file,const bool set_raffelt_approx);
     SolarModel(std::string file);
     ~SolarModel();
     SolarModel& operator=(SolarModel&&);
@@ -99,24 +100,21 @@ class SolarModel
     SolarModel(const SolarModel&) = delete;
     SolarModel operator=(const SolarModel&) = delete;
     // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
+    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf), default is false
     double r_lo, r_hi;
     // Routine to return the screening parameter kappa^2 (kappa^-1 = Debye-Hueckel radius).
     double kappa_squared(double r);
-    double kappa_squared_Raff(double r);
     // Routine to return the temperature in keV.
     double temperature_in_keV(double r);
     // ...
     double z2_n_iz(double r, int iz);
     double z2_n(double r);
-    double z2_n_Raff(double r);
     // ...
     double n_iz(double r, int iz);
     // Raffelt approximation
     double n_e(double r);
-    double n_e_Raff(double r);
     // Routine to return the plasma frequency squared.
     double omega_pl_squared(double r);
-    double omega_pl_squared_Raff(double r);
 
     // ...
     double Gamma_P_ff(double omega, double r, int iz);
