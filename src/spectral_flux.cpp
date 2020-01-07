@@ -116,11 +116,10 @@ void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*i
 
 void calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s) { calculate_spectral_flux(ergs, s, &integrand_Primakoff); }
 void calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) { calculate_spectral_flux(ergs, s, &integrand_Primakoff,saveas); }
-
 void calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s) { calculate_spectral_flux(ergs, s, &integrand_Compton); }
-
+void calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) { calculate_spectral_flux(ergs, s, &integrand_Compton,saveas); }
 void calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s) { calculate_spectral_flux(ergs, s, &integrand_weightedCompton); }
-
+void calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas) { calculate_spectral_flux(ergs, s, &integrand_weightedCompton,saveas); }
 void calculate_spectral_flux_element(std::vector<double> ergs, SolarModel &s, int iz) { calculate_spectral_flux(ergs, s, &integrand_element, iz); }
 void calculate_spectral_flux_element(std::vector<double> ergs, SolarModel &s, int iz,std::string saveas) { calculate_spectral_flux(ergs, s, &integrand_element, iz,saveas); }
 void calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s) { calculate_spectral_flux(ergs, s, &integrand_all_ff); }
