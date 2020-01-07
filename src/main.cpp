@@ -38,7 +38,7 @@ int main() {
   for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
   calculate_spectral_flux_axionelectron(test_ergs, s,"all_gaee");
   auto t5 = std::chrono::high_resolution_clock::now();
-  std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy) values took "
+  std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
   std::cout << "# Finished testing!" << std::endl;
   return 0;
