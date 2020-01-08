@@ -30,7 +30,7 @@ int main() {
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
   std::vector<double> javis_ergs = javis_data[0];
   std:: vector<double> test_ergs;
-  int n_test_values = 20000;
+  int n_test_values = 1000;
   for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
   calculate_spectral_flux_axionelectron(test_ergs, s,"all_gaee");
   auto t5 = std::chrono::high_resolution_clock::now();

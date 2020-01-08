@@ -422,7 +422,7 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
 double SolarModel::opacity (double omega, double r, int iz) {
   const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
   double u = omega/temperature_in_keV(r);
-  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz);
+  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*(-gsl_expm1(-u));
 };
 
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
@@ -431,7 +431,7 @@ double SolarModel::Gamma_P_element (double omega, double r, int iz) {
   double result = 0.0;
   if (u < 17.5) {
     double v = omega/m_electron;
-    result = prefactor5*v*v*opacity(omega,r,iz)*(gsl_expm1(-u)+1.0);
+      result = prefactor5*v*v*opacity(omega,r,iz)/gsl_expm1(u);
   };
   return result;
 }
