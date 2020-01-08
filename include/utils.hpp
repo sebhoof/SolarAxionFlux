@@ -123,6 +123,7 @@ class SolarModel
     double Gamma_P_Compton (double omega, double r);
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double opacity_table_interpolator (double omega, double r, int iz);
+    double opacity_table_interpolator2 (double omega, double r, int iz);
     double opacity (double omega, double r, int iz);
     double Gamma_P_element (double omega, double r, int iz);
     double Gamma_P_Primakoff (double omega, double r);

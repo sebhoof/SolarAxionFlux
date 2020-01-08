@@ -16,17 +16,13 @@ int main() {
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
 
   std::vector<double> ergs;
-  for (double erg = 0.3; erg < 10.1; erg += 0.02) { ergs.push_back(erg); };
+  for (double erg = 0.0; erg < 10.1; erg += 0.02) { ergs.push_back(erg); };
 
   std::cout << "# Compute Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(ergs, s, "primakoff");
 
   std::cout << "# Compute Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(ergs, s,"compton");
-
-  //std::cout << "Compute weighted Compton spectrum..." << std::endl;
-  //calculate_spectral_flux_weightedCompton(ergs, s);
-
   std::cout << "# Compute FF spectrum..." << std::endl;
   calculate_spectral_flux_all_ff(ergs, s,"all_ff");
   auto t4 = std::chrono::high_resolution_clock::now();
@@ -34,7 +30,7 @@ int main() {
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
   std::vector<double> javis_ergs = javis_data[0];
   std:: vector<double> test_ergs;
-  int n_test_values = 1000;
+  int n_test_values = 20000;
   for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
   calculate_spectral_flux_axionelectron(test_ergs, s,"all_gaee");
   auto t5 = std::chrono::high_resolution_clock::now();

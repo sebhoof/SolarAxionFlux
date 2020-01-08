@@ -325,12 +325,14 @@ double aux_function(double u, double y) {
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ff(double omega, double r, int iz) {
+  if (omega == 0) {return 0;}
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*g_aee,2) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_e(r)*z2_n_iz(r,iz)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 double SolarModel::Gamma_P_ff(double omega, double r) {
+  if (omega == 0) {return 0;}
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * pow(alpha_EM*g_aee,2) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
@@ -341,6 +343,7 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
+    if (omega == 0) {return 0;}
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
   double y = sqrt(kappa_squared(r)/(m_electron*temperature_in_keV(r)));
@@ -349,6 +352,7 @@ double SolarModel::Gamma_P_ee(double omega, double r) {
 
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_Compton (double omega, double r) {
+  if (omega == 0) {return 0;}
   const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
@@ -364,7 +368,7 @@ double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
 //  re
 //}
 
-double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
+double SolarModel::opacity_table_interpolator2 (double omega, double r, int iz) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
@@ -389,11 +393,36 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   };
   return result;
 };
+double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
+  // Need temperature in Kelvin
+  double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
+  double ne = n_e(r);
+  double ite = 40.0*log10(temperature);
+  double jne = 4.0*log10(ne);
+  int ite2 = int(ceil(20.0*log10(temperature))*2);
+  int ite1 = ite2 - 2;
+  // Need omega in Kelvin
+  double u1 = omega/(1.0e-3*K2eV*pow(10,double(ite1)/40.0));
+  double u2 = omega/(1.0e-3*K2eV*pow(10,double(ite2)/40.0));
+  int jne2 = int(ceil(log10(ne)*2)*2);
+  int jne1 = jne2 - 2;
+  double t1 = (ite-double(ite1))/2.0;
+  double t2 = (jne-double(jne1))/2.0;
+  double result = pow(pow(op_grid_interp_erg(u1,ite1,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u1,ite1,jne2,iz),t2),1.0-t1)*
+    pow(pow(op_grid_interp_erg(u2,ite2,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u2,ite2,jne2,iz),t2),t1);
+  if (result < 0) {
+    std::cout << "ERROR! Negative opacity!" << std::endl;
+    std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
+    std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,iz) << " " << op_grid_interp_erg(u1,ite2,jne2,iz) << " | " << result << std::endl;
+  };
+  return result;
+};
+
 
 double SolarModel::opacity (double omega, double r, int iz) {
   const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
   double u = omega/temperature_in_keV(r);
-  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*(-gsl_expm1(-u));
+  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz);
 };
 
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
@@ -402,14 +431,14 @@ double SolarModel::Gamma_P_element (double omega, double r, int iz) {
   double result = 0.0;
   if (u < 17.5) {
     double v = omega/m_electron;
-    result = prefactor5*v*v*opacity(omega,r,iz)/gsl_expm1(u);
+    result = prefactor5*v*v*opacity(omega,r,iz)*(gsl_expm1(-u)+1.0);
   };
-
   return result;
 }
 
 double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   // N.B. gagg = 10^-16 keV^-1 = 10^-19 eV^-1
+  if (erg == 0) {return 0;}
   const double prefactor6 = g_agg*g_agg/(32.0*pi);
 
   // Get kappa_s^2, omega_plasma^2 and the temperature.
@@ -419,6 +448,7 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
 
   // Calculate the flux.
   double x = 4.0*(erg*erg)/ks_sq;
+  if (w_pl_sq/(erg*erg) > 1.0) {return 0;}
   double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
   double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
 

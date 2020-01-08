@@ -22,6 +22,7 @@ double integrand_weightedCompton(double r, void * params) {
   // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
+  if (erg == 0) {return 0;}
   SolarModel* sol = (p->sol);
   double u = erg/(sol->temperature_in_keV(r));
 
