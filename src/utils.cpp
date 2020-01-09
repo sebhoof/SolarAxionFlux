@@ -431,7 +431,7 @@ double SolarModel::Gamma_P_element (double omega, double r, int iz) {
   double result = 0.0;
   if (u < 17.5) {
     double v = omega/m_electron;
-      result = prefactor5*v*v*opacity(omega,r,iz)/gsl_expm1(u);
+    result = prefactor5*v*v*opacity(omega,r,iz)/gsl_expm1(u);
   };
   return result;
 }
