@@ -9,8 +9,8 @@ int main() {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
-  std::string solar_model_name = "data/SolarModel_AGSS09ph.dat";
-  SolarModel s (solar_model_name,OPAS,false);
+  std::string solar_model_name = "data/SolarModel_AGSS09.dat";
+  SolarModel s (solar_model_name,LEDCOP,false);
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;

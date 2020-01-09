@@ -171,7 +171,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
     std::map<std::pair<int,int>, gsl_spline*> temp2;
     for (int j = 0; j < 197; j++){
-      std::string op_filename = "data/opacity_tables/LEDCOP/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
+      std::string op_filename = "data/opacity_tables/OP/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
       ASCIItableReader op_data = ASCIItableReader(op_filename);
 
       // Determine the number of interpolated mass values.
@@ -188,7 +188,11 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   };
   //LEDCOP opacitites
   for (int j = 0; j < 26; j++){
-      std::string op_filename = "data/opacity_tables/LEDCOP/T"+std::to_string(ledcop_grid[j][0])+"Rho"+std::to_string(ledcop_grid[j][1])+".dat";
+      std::stringstream Tstream;
+      std::stringstream rhostream;
+      Tstream << std::fixed << std::setprecision(2) << ledcop_grid[j][0];
+      rhostream << std::fixed << std::setprecision(3) << ledcop_grid[j][1];
+      std::string op_filename = "data/opacity_tables/LEDCOP/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
       ASCIItableReader ledcop_data = ASCIItableReader(op_filename);
       // Determine the number of interpolated energy values.
       int ledcop_pts = ledcop_data[0].size();
