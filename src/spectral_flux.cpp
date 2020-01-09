@@ -57,15 +57,32 @@ double integrand_all_axionelectron(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-  double u = erg/(sol->temperature_in_keV(r));
-
-  double element_contrib = 0.0;
-  // Add H, He contributions from ff approximation
-  //  element_contrib += sol->Gamma_P_ff(erg, r);
-  for (int iz = 0; iz < 2; iz++) { element_contrib += sol->Gamma_P_ff(erg, r, iz); };
-  // Add opacity terms all non-H or He elements (metals)
-  for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
-  return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + sol->Gamma_P_Compton(erg, r) + sol->Gamma_P_ee(erg, r));
+  if (sol->opcode == OP){
+      double u = erg/(sol->temperature_in_keV(r));
+      double element_contrib = 0.0;
+      // Add H, He contributions from ff approximation
+      //  element_contrib += sol->Gamma_P_ff(erg, r);
+      for (int iz = 0; iz < 2; iz++) { element_contrib += sol->Gamma_P_ff(erg, r, iz); };
+      // Add opacity terms all non-H or He elements (metals)
+      for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
+      return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + sol->Gamma_P_Compton(erg, r) + sol->Gamma_P_ee(erg, r));
+  }
+  if (sol->opcode == OPAS){
+      double u = erg/(sol->temperature_in_keV(r));
+      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
+      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+  }
+  if (sol->opcode == LEDCOP){
+      double u = erg/(sol->temperature_in_keV(r));
+      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
+      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+  }
+  if (sol->opcode == ATOMIC){
+      double u = erg/(sol->temperature_in_keV(r));
+      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
+      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+  }
+  return 0;
 }
 
 // same function with safe method
