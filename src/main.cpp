@@ -14,9 +14,8 @@ int main() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
-
   std::vector<double> ergs;
-  for (double erg = 0.0; erg < 10.1; erg += 0.02) { ergs.push_back(erg); };
+  for (double erg = 0.0; erg < 12; erg += 0.02) { ergs.push_back(erg); };
 
   std::cout << "# Compute Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(ergs, s, "primakoff");

@@ -48,7 +48,11 @@ double integrand_all_ff(double r, void * params) {
 
   double sum = 0.0;
   //sum += sol->Gamma_P_ff(erg, r);
-  for (int iz = 0; iz < 2; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
+  if (sol->raffelt_approx == false) {
+        for (int iz = 0; iz < 2; iz++) { sum += sol->Gamma_P_ff(erg, r, iz); };
+  } else {
+        sum += sol->Gamma_P_ff(erg, r);
+  }
   return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
 }
 
@@ -70,17 +74,17 @@ double integrand_all_axionelectron(double r, void * params) {
   if (sol->opcode == OPAS){
       double u = erg/(sol->temperature_in_keV(r));
       double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
   }
   if (sol->opcode == LEDCOP){
       double u = erg/(sol->temperature_in_keV(r));
       double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
   }
   if (sol->opcode == ATOMIC){
       double u = erg/(sol->temperature_in_keV(r));
       double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(reducedCompton + sol->Gamma_P_ee(erg, r));
+      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
   }
   return 0;
 }

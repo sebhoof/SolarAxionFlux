@@ -154,8 +154,8 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   gsl_spline_init (linear_interp[3], radius, z2_n_vals_Raff, pts);
   accel[4] = gsl_interp_accel_alloc ();
   linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* density_vals = &z2_n_Raff[0];
-  gsl_spline_init (linear_interp[4], radius, z2_n_vals_Raff, pts);
+  const double* density_vals = &density[0];
+  gsl_spline_init (linear_interp[4], radius, density_vals, pts);
   
   //Quantities depnding on specfific element
   for (int iz = 0; iz < n_op_elements; iz++) {
@@ -168,6 +168,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     const double* n_iz_vals = &n_iz[iz][0];
     gsl_spline_init (n_iz_lin_interp[iz], radius, n_iz_vals, pts);
     //OP opacities
+    if (opcode == OP) {
     std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
     std::map<std::pair<int,int>, gsl_spline*> temp2;
     for (int j = 0; j < 197; j++){
@@ -185,9 +186,10 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     };
     opacity_acc_op.push_back(temp1);
     opacity_lin_interp_op.push_back(temp2);
+    }
   };
   //LEDCOP opacitites
-  for (int j = 0; j < 26; j++){
+  for (int j = 0; j < 31; j++){
       std::stringstream Tstream;
       std::stringstream rhostream;
       Tstream << std::fixed << std::setprecision(2) << ledcop_grid[j][0];
@@ -283,11 +285,9 @@ double aux_function(double u, double y) {
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (1E6);
   double result, error;
-
   gsl_function f;
   f.function = &integrand;
   f.params = &p;
-
   //gsl_set_error_handler_off();
   //gsl_integration_qag (&f, sqrt(x*x + u) - x, sqrt(x*x + u) - x, 0.1*abs_prec, 0.1*rel_prec, 1e6, method, w, &result, &error);
   gsl_integration_qagiu (&f, 0, abs_prec, rel_prec, 1e6, w, &result, &error);
@@ -339,10 +339,15 @@ double SolarModel::Gamma_P_Compton (double omega, double r) {
 // Read off interpolated elements
 double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
   auto key = std::make_pair(ite,jne);
+    
   return gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
 };
 double SolarModel::ledcop_grid_interp_erg (double erg, float T, float rho) {
   auto key = std::make_pair(T,rho);
+  if (opacity_lin_interp_ledcop.find(key) == opacity_lin_interp_ledcop.end()) {
+      std::cout << T << "  " << rho << std::endl;
+      return 0;
+  }
   return gsl_spline_eval(opacity_lin_interp_ledcop.at(key), erg, opacity_acc_ledcop.at(key));
 };
   //double result = interp1d(np.log(s[:,0]),s[:,1],bounds_error=False,fill_value=0,kind='linear')(np.log(u))
@@ -399,12 +404,9 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   return result;
 };
 double SolarModel::opacity_table_interpolator (double omega, double r) {
-  // Need temperature in Kelvin
-  double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
+  double temperature = temperature_in_keV(r);
   double rho = density(r);
-  if ((rho <= 10.175) || (temperature<=0.1))  {
-        return 0;
-  }
+  if ((rho <= 10.175) || (temperature<=0.1))  { return 0; }
   float Tlow = ledcop_temperatures[0];
   for (int k = 0; k < 13; k++) {
         if (ledcop_temperatures[k] < temperature) {
@@ -429,13 +431,18 @@ double SolarModel::opacity_table_interpolator (double omega, double r) {
             rhoup = ledcop_densities[12-k];
         }
   }
-  double t1 = (temperature-double(Tlow))/double(Tup-Tlow);
-  double t2 = (rho-double(rholow))/double(rhoup-rholow);
+  double t1;
+  double t2;
+  if (Tup == Tlow) {t1 = 0.0;}
+  else {t1 = (temperature-double(Tlow))/double(Tup-Tlow);}
+  if (rhoup == rholow ) {t2 = 0.0;}
+  else {t2 = (rho-double(rholow))/double(rhoup-rholow);}
   double result = pow(pow(ledcop_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(ledcop_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*
     pow(pow(ledcop_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(ledcop_grid_interp_erg(omega,Tup,rhoup),t2),t1);
   if (result < 0) {
     std::cout << "ERROR! Negative opacity!" << std::endl;
   };
+  if (isnan(result)) {std::cout << "Error: interpolation failed " << std::endl;}
   return result;
 };
 
@@ -454,7 +461,10 @@ double SolarModel::opacity (double omega, double r){
         for (int iz = 0; iz < n_op_elements; iz++) { sum += opacity_element(omega,r,iz); };
         return sum;
     }
-    
+    if (opcode == LEDCOP){
+        double result = opacity_table_interpolator(omega, r)*density(r)*keV2cm;
+        return result;
+    }
     return 0;
 }
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
