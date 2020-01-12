@@ -187,22 +187,35 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     }
   };
   //LEDCOP opacitites
+  std::string name;
   if (opcode == LEDCOP){
-      for (int j = 0; j < 31; j++){
+      tops_grid = ledcop_grid;
+      tops_temperatures = ledcop_temperatures;
+      tops_densities = ledcop_densities;
+      name = "LEDCOP";
+  }
+  if (opcode == ATOMIC){
+        tops_grid = atomic_grid;
+        tops_temperatures = atomic_temperatures;
+        tops_densities = atomic_densities;
+        name = "ATOMIC";
+  }
+  if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
+      for (int j = 0; j < tops_grid.size(); j++){
           std::stringstream Tstream;
           std::stringstream rhostream;
-          Tstream << std::fixed << std::setprecision(2) << ledcop_grid[j][0];
-          rhostream << std::fixed << std::setprecision(3) << ledcop_grid[j][1];
-          std::string op_filename = "data/opacity_tables/LEDCOP/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
-          ASCIItableReader ledcop_data = ASCIItableReader(op_filename);
+          Tstream << std::fixed << std::setprecision(3) << tops_grid[j][0];
+          rhostream << std::fixed << std::setprecision(3) << tops_grid[j][1];
+          std::string op_filename = "data/opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+          ASCIItableReader tops_data = ASCIItableReader(op_filename);
           // Determine the number of interpolated energy values.
-          int ledcop_pts = ledcop_data[0].size();
-          auto pr = std::make_pair(ledcop_grid[j][0], ledcop_grid[j][1]);
+          int tops_pts = tops_data[0].size();
+          auto pr = std::make_pair(tops_grid[j][0], tops_grid[j][1]);
           opacity_acc_tops[pr] = gsl_interp_accel_alloc();
-          opacity_lin_interp_tops[pr] = gsl_spline_alloc (gsl_interp_linear, ledcop_pts);
-          const double* omega = &ledcop_data[0][0];
-          const double* s = &ledcop_data[1][0];
-          gsl_spline_init (opacity_lin_interp_tops[pr], omega, s, ledcop_pts);
+          opacity_lin_interp_tops[pr] = gsl_spline_alloc (gsl_interp_linear, tops_pts);
+          const double* omega = &tops_data[0][0];
+          const double* s = &tops_data[1][0];
+          gsl_spline_init (opacity_lin_interp_tops[pr], omega, s, tops_pts);
         };
     }
 }
@@ -406,29 +419,31 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
 double SolarModel::opacity_table_interpolator (double omega, double r) {
   double temperature = temperature_in_keV(r);
   double rho = density(r);
-  if ((rho <= 10.175) || (temperature<=0.1))  { return 0; }
-  float Tlow = ledcop_temperatures[0];
-  for (int k = 0; k < 13; k++) {
-        if (ledcop_temperatures[k] < temperature) {
-            Tlow = ledcop_temperatures[k];
+  int lenT = tops_temperatures.size();
+  int lenrho = tops_densities.size();
+  if ((rho <= tops_densities[0]) || (temperature<=tops_temperatures[0]))  { return 0; }
+  float Tlow = tops_temperatures[0];
+  for (int k = 0; k < lenT; k++) {
+        if (tops_temperatures[k] < temperature) {
+            Tlow = tops_temperatures[k];
         }
   }
-  float Tup = ledcop_temperatures[12];
-  for (int k = 0; k < 13; k++) {
-        if (ledcop_temperatures[12-k] > temperature) {
-            Tup = ledcop_temperatures[12-k];
+  float Tup = tops_temperatures[lenT-1];
+  for (int k = 0; k < lenT; k++) {
+        if (tops_temperatures[lenT-1-k] > temperature) {
+            Tup = tops_temperatures[lenT-1-k];
         }
   }
-  float rholow = ledcop_densities[0];
-  for (int k = 0; k < 13; k++) {
-        if (ledcop_densities[k] < rho) {
-            rholow = ledcop_densities[k];
+  float rholow = tops_densities[0];
+  for (int k = 0; k < lenrho; k++) {
+        if (tops_densities[k] < rho) {
+            rholow = tops_densities[k];
         }
   }
-  float rhoup = ledcop_densities[12];
-  for (int k = 0; k < 13; k++) {
-        if (ledcop_densities[12-k] > rho) {
-            rhoup = ledcop_densities[12-k];
+  float rhoup = tops_densities[lenrho-1];
+  for (int k = 0; k < lenrho; k++) {
+        if (tops_densities[lenrho-1-k] > rho) {
+            rhoup = tops_densities[lenrho-1-k];
         }
   }
   double t1;
@@ -460,7 +475,7 @@ double SolarModel::opacity (double omega, double r){
         for (int iz = 0; iz < n_op_elements; iz++) { sum += opacity_element(omega,r,iz); };
         return sum;
     }
-    if (opcode == LEDCOP){
+    if ((opcode == LEDCOP) || (opcode == ATOMIC)){
         double result = opacity_table_interpolator(omega, r)*density(r)*keV2cm;
         return result;
     }
