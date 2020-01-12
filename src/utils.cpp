@@ -42,15 +42,13 @@ void ASCIItableReader::setcolnames(std::vector<std::string> names) {
 }
 
 // Constructors
-SolarModel::SolarModel() {};
+SolarModel::SolarModel() : opcode(OP) {};
 SolarModel::SolarModel(std::string file,opacitycode set_opcode) : SolarModel(file,set_opcode,false){};
-SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx)
-{
+SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")){
       std::cout << "Warning: The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
   }
-  opcode = set_opcode;
   raffelt_approx = set_raffelt_approx;
   data = ASCIItableReader(file);
   int pts = data.getnrow();
@@ -169,42 +167,44 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     gsl_spline_init (n_iz_lin_interp[iz], radius, n_iz_vals, pts);
     //OP opacities
     if (opcode == OP) {
-    std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
-    std::map<std::pair<int,int>, gsl_spline*> temp2;
-    for (int j = 0; j < 197; j++){
-      std::string op_filename = "data/opacity_tables/OP/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
-      ASCIItableReader op_data = ASCIItableReader(op_filename);
+        std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
+        std::map<std::pair<int,int>, gsl_spline*> temp2;
+        for (int j = 0; j < 197; j++){
+          std::string op_filename = "data/opacity_tables/OP/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
+          ASCIItableReader op_data = ASCIItableReader(op_filename);
 
-      // Determine the number of interpolated mass values.
-      int op_pts = op_data[0].size();
-      auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
-      temp1[pr] = gsl_interp_accel_alloc();
-      temp2[pr] = gsl_spline_alloc (gsl_interp_linear, op_pts);
-      const double* omega = &op_data[0][0];
-      const double* s = &op_data[1][0];
-      gsl_spline_init (temp2[pr], omega, s, op_pts);
-    };
-    opacity_acc_op.push_back(temp1);
-    opacity_lin_interp_op.push_back(temp2);
+          // Determine the number of interpolated mass values.
+          int op_pts = op_data[0].size();
+          auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
+          temp1[pr] = gsl_interp_accel_alloc();
+          temp2[pr] = gsl_spline_alloc (gsl_interp_linear, op_pts);
+          const double* omega = &op_data[0][0];
+          const double* s = &op_data[1][0];
+          gsl_spline_init (temp2[pr], omega, s, op_pts);
+        };
+        opacity_acc_op.push_back(temp1);
+        opacity_lin_interp_op.push_back(temp2);
     }
   };
   //LEDCOP opacitites
-  for (int j = 0; j < 31; j++){
-      std::stringstream Tstream;
-      std::stringstream rhostream;
-      Tstream << std::fixed << std::setprecision(2) << ledcop_grid[j][0];
-      rhostream << std::fixed << std::setprecision(3) << ledcop_grid[j][1];
-      std::string op_filename = "data/opacity_tables/LEDCOP/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
-      ASCIItableReader ledcop_data = ASCIItableReader(op_filename);
-      // Determine the number of interpolated energy values.
-      int ledcop_pts = ledcop_data[0].size();
-      auto pr = std::make_pair(ledcop_grid[j][0], ledcop_grid[j][1]);
-      opacity_acc_ledcop[pr] = gsl_interp_accel_alloc();
-      opacity_lin_interp_ledcop[pr] = gsl_spline_alloc (gsl_interp_linear, ledcop_pts);
-      const double* omega = &ledcop_data[0][0];
-      const double* s = &ledcop_data[1][0];
-      gsl_spline_init (opacity_lin_interp_ledcop[pr], omega, s, ledcop_pts);
-    };
+  if (opcode == LEDCOP){
+      for (int j = 0; j < 31; j++){
+          std::stringstream Tstream;
+          std::stringstream rhostream;
+          Tstream << std::fixed << std::setprecision(2) << ledcop_grid[j][0];
+          rhostream << std::fixed << std::setprecision(3) << ledcop_grid[j][1];
+          std::string op_filename = "data/opacity_tables/LEDCOP/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+          ASCIItableReader ledcop_data = ASCIItableReader(op_filename);
+          // Determine the number of interpolated energy values.
+          int ledcop_pts = ledcop_data[0].size();
+          auto pr = std::make_pair(ledcop_grid[j][0], ledcop_grid[j][1]);
+          opacity_acc_tops[pr] = gsl_interp_accel_alloc();
+          opacity_lin_interp_tops[pr] = gsl_spline_alloc (gsl_interp_linear, ledcop_pts);
+          const double* omega = &ledcop_data[0][0];
+          const double* s = &ledcop_data[1][0];
+          gsl_spline_init (opacity_lin_interp_tops[pr], omega, s, ledcop_pts);
+        };
+    }
 }
 
 // Move assignment operator
@@ -342,13 +342,13 @@ double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
     
   return gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
 };
-double SolarModel::ledcop_grid_interp_erg (double erg, float T, float rho) {
+double SolarModel::tops_grid_interp_erg (double erg, float T, float rho) {
   auto key = std::make_pair(T,rho);
-  if (opacity_lin_interp_ledcop.find(key) == opacity_lin_interp_ledcop.end()) {
+  if (opacity_lin_interp_tops.find(key) == opacity_lin_interp_tops.end()) {
       std::cout << T << "  " << rho << std::endl;
       return 0;
   }
-  return gsl_spline_eval(opacity_lin_interp_ledcop.at(key), erg, opacity_acc_ledcop.at(key));
+  return gsl_spline_eval(opacity_lin_interp_tops.at(key), erg, opacity_acc_tops.at(key));
 };
   //double result = interp1d(np.log(s[:,0]),s[:,1],bounds_error=False,fill_value=0,kind='linear')(np.log(u))
 //  re
@@ -437,12 +437,11 @@ double SolarModel::opacity_table_interpolator (double omega, double r) {
   else {t1 = (temperature-double(Tlow))/double(Tup-Tlow);}
   if (rhoup == rholow ) {t2 = 0.0;}
   else {t2 = (rho-double(rholow))/double(rhoup-rholow);}
-  double result = pow(pow(ledcop_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(ledcop_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*
-    pow(pow(ledcop_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(ledcop_grid_interp_erg(omega,Tup,rhoup),t2),t1);
+  double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*
+    pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
   if (result < 0) {
     std::cout << "ERROR! Negative opacity!" << std::endl;
   };
-  if (isnan(result)) {std::cout << "Error: interpolation failed " << std::endl;}
   return result;
 };
 
