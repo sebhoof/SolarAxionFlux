@@ -1,6 +1,6 @@
-Frequency Dependent Energy Opacities 
-T (keV), Density (gm/cc) =   1.1250E+00  1.0344E+02 
-Photon energy(keV), Total, Absorp, Scatt (cm**2/gm) 
+#Frequency Dependent Energy Opacities
+#T (keV), Density (gm/cc) =   1.1250E+00  1.0344E+02
+#Photon energy(keV), Total, Absorp, Scatt (cm**2/gm) 
   1.4062E-03  5.9000E+00  5.7474E+00  1.5260E-01 
   2.8125E-03  2.5354E+01  2.5202E+01  1.5260E-01 
   4.2188E-03  6.0180E+01  6.0027E+01  1.5260E-01 
