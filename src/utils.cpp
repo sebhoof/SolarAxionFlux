@@ -101,9 +101,14 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   // Calculate the necessary quantities -- T(r), kappa_s^2(r) and omega_pl^2(r) -- and store them internally.
   for (int i = 0; i < pts; i++)
   {
+    double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     double sum = 0.0;
     double ne = 0.0;
     double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
+    double radiation_pressure = 4.0/3.0*5.678e-15*pow(data["temperature"][i],4.0);
+    double ion_number_dens = 0;
+    for (int l = 0; l<29;l++) {ion_number_dens += data[6+l][i]*rhorel/A_vals[l];}
+    double ne_press = (data["Pressure"][i]-radiation_pressure)/data["temperature"][i]/1.381e-16-ion_number_dens;
     temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);
     density.push_back(data["rho"][i]);
     for (int j = 0; j < 29; j++)
@@ -112,7 +117,6 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
       ne += temp;
       sum += temp*(1.0 + Z_vals[j]);
     };
-    double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     n_e.push_back(ne*rhorel);
     n_e_Raff.push_back(ne_Raff);
     z2_n_Raff.push_back(data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9));
@@ -180,6 +184,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           temp2[pr] = gsl_spline_alloc (gsl_interp_linear, op_pts);
           const double* omega = &op_data[0][0];
           const double* s = &op_data[1][0];
+          //std::vector<double> op_data_exp;
+          //for (int c=0; c < op_pts; c++){op_data_exp.push_back(exp(op_data[0][c]));}
+          //const double* omega_exp = &op_data_exp[0];
           gsl_spline_init (temp2[pr], omega, s, op_pts);
         };
         opacity_acc_op.push_back(temp1);
