@@ -13,11 +13,12 @@
 //#include <gsl/gsl_sf_exp.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_errno.h>
 
 #include "constants.hpp"
 
 void terminate_with_error(std::string err_string);
-
+void my_handler (const char * reason, const char * file, int line, int gsl_errno);
 const double abs_prec = 1.0e-4, rel_prec = 1.0e-6;
 const int method = 5;
 struct integrand_params {double u; double y;};
@@ -57,7 +58,7 @@ const std::vector<float> ledcop_densities = {10.175, 13.684, 18.308, 24.268, 31.
 const std::vector<std::vector<float>> atomic_grid = {{0.55,10.175}, {0.55,13.684}, {0.6,10.175}, {0.6,13.684},  {0.6,18.308}, {0.65,13.684}, {0.65,18.308}, {0.65,24.268}, {0.7,18.308}, {0.7,24.268}, {0.7,31.802}, {0.7,41.156}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.9,31.802}, {0.9,41.156}, {0.9,52.611}, {0.9,66.544}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.125,66.544}, {1.125,83.466}, {1.125,103.442}, {1.125,124.995}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.375,124.995}, {1.375,143.111}, {1.375,150.5}};
 const std::vector<float> atomic_temperatures = {0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 1.0, 1.125, 1.25, 1.375};
 const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5};
-
+const std::vector<double> opas_radii ={0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
 
 class ASCIItableReader {
   public:
@@ -132,9 +133,11 @@ class SolarModel
     double Gamma_P_Compton (double omega, double r);
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double tops_grid_interp_erg (double erg, float T, float rho);
-    double opacity_table_interpolator (double omega, double r, int iz);
-    double opacity_table_interpolator (double omega, double r);
-    double opacity_table_interpolator2 (double omega, double r, int iz);
+    double opas_grid_interp_erg (double erg, double r);
+    double opacity_table_interpolator_op (double omega, double r, int iz);
+    double opacity_table_interpolator_op2 (double omega, double r, int iz);
+    double opacity_table_interpolator_tops (double omega, double r);
+    double opacity_table_interpolator_opas (double omega, double r);
     double opacity_element (double omega, double r, int iz);
     double opacity (double omega, double r);
     double Gamma_P_element (double omega, double r, int iz);
@@ -148,6 +151,8 @@ class SolarModel
     std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map<std::pair<float,float>, gsl_interp_accel*> opacity_acc_tops;
     std::map<std::pair<float,float>, gsl_spline*> opacity_lin_interp_tops;
+    std::map<double, gsl_interp_accel*> opacity_acc_opas;
+    std::map<double, gsl_spline*> opacity_lin_interp_opas;
     std::vector<std::vector<float>> tops_grid;
     std::vector<float> tops_temperatures;
     std::vector<float> tops_densities;

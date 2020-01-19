@@ -4,6 +4,15 @@ void terminate_with_error(std::string err_string) {
   std::cerr << err_string << std::endl;
   exit(EXIT_FAILURE);
 };
+void my_handler (const char * reason, const char * file, int line, int gsl_errno) {
+    if (gsl_errno == GSL_EDOM) { }
+    else {
+        std::cout << reason << " in " << file << " line: " << line << std::endl;
+        std::cout << "error number: " << gsl_errno << std::endl;
+        abort();
+    }
+    
+}
 
 // ASCII Table Reader by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
@@ -193,7 +202,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
         opacity_lin_interp_op.push_back(temp2);
     }
   };
-  //LEDCOP opacitites
+  //LEDCOP & ATOMIC (both TOPS) opacitites
   std::string name;
   if (opcode == LEDCOP){
       tops_grid = ledcop_grid;
@@ -213,8 +222,8 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           std::stringstream rhostream;
           Tstream << std::fixed << std::setprecision(3) << tops_grid[j][0];
           rhostream << std::fixed << std::setprecision(3) << tops_grid[j][1];
-          std::string op_filename = "data/opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
-          ASCIItableReader tops_data = ASCIItableReader(op_filename);
+          std::string tops_filename = "data/opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+          ASCIItableReader tops_data = ASCIItableReader(tops_filename);
           // Determine the number of interpolated energy values.
           int tops_pts = tops_data[0].size();
           auto pr = std::make_pair(tops_grid[j][0], tops_grid[j][1]);
@@ -224,6 +233,22 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           const double* s = &tops_data[1][0];
           gsl_spline_init (opacity_lin_interp_tops[pr], omega, s, tops_pts);
         };
+    }
+    if (opcode == OPAS) {
+        for (int j = 0 ; j < opas_radii.size(); j++) {
+            std::stringstream Rstream;
+            Rstream << std::fixed << std::setprecision(2) << opas_radii[j];
+            std::string opas_filename = "data/opacity_tables/OPAS/R" +Rstream.str() +".dat";
+            ASCIItableReader opas_data = ASCIItableReader(opas_filename);
+            // Determine the number of interpolated energy values.
+            int opas_pts = opas_data[0].size();
+            double rad = opas_radii[j];
+            opacity_acc_opas[rad] = gsl_interp_accel_alloc();
+            opacity_lin_interp_opas[rad] = gsl_spline_alloc (gsl_interp_linear, opas_pts);
+            const double* omega = &opas_data[0][0];
+            const double* s = &opas_data[1][0];
+            gsl_spline_init (opacity_lin_interp_opas[rad], omega, s, opas_pts);
+        }
     }
 }
 
@@ -359,22 +384,34 @@ double SolarModel::Gamma_P_Compton (double omega, double r) {
 // Read off interpolated elements
 double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
   auto key = std::make_pair(ite,jne);
-    
-  return gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
+  double result =  gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
+  if (gsl_isnan(result) == true) {return 0;}
+  return result;
 };
 double SolarModel::tops_grid_interp_erg (double erg, float T, float rho) {
   auto key = std::make_pair(T,rho);
   if (opacity_lin_interp_tops.find(key) == opacity_lin_interp_tops.end()) {
-      std::cout << T << "  " << rho << std::endl;
+      std::cout << "Grid point {" << T << ", " << rho << "} not found" << std::endl;
       return 0;
   }
-  return gsl_spline_eval(opacity_lin_interp_tops.at(key), erg, opacity_acc_tops.at(key));
+  double result = gsl_spline_eval(opacity_lin_interp_tops.at(key), erg, opacity_acc_tops.at(key));
+  if (gsl_isnan(result) == true) {return 0;}
+  return result;
+};
+double SolarModel::opas_grid_interp_erg (double erg, double r) {
+    if (opacity_lin_interp_opas.find(r) == opacity_lin_interp_opas.end()) {
+        std::cout << "OPAS data for R=" <<r << " not found!"  << std::endl;
+        return 0;
+    }
+    double result = gsl_spline_eval(opacity_lin_interp_opas.at(r), erg, opacity_acc_opas.at(r));
+    if (gsl_isnan(result) == true) {return 0;}
+    return result;
 };
   //double result = interp1d(np.log(s[:,0]),s[:,1],bounds_error=False,fill_value=0,kind='linear')(np.log(u))
 //  re
 //}
 
-double SolarModel::opacity_table_interpolator2 (double omega, double r, int iz) {
+double SolarModel::opacity_table_interpolator_op2 (double omega, double r, int iz) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
@@ -399,7 +436,7 @@ double SolarModel::opacity_table_interpolator2 (double omega, double r, int iz) 
   };
   return result;
 };
-double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
+double SolarModel::opacity_table_interpolator_op (double omega, double r, int iz) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
@@ -414,8 +451,7 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   int jne1 = jne2 - 2;
   double t1 = (ite-double(ite1))/2.0;
   double t2 = (jne-double(jne1))/2.0;
-  double result = pow(pow(op_grid_interp_erg(u1,ite1,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u1,ite1,jne2,iz),t2),1.0-t1)*
-    pow(pow(op_grid_interp_erg(u2,ite2,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u2,ite2,jne2,iz),t2),t1);
+  double result = pow(pow(op_grid_interp_erg(u1,ite1,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u1,ite1,jne2,iz),t2),1.0-t1)*  pow(pow(op_grid_interp_erg(u2,ite2,jne1,iz),1.0-t2)*pow(op_grid_interp_erg(u2,ite2,jne2,iz),t2),t1);
   if (result < 0) {
     std::cout << "ERROR! Negative opacity!" << std::endl;
     std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
@@ -423,90 +459,95 @@ double SolarModel::opacity_table_interpolator (double omega, double r, int iz) {
   };
   return result;
 };
-double SolarModel::opacity_table_interpolator (double omega, double r) {
+double SolarModel::opacity_table_interpolator_tops (double omega, double r) {
   double temperature = temperature_in_keV(r);
   double rho = density(r);
   int lenT = tops_temperatures.size();
   int lenrho = tops_densities.size();
   if ((rho <= tops_densities[0]) || (temperature<=tops_temperatures[0]))  { return 0; }
-  float Tlow = tops_temperatures[0];
+  float Tlow,Tup;
   for (int k = 0; k < lenT; k++) {
         if (tops_temperatures[k] < temperature) {
             Tlow = tops_temperatures[k];
+            Tup = tops_temperatures[k+1];
         }
   }
-  float Tup = tops_temperatures[lenT-1];
-  for (int k = 0; k < lenT; k++) {
-        if (tops_temperatures[lenT-1-k] > temperature) {
-            Tup = tops_temperatures[lenT-1-k];
-        }
-  }
-  float rholow = tops_densities[0];
+  float rholow, rhoup;
   for (int k = 0; k < lenrho; k++) {
         if (tops_densities[k] < rho) {
             rholow = tops_densities[k];
+            rhoup = tops_densities[k+1];
         }
   }
-  float rhoup = tops_densities[lenrho-1];
-  for (int k = 0; k < lenrho; k++) {
-        if (tops_densities[lenrho-1-k] > rho) {
-            rhoup = tops_densities[lenrho-1-k];
-        }
-  }
-  double t1;
-  double t2;
-  if (Tup == Tlow) {t1 = 0.0;}
-  else {t1 = (temperature-double(Tlow))/double(Tup-Tlow);}
-  if (rhoup == rholow ) {t2 = 0.0;}
-  else {t2 = (rho-double(rholow))/double(rhoup-rholow);}
-  double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*
-    pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
+  double t1 = (temperature-double(Tlow))/double(Tup-Tlow);
+  double t2 = (rho-double(rholow))/double(rhoup-rholow);
+  double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*   pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
   if (result < 0) {
     std::cout << "ERROR! Negative opacity!" << std::endl;
   };
   return result;
 };
+double SolarModel::opacity_table_interpolator_opas (double omega, double r) {
+    if (r > opas_radii.back()) {return 0;}
+    int lenR = opas_radii.size();
+    double Rlow, Rup;
+    for (int k = 0; k < lenR; k++) {
+          if (opas_radii[k] < r) {
+              Rlow = opas_radii[k];
+              Rup = opas_radii[k+1];
+          }
+    }
+    double Tup = temperature_in_keV(Rlow);
+    double Tlow = temperature_in_keV(Rup);
+    double temperature = temperature_in_keV(r);
+    double t1 = (temperature-Tlow)/(Tup-Tlow);
+    double result = pow(opas_grid_interp_erg(omega*1000.0,Rup),1.0-t1)*pow(opas_grid_interp_erg(omega*1000.0,Rlow),t1);
+    if (result < 0) {
+      std::cout << "ERROR! Negative opacity!" << std::endl;
+    };
+    return result;
+}
 
 double SolarModel::opacity_element (double omega, double r, int iz) {
+    gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);
     if (opcode != OP) {
         std::cout << "Warning: Chosen opacity code does not provide opacities for indivdual elements" << std::endl;
         return 0;
     }
-  const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
-  double u = omega/temperature_in_keV(r);
-  return prefactor4*n_iz(r, iz)*opacity_table_interpolator(omega, r, iz)*(-gsl_expm1(-u));
+    const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
+    double u = omega/temperature_in_keV(r);
+    double result = prefactor4*n_iz(r, iz)*opacity_table_interpolator_op(omega, r, iz)*(-gsl_expm1(-u));
+    gsl_set_error_handler (old_handler);
+    return result;
 };
 double SolarModel::opacity (double omega, double r){
+    gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);
+    double result = 0;
     if (opcode == OP) {
         double sum = 0;
         for (int iz = 0; iz < n_op_elements; iz++) { sum += opacity_element(omega,r,iz); };
-        return sum;
+        result =  sum;
     }
     if ((opcode == LEDCOP) || (opcode == ATOMIC)){
-        double result = opacity_table_interpolator(omega, r)*density(r)*keV2cm;
-        return result;
+        result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
     }
-    return 0;
+    if (opcode == OPAS) {
+        result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
+    }
+    gsl_set_error_handler (old_handler);
+    return result;
 }
 double SolarModel::Gamma_P_element (double omega, double r, int iz) {
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
-  double result = 0.0;
-  if (u < 17.5) {    //limit of 17.5 avoids going over the interpolation range
-    double v = omega/m_electron;
-    result = prefactor5*v*v*opacity_element(omega,r,iz)/gsl_expm1(u);
-  };
-  return result;
+  double v = omega/m_electron;
+  return prefactor5*v*v*opacity_element(omega,r,iz)/gsl_expm1(u);
 }
 double SolarModel::Gamma_P_opacity (double omega, double r) {
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
-  double result = 0.0;
-  if (u < 17.5) {    //limit of 17.5 avoids going over the interpolation range
-    double v = omega/m_electron;
-    result = prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
-  };
-  return result;
+  double v = omega/m_electron;
+  return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
 }
 double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   // N.B. gagg = 10^-16 keV^-1 = 10^-19 eV^-1

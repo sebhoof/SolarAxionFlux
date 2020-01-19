@@ -75,21 +75,16 @@ double integrand_all_axionelectron(double r, void * params) {
       for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
       return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + sol->Gamma_P_Compton(erg, r) + sol->Gamma_P_ee(erg, r));
   }
-  if (sol->opcode == OPAS){
+  if ((sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)){
       double u = erg/(sol->temperature_in_keV(r));
       double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
       return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
   }
-  if (sol->opcode == LEDCOP){
-      double u = erg/(sol->temperature_in_keV(r));
-      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
-  }
-  if (sol->opcode == ATOMIC){
-      double u = erg/(sol->temperature_in_keV(r));
-      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity (erg,r)+reducedCompton + sol->Gamma_P_ee(erg, r));
-  }
+    if (sol->opcode == OPAS) {
+        double u = erg/(sol->temperature_in_keV(r));
+        double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
+        return 0.5*gsl_pow_2(r*erg/pi)*sol->Gamma_P_opacity (erg,r);
+    }
   return 0;
 }
 double integrand_opacity(double r, void * params) {
@@ -103,14 +98,8 @@ double integrand_opacity(double r, void * params) {
       for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_element(erg, r, iz); };
       return 0.5*gsl_pow_2(r*erg/pi)*element_contrib ;
   }
-  if (sol->opcode == OPAS){
+  if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC) ){
       return 0.5*gsl_pow_2(r*erg/pi)* sol->Gamma_P_opacity (erg,r) ;
-  }
-  if (sol->opcode == LEDCOP){
-      return 0.5*gsl_pow_2(r*erg/pi)*sol->Gamma_P_opacity (erg,r);
-  }
-  if (sol->opcode == ATOMIC){
-      return 0.5*gsl_pow_2(r*erg/pi)*sol->Gamma_P_opacity (erg,r);
   }
   return 0;
 }
@@ -180,6 +169,7 @@ void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, doubl
  void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*),std::string saveas) { calculate_spectral_flux_javi(ergs, s, integrand, 0,saveas); }
  */
 /*
+ // will become integrator for spectral flux to compute total flux in some energy range
 double calculate_spectral_flux(double erg, void * params ){
     struct integration_params * p2 = (struct integration_params2 *)params;
     int iz = (p2->iz);
