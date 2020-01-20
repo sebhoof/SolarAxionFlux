@@ -128,6 +128,7 @@ void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*i
   if (saveas!= ""){ output.close();}
   gsl_integration_workspace_free (w);
 }
+
 /*
 // Javis integrator to check how much different it makes
 void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz,std::string saveas) {
@@ -168,33 +169,41 @@ void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, doubl
  void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*)) { calculate_spectral_flux_javi(ergs, s, integrand, 0); }
  void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*),std::string saveas) { calculate_spectral_flux_javi(ergs, s, integrand, 0,saveas); }
  */
-/*
+
  // will become integrator for spectral flux to compute total flux in some energy range
-double calculate_spectral_flux(double erg, void * params ){
-    struct integration_params * p2 = (struct integration_params2 *)params;
+double spectral_flux_integrand(double erg, void * params ){
+    struct integration_params2 * p2 = (struct integration_params2 *)params;
     int iz = (p2->iz);
     SolarModel* s = (p2->sol);
     const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / (pow(distance_sol,2) * (1.0e6*hbar/(60.0*60.0*24.0*365.0)));
+    const double normfactor = 1.0e20;
     double result, error;
     gsl_function f;
     f.function = p2->integrand;
     gsl_integration_workspace * w = gsl_integration_workspace_alloc (1e6);
-    integration_params p = {erg, &s, iz};
+    integration_params p = {erg, s, iz};
     f.params = &p;
-    gsl_integration_qag (&f, s.r_lo, s.r_hi, abs_prec1, rel_prec1, 1e6, method1, w, &result, &error);
+    gsl_integration_qag (&f, s->r_lo, s->r_hi, abs_prec1, rel_prec1, 1e6, method1, w, &result, &error);
     gsl_integration_workspace_free (w);
-    return factor*result
+    return factor*result/normfactor;
 }
-void calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, double (*integrand)(double, void*),int iz){
-    const double factor = 1.0e20;
+
+double calculate_full_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz){
+    const double normfactor = 1.0e20;
     double result, error;
     gsl_function f;
-    f.function = calculate_spectral_flux;
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc (1e6);
-    integration_params p = {erg, &s, iz};
-
+    f.function = spectral_flux_integrand;
+    gsl_integration_workspace * w = gsl_integration_workspace_alloc (1e8);
+    integration_params2 p2 = {&s,&integrand_all_axionelectron,iz};
+    f.params = &p2;
+    gsl_integration_qag (&f, lowerlimit, upperlimit, abs_prec2, rel_prec2, 1e8, method2, w, &result, &error);
+    std::cout << w->size << std::endl;
+    gsl_integration_workspace_free (w);
+    std::cout << error << std::endl;
+    return result*normfactor;
 }
-*/
+ 
+
 
 
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz) {calculate_spectral_flux(ergs, s, integrand,iz,"");}

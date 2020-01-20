@@ -7,11 +7,12 @@
 #include <gsl/gsl_integration.h>
 
 #include "utils.hpp"
-
+//for spectral flux
 const int method1 = 5;
-const double abs_prec1 = 1.0e-6, rel_prec1 = 1.0e-6;
+const int method2 = 2;
+const double abs_prec1 = 0.0, rel_prec1 = 1.0e-3;
+const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;;
 struct integration_params { double erg; SolarModel* sol; int iz; };
-struct integration_params2 {SolarModel* sol; double* integrand(double, void*); int iz; };
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz);
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*));
 void calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s);
@@ -28,5 +29,8 @@ void calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel 
 void calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s,std::string saveas);
 void calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s);
 void calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s,std::string saveas);
-
+//for total flux
+struct integration_params2 {SolarModel* sol; double (*integrand)(double, void*); int iz; };
+double spectral_flux_integrand(double erg, void * params );
+double calculate_full_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz);
 #endif // defined __spectral_flux_hpp__

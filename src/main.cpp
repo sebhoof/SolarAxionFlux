@@ -24,8 +24,8 @@ int main() {
   calculate_spectral_flux_Primakoff(test_ergs, s, "primakoff");
   std::cout << "# Compute Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(test_ergs, s,"compton");
-  std::cout << "# Compute FF spectrum..." << std::endl;
-  calculate_spectral_flux_all_ff(test_ergs, s,"all_ff");
+//  std::cout << "# Compute FF spectrum..." << std::endl;
+//  calculate_spectral_flux_all_ff(test_ergs, s,"all_ff");
   std::cout << "# Compute opacity contribution (only metals in OP case)..." << std::endl;
   calculate_spectral_flux_opacity(test_ergs, s,"metals");
   auto t4 = std::chrono::high_resolution_clock::now();
@@ -34,6 +34,10 @@ int main() {
   auto t5 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
+  double lowerg = 0.1;
+  double higherg = 10.0;
+  std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
+  std::cout << calculate_full_flux(lowerg,higherg,s,0);
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
