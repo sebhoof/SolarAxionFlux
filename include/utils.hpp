@@ -121,6 +121,7 @@ class SolarModel
     double Gamma_P_element (double omega, double r, int iz);
     double Gamma_P_Primakoff (double omega, double r);
   private:
+    int n_cols;
     ASCIItableReader data;
     gsl_interp_accel *accel[4];
     gsl_spline *linear_interp[4];
