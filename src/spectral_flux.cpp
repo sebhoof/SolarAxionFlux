@@ -188,7 +188,7 @@ double spectral_flux_integrand(double erg, void * params ){
     return factor*result/normfactor;
 }
 
-double calculate_full_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz){
+double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz){
     const double normfactor = 1.0e20;
     double result, error;
     gsl_function f;
@@ -197,15 +197,9 @@ double calculate_full_flux(double lowerlimit, double upperlimit, SolarModel &s,i
     integration_params2 p2 = {&s,&integrand_all_axionelectron,iz};
     f.params = &p2;
     gsl_integration_qag (&f, lowerlimit, upperlimit, abs_prec2, rel_prec2, 1e8, method2, w, &result, &error);
-    std::cout << w->size << std::endl;
     gsl_integration_workspace_free (w);
-    std::cout << error << std::endl;
     return result*normfactor;
 }
- 
-
-
-
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz) {calculate_spectral_flux(ergs, s, integrand,iz,"");}
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*)) { calculate_spectral_flux(ergs, s, integrand, 0); }
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*),std::string saveas) { calculate_spectral_flux(ergs, s, integrand, 0,saveas); }

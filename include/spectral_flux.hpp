@@ -32,5 +32,5 @@ void calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s,std
 //for total flux
 struct integration_params2 {SolarModel* sol; double (*integrand)(double, void*); int iz; };
 double spectral_flux_integrand(double erg, void * params );
-double calculate_full_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz);
+double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz);
 #endif // defined __spectral_flux_hpp__

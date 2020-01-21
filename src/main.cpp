@@ -10,11 +10,11 @@ int main() {
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
   std::string solar_model_name = "data/SolarModel_AGSS09.dat";
-  SolarModel s (solar_model_name,OPAS,true);
+  SolarModel s (solar_model_name,LEDCOP,true);
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
-  int n_test_values = 2000;
+  int n_test_values = 1000;
   std:: vector<double> test_ergs;
   for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
@@ -37,8 +37,37 @@ int main() {
   double lowerg = 0.1;
   double higherg = 10.0;
   std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
-  std::cout << calculate_full_flux(lowerg,higherg,s,0);
+  std::cout << calculate_flux(lowerg,higherg,s,0);
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
+ /*
+int main() {
+//compare different opacities in each 1 kev bin
+    std::string solar_model_name = "data/SolarModel_AGSS09.dat";
+    std::cout << "# compare different opacities in each 1 kev bin" << std::endl;
+    std:: cout << "# building solar models..." << std::endl;
+    SolarModel sOPAS (solar_model_name,OPAS,true);
+    SolarModel sOP (solar_model_name,OP,true);
+    SolarModel sATOMIC (solar_model_name,ATOMIC,true);
+    SolarModel sLEDCOP (solar_model_name,LEDCOP,true);
+//computing fluxes
+    std:: cout << "# computing fluxes..." << std::endl;
+    std::vector<double> erg_boundaries = {0.1};
+    for (int k=1; k<13;k++ ) {erg_boundaries.push_back(double(k));}
+    std::ofstream output;
+    output.open("results/compare_opacitites.dat");
+    output << "fluxes in each bin for four opacity codes" << std::endl;
+    output << "OP OPAS LEDCOP ATOMIC" << std::endl;
+    for (int k=0; k<12; k++) {
+        output << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sOP,0) << " "
+            << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sOPAS,0) << " "
+            << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sATOMIC,0) << " "
+            << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sLEDCOP,0) << std::endl;
+    }
+    output.close();
+}
+ */
+
+
 
