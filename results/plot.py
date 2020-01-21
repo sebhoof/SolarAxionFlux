@@ -34,7 +34,7 @@ plt.plot(res5[:,0], res5[:,1]/1.0e20, 'k--')
 plt.xlabel(r'Energy $\omega$ [keV]')
 plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e20}{\per\m\squared\per\keV\per\year}]')
 plt.xlim([0,10])
-plt.ylim([0,4])
+plt.ylim([0,3.5])
 
 plt.legend()
 

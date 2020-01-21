@@ -259,7 +259,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     if (opcode == OP) {
         std::map<std::pair<int,int>, gsl_interp_accel*> temp1;
         std::map<std::pair<int,int>, gsl_spline*> temp2;
-        for (int j = 0; j < 197; j++){
+        for (int j = 0; j < op_grid_size; j++){
           std::string op_filename = "data/opacity_tables/OP/opacity_table_"+std::to_string(iz+1)+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
           ASCIItableReader op_data = ASCIItableReader(op_filename);
 
@@ -460,10 +460,16 @@ double SolarModel::Gamma_P_Compton (double omega, double r) {
 
 // Read off interpolated elements
 double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
-  auto key = std::make_pair(ite,jne);
-  double result =  gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
-  if (gsl_isnan(result) == true) {return 0;}
-  return result;
+    auto key = std::make_pair(ite,jne);
+    if (opacity_lin_interp_op[iz].find(key) == opacity_lin_interp_op[iz].end()) {
+        if (unavailable_OP.find(key) == unavailable_OP.end()){
+            std::cout << "OP data for " << op_elements_simple[iz] << ", ite=" << ite << " and jne=" << jne << " not found!"  << std::endl;
+        }
+        return 0;
+    }
+    double result =  gsl_spline_eval(opacity_lin_interp_op[iz].at(key), log(u), opacity_acc_op[iz].at(key));
+    if (gsl_isnan(result) == true) {return 0;}
+    return result;
 };
 double SolarModel::tops_grid_interp_erg (double erg, float T, float rho) {
   auto key = std::make_pair(T,rho);
