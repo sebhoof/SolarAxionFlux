@@ -9,8 +9,8 @@ int main() {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
-  std::string solar_model_name = "data/SolarModel_AGSS09.dat";
-  SolarModel s (solar_model_name,LEDCOP,true);
+  std::string solar_model_name = "data/SolarModel_GS98.dat";
+  SolarModel s (solar_model_name,OP,true);
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
@@ -41,7 +41,8 @@ int main() {
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
- /*
+ 
+/*
 int main() {
 //compare different opacities in each 1 kev bin
     std::string solar_model_name = "data/SolarModel_AGSS09.dat";
@@ -56,7 +57,7 @@ int main() {
     std::vector<double> erg_boundaries = {0.1};
     for (int k=1; k<13;k++ ) {erg_boundaries.push_back(double(k));}
     std::ofstream output;
-    output.open("results/compare_opacitites.dat");
+    output.open("results/compare_opacities.dat");
     output << "fluxes in each bin for four opacity codes" << std::endl;
     output << "OP OPAS LEDCOP ATOMIC" << std::endl;
     for (int k=0; k<12; k++) {
@@ -68,6 +69,34 @@ int main() {
     output.close();
 }
  */
-
+/*
+int main() {
+ //compare different solarmodels in each 1 kev bin
+     std::string solar_model_name = "data/SolarModel_AGSS09.dat";
+     std::cout << "# compare different opacities in each 1 kev bin" << std::endl;
+     std:: cout << "# building solar models..." << std::endl;
+     SolarModel sAGSS09 ("data/SolarModel_AGSS09.dat",OP,true);
+     SolarModel sAGSS09ph ("data/SolarModel_AGSS09ph.dat",OP,true);
+     SolarModel sGS98 ("data/SolarModel_GS98.dat",OP,true);
+    SolarModel sAGS05 ("data/SolarModel_AGS05.dat",OP,true);
+    SolarModel sJavi ("data/SolarModel_Javi_red.dat",OP,true);
+ //computing fluxes
+     std:: cout << "# computing fluxes..." << std::endl;
+     std::vector<double> erg_boundaries = {0.1};
+     for (int k=1; k<13;k++ ) {erg_boundaries.push_back(double(k));}
+     std::ofstream output;
+     output.open("results/compare_SolarModels.dat");
+     output << "fluxes in each bin for five solar models" << std::endl;
+     output << "AGSS09 AGSS09ph GS98 AGS05 JaviRed" << std::endl;
+     for (int k=0; k<12; k++) {
+         output << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sAGSS09,0) << " "
+             << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sAGSS09ph,0) << " "
+             << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sGS98,0) << " "
+            << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sAGS05,0) << " "
+             << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sJavi,0) << std::endl;
+     }
+     output.close();
+}
+*/
 
 
