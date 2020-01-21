@@ -7,7 +7,7 @@ double integrand_Primakoff(double r, void * params) {
   SolarModel* sol = (p->sol);
 
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Primakoff(erg, r));
-}
+};
 
 double integrand_Compton(double r, void * params) {
   // Retrieve parameters and other integration variables.

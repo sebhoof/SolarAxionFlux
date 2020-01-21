@@ -11,8 +11,85 @@ void my_handler (const char * reason, const char * file, int line, int gsl_errno
         std::cout << "error number: " << gsl_errno << std::endl;
         abort();
     }
-    
+
 }
+
+/// Check if a file exists
+bool file_exists(const std::string& filename)
+{
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+}
+
+// Initialiser for the OneDInterpolator class.
+void OneDInterpolator::init(std::string file, std::string type)
+{
+  // Check if file exists.
+  if (not(file_exists(file)))
+  {
+    //DarkBit_error().raise(LOCAL_INFO, "ERROR! File '"+file+"' not found!");
+    terminate_with_error("ERROR! File '"+file+"' not found!");
+  } else {
+    //logger() << LogTags::debug << "Reading data from file '"+file+"' and interpolating it with '"+type+"' method." << EOM;
+  };
+  // Read numerical values from data file.
+  ASCIItableReader tab (file);
+  tab.setcolnames("x", "y");
+  // Initialise gsl interpolation routine.
+  int pts = tab["x"].size();
+  const double* x = &tab["x"][0];
+  const double* y = &tab["y"][0];
+  acc = gsl_interp_accel_alloc ();
+  if (type == "cspline")
+  {
+    spline = gsl_spline_alloc (gsl_interp_cspline, pts);
+  }
+  else if (type == "linear")
+  {
+    spline = gsl_spline_alloc (gsl_interp_linear, pts);
+  }
+  else
+  {
+    //DarkBit_error().raise(LOCAL_INFO, "ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
+    terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
+  };
+  gsl_spline_init (spline, x, y, pts);
+  // Get first and last value of the "x" component.
+  lo = tab["x"].front();
+  up = tab["x"].back();
+};
+
+// Overloaded class creators for the OneDInterpolator class using the init function above.
+OneDInterpolator::OneDInterpolator(std::string file, std::string type) { init(file, type); };
+OneDInterpolator::OneDInterpolator(std::string file) { init(file, "linear"); };
+OneDInterpolator::OneDInterpolator() {};
+
+// Move assignment operator
+OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp)
+{
+  if(this != &interp)
+  {
+    std::swap(acc,interp.acc);
+    std::swap(spline,interp.spline);
+    std::swap(lo,interp.lo);
+    std::swap(up,interp.up);
+  }
+  return *this;
+}
+
+// Destructor
+OneDInterpolator::~OneDInterpolator()
+{
+    gsl_spline_free (spline);
+    gsl_interp_accel_free (acc);
+}
+
+// Routine to access interpolated values.
+double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, x, acc); };
+
+// Routines to return upper and lower boundaries of interpolating function
+double OneDInterpolator::lower() { return lo; };
+double OneDInterpolator::upper() { return up; };
 
 // ASCII Table Reader by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
@@ -167,7 +244,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
   const double* density_vals = &density[0];
   gsl_spline_init (linear_interp[4], radius, density_vals, pts);
-  
+
   //Quantities depnding on specfific element
   for (int iz = 0; iz < n_op_elements; iz++) {
     z2_n_iz_acc.push_back( gsl_interp_accel_alloc() );

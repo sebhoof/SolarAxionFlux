@@ -9,9 +9,12 @@
 #include "utils.hpp"
 
 const int method1 = 5;
-const double abs_prec1 = 1.0e-6, rel_prec1 = 1.0e-6;
+const double abs_prec1 = 1.0e-7, rel_prec1 = 1.0e-7;
 struct integration_params { double erg; SolarModel* sol; int iz; };
 struct integration_params2 {SolarModel* sol; double* integrand(double, void*); int iz; };
+
+double integrand_Primakoff(double r, void * params);
+
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz);
 void calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*));
 void calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s);

@@ -2,12 +2,15 @@
 #define __utils_hpp__
 
 #include <iostream>
-#include <stdlib.h>
-#include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <map>
 #include <sstream>
+
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <gsl/gsl_math.h>
 //#include <gsl/gsl_sf_exp.h>
@@ -59,6 +62,39 @@ const std::vector<std::vector<float>> atomic_grid = {{0.55,10.175}, {0.55,13.684
 const std::vector<float> atomic_temperatures = {0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 1.0, 1.125, 1.25, 1.375};
 const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5};
 const std::vector<double> opas_radii ={0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
+
+bool file_exists(const std::string& filename);
+
+// OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
+// Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
+class OneDInterpolator
+{
+  public:
+    // Overloaded class creators for the OneDInterpolator class using the init function below.
+    OneDInterpolator(std::string file, std::string type);
+    OneDInterpolator(std::string file);
+    OneDInterpolator();
+    OneDInterpolator& operator=(OneDInterpolator&&);
+    // Destructor
+    ~OneDInterpolator();
+    // Delete copy constructor and assignment operator to avoid shallow copies
+    OneDInterpolator(const OneDInterpolator&) = delete;
+    OneDInterpolator operator=(const OneDInterpolator&) = delete;
+    // Routine to access interpolated values.
+    double interpolate(double x);
+    // Routine to access upper and lower boundaries of available data.
+    double lower();
+    double upper();
+  private:
+    // Initialiser for the OneDInterpolator class.
+    void init(std::string file, std::string type);
+    // The gsl objects for the interpolating functions.
+    gsl_interp_accel *acc;
+    gsl_spline *spline;
+    // Upper and lower boundaries available for the interpolating function.
+    double lo;
+    double up;
+};
 
 class ASCIItableReader {
   public:
@@ -160,7 +196,7 @@ class SolarModel
     std::vector<gsl_spline*> n_iz_lin_interp;
     std::vector<gsl_interp_accel*> z2_n_iz_acc;
     std::vector<gsl_spline*> z2_n_iz_lin_interp;
-    
+
 };
 
 #endif // defined __utils_hpp__
