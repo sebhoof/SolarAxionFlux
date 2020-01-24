@@ -139,7 +139,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   data = ASCIItableReader(file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
-  n_cols = data.getncol();
+  int n_cols = data.getncol();
   if (n_cols == 35)
   {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
