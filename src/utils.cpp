@@ -139,9 +139,20 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   data = ASCIItableReader(file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
-  if (data.getncol() != 35) { terminate_with_error("ERROR! Solar model file '"+file+"' not compatible with this code!"); };
-  data.setcolnames("mass", "radius", "temperature", "rho", "Pressure", "Luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
-                   "X_K", "X_Ca", "X_Sc", "X_Ti", "X_V", "X_Cr", "X_Mn", "X_Fe", "X_Co", "X_Ni");
+  n_cols = data.getncol();
+  if (n_cols == 35)
+  {
+    data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
+                     "X_K", "X_Ca", "X_Sc", "X_Ti", "X_V", "X_Cr", "X_Mn", "X_Fe", "X_Co", "X_Ni");
+  }
+  else if (n_cols == 12)
+  {
+    data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
+  }
+  else
+  {
+    terminate_with_error("ERROR! Solar model file '"+file+"' not compatible with this code!");
+  };
 
   // Extract the radius from the files (in units of the solar radius).
   r_lo = data["radius"][0];
@@ -174,7 +185,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   {
     double r0 = data["radius"][0], r1 = data["radius"][1];
 
-    for (int i = 0; i < 29; i++)
+    for (int i = 0; i < n_cols; i++)
     {
       double intercept = (r0*data[i][1]-r1*data[i][0])/(r0-r1);
       //data[i].insert(data[i].begin(), intercept);
