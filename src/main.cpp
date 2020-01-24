@@ -47,7 +47,7 @@ int main() {
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
-
+//compare 4 different op codes
 /*
 int main() {
 //compare different opacities in each 1 kev bin
@@ -75,6 +75,7 @@ int main() {
     output.close();
 }
  */
+// compare five different solar models
 /*
 int main() {
  //compare different solarmodels in each 1 kev bin
