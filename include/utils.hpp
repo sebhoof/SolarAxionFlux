@@ -147,29 +147,33 @@ class SolarModel
     SolarModel(const SolarModel&) = delete;
     SolarModel operator=(const SolarModel&) = delete;
     // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
-    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf), default is false
+    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) egs. 16 a-c, default is true
     const opacitycode opcode;
     double r_lo, r_hi;
     // Routine to return the screening parameter kappa^2 (kappa^-1 = Debye-Hueckel radius).
     double kappa_squared(double r);
     // Routine to return the temperature in keV.
     double temperature_in_keV(double r);
+    // Routine to return density
     double density(double r);
-    // ...
+    // Routines to return ion number density times charge^2 (for each element and for all)
     double z2_n_iz(double r, int iz);
     double z2_n(double r);
-    // ...
+    // Routine to return ion density for each element
     double n_iz(double r, int iz);
-    // Raffelt approximation
+    // Routine to return electron density
     double n_e(double r);
     // Routine to return the plasma frequency squared.
     double omega_pl_squared(double r);
-
-    // ...
+    // Rates for various axion prodcution preecesses
     double Gamma_P_ff(double omega, double r, int iz);
     double Gamma_P_ff(double omega, double r);
     double Gamma_P_ee(double omega, double r);
     double Gamma_P_Compton (double omega, double r);
+    double Gamma_P_opacity (double omega, double r, int iz);
+    double Gamma_P_opacity (double omega, double r);
+    double Gamma_P_Primakoff (double omega, double r);
+    // interpolating the opacity data
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double tops_grid_interp_erg (double erg, float T, float rho);
     double opas_grid_interp_erg (double erg, double r);
@@ -179,11 +183,10 @@ class SolarModel
     double opacity_table_interpolator_opas (double omega, double r);
     double opacity_element (double omega, double r, int iz);
     double opacity (double omega, double r);
-    double Gamma_P_element (double omega, double r, int iz);
-    double Gamma_P_opacity (double omega, double r);
-    double Gamma_P_Primakoff (double omega, double r);
   private:
+    // solar data
     ASCIItableReader data;
+    // spline interpolations (all linear)
     gsl_interp_accel *accel[5];
     gsl_spline *linear_interp[5];
     std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;

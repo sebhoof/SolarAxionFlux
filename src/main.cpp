@@ -42,8 +42,8 @@ int main() {
   std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
   double lowerg = 0.1;
   double higherg = 10.0;
-  std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
-  std::cout << calculate_flux(lowerg,higherg,s,0);
+//  std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
+//  std::cout << calculate_flux(lowerg,higherg,s,0);
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
