@@ -12,7 +12,7 @@
 
 // Constant numbers for precision etc.
 //const double radint_abs_prec = 1.0e-1, radint_rel_prec = 1.0e-6;
-const double ergint_abs_prec = 1.0e-5, ergint_rel_prec = 1.0e-6;
+const double ergint_abs_prec = 0.0, ergint_rel_prec = 1.0e-6;
 const int gagg_method = 5, int_space_size = 1e5;
 
 struct exp_setup { int n_bins; double bin_lo; double bin_delta; double r_max; double b_field; double length; std::string eff_exposure_file; };
