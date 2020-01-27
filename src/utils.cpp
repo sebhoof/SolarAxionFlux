@@ -11,7 +11,6 @@ void my_handler (const char * reason, const char * file, int line, int gsl_errno
         std::cout << "error number: " << gsl_errno << std::endl;
         abort();
     }
-
 }
 
 /// Check if a file exists
@@ -128,8 +127,8 @@ void ASCIItableReader::setcolnames(std::vector<std::string> names) {
 }
 
 // Constructors
-SolarModel::SolarModel() : opcode(OP) {};
-SolarModel::SolarModel(std::string file,opacitycode set_opcode) : SolarModel(file,set_opcode,false){};
+SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
+SolarModel::SolarModel(std::string file,opacitycode set_opcode) : SolarModel(file,set_opcode,true){};  //if raff approx is not set, then true
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")){
       std::cout << "Warning: The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
@@ -139,7 +138,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   data = ASCIItableReader(file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
-  n_cols = data.getncol();
+  int n_cols = data.getncol();
   if (n_cols == 35)
   {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
@@ -158,7 +157,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   r_lo = data["radius"][0];
   r_hi = data["radius"][pts-1];
 
-  // Extract the temperature from the files (has to be converted into keV) & calculate the screening scale kappa_s_squared.
+  // Extract the temperature (has to be converted into keV), density, electron density, and ion density * charge^2  from the files.
   // Initialise necessary variables for the screening scale calculation.
   std::vector<double> temperature;
   std::vector<double> n_e;
@@ -198,25 +197,30 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   // Calculate the necessary quantities -- T(r), kappa_s^2(r) and omega_pl^2(r) -- and store them internally.
   for (int i = 0; i < pts; i++)
   {
+//    temperature
+    temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);     //temperature
+//    density
+    density.push_back(data["rho"][i]);
+
+    
+//    electron density
     double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
-    double sum = 0.0;
-    double ne = 0.0;
+//    electron density from Raffelt
     double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
-    double radiation_pressure = 4.0/3.0*5.678e-15*pow(data["temperature"][i],4.0);
-    double ion_number_dens = 0;
+    n_e_Raff.push_back(ne_Raff);
+//    electron density form pressure (currently not used)
+    double radiation_pressure = 4.0/3.0*5.678e-15*pow(data["temperature"][i],4.0);                    //radiation pressure
+    double ion_number_dens = 0.0;
     for (int l = 0; l<29;l++) {ion_number_dens += data[6+l][i]*rhorel/A_vals[l];}
     double ne_press = (data["Pressure"][i]-radiation_pressure)/data["temperature"][i]/1.381e-16-ion_number_dens;
-    temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);
-    density.push_back(data["rho"][i]);
-    for (int j = 0; j < 29; j++)
-    {
-      double temp = data[j+6][i]*Z_vals[j]/A_vals[j];
-      ne += temp;
-      sum += temp*(1.0 + Z_vals[j]);
-    };
+//    electron density from summing over all elements (full ionisation)
+    double ne = 0.0;
+    for (int j = 0; j < 29; j++) { ne += data[j+6][i]*Z_vals[j]/A_vals[j];}
     n_e.push_back(ne*rhorel);
-    n_e_Raff.push_back(ne_Raff);
+//    ion density weighted by charge^2
+//    ion density weighted by charge^2 from Raffelt
     z2_n_Raff.push_back(data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9));
+//    ion density weighted by charge^2 from summing over all elements (full ionisation)
     for (int k = 0; k < n_op_elements; k++)
     {
       double z2_n = 0.0;
