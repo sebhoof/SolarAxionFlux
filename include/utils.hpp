@@ -165,14 +165,14 @@ class SolarModel
     double n_e(double r);
     // Routine to return the plasma frequency squared.
     double omega_pl_squared(double r);
-    // Rates for various axion prodcution preecesses
+    // Rates for various axion prodcution processes
     double Gamma_P_ff(double omega, double r, int iz);
     double Gamma_P_ff(double omega, double r);
     double Gamma_P_ee(double omega, double r);
-    double Gamma_P_Compton (double omega, double r);
-    double Gamma_P_opacity (double omega, double r, int iz);
-    double Gamma_P_opacity (double omega, double r);
-    double Gamma_P_Primakoff (double omega, double r);
+    double Gamma_P_Compton(double omega, double r);
+    double Gamma_P_opacity(double omega, double r, int iz);
+    double Gamma_P_opacity(double omega, double r);
+    double Gamma_P_Primakoff(double omega, double r);
     // interpolating the opacity data
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double tops_grid_interp_erg (double erg, float T, float rho);

@@ -4,6 +4,7 @@ void terminate_with_error(std::string err_string) {
   std::cerr << err_string << std::endl;
   exit(EXIT_FAILURE);
 };
+
 void my_handler (const char * reason, const char * file, int line, int gsl_errno) {
     if (gsl_errno == GSL_EDOM) { }
     else {
@@ -653,4 +654,4 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
   double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
   return  prefactor6*phase_factor*rate;
-};
+}
