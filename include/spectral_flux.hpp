@@ -8,9 +8,9 @@
 
 #include "utils.hpp"
 //for spectral flux
-const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e5;
-const double int_abs_prec = 0.0, int_rel_prec = 1.0e-3;
-const double abs_prec1 = 0.0, rel_prec1 = 1.0e-3;
+const double ref_erg_value = 2.0;
+const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e7;
+const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
 const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;
 struct integration_params { double erg; SolarModel* sol; int iz; };
 //struct solar_disc_integration_params { double erg; double rad; double r_max; SolarModel* s; double (*integrand)(double, double); gsl_integration_workspace* w1; };

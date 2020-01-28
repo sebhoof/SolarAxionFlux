@@ -10,7 +10,7 @@ int main() {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
-  std::string solar_model_name = "data/SolarModel_AGSS09.dat";
+  std::string solar_model_name = "data/SolarModel_AGSS09met.dat";
   SolarModel s (solar_model_name,OP,true);
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "

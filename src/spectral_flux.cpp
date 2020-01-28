@@ -120,7 +120,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, int iz, So
     double integral, error;
     integration_params p = {ergs[i], &s, iz};
     f.params = &p;
-    gsl_integration_qag (&f, s.r_lo, s.r_hi, abs_prec1, rel_prec1, int_space_size, int_method_1, w, &integral, &error);
+    gsl_integration_qag (&f, s.r_lo, s.r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
     result.push_back(factor*integral);
     if (saveas!= ""){ output << ergs[i] << " " << factor*integral << std::endl; };
   };
@@ -135,14 +135,18 @@ double rho_integrand(double rho, void * params) {
   // Retrieve parameters and other integration variables.
   struct solar_disc_integration_params * p1 = (struct solar_disc_integration_params *)params;
   double erg = (p1->erg);
-  double r = (p1->rad);
+  double rad = (p1->rad);
   SolarModel *s = p1->s;
 
-  double cylinder = rho*rho - r*r;
+  // Normalising factor ~ max values, which occur for rho = r_lo, ref_erg_value = 2.0 keV.
+  static double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->r_lo);
+  double cylinder = rho*rho - rad*rad;
   cylinder = rho/sqrt(cylinder);
 
+  //std::cout << "rho = " << rho << ", erg = " << erg << ", res = " << cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1 << std::endl;
+
   //return cylinder*(p1->integrand(erg, rho));
-  return cylinder * ( (s->*(p1->integrand))(erg, rho) );
+  return cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1;
 }
 
 double rad_integrand(double rad, void * params) {
@@ -156,7 +160,9 @@ double rad_integrand(double rad, void * params) {
   f1.params = p2;
 
   double result, error;
-  gsl_integration_qag (&f1, rad, r_max, 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
+  gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
+  //gsl_integration_qags(&f1, rad, r_max, 0.001*int_abs_prec, 0.001*int_rel_prec, int_space_size, p2->w1, &result, &error);
+  //std::cout << "rad = " << rad << ", integral 1 = " << result << std::endl;
 
   result = rad*result;
   return result;
@@ -165,6 +171,7 @@ double rad_integrand(double rad, void * params) {
 std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, int iz, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
+  static double norm_factor1 = (s.*integrand)(ref_erg_value, s.r_lo);
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
   // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
   std::vector<double> result;
@@ -189,9 +196,9 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
     double integral, error;
     p2.erg = ergs[i];
     f2.params = &p2;
-    gsl_integration_qag (&f2, r_min, r_max, abs_prec1, rel_prec1, int_space_size, int_method_1, w2, &integral, &error);
-    result.push_back(factor*integral);
-    if (saveas!= ""){ output << ergs[i] << " " << factor*integral << std::endl; };
+    gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w2, &integral, &error);
+    result.push_back(factor*norm_factor1*integral);
+    if (saveas!= ""){ output << ergs[i] << " " << factor*norm_factor1*integral << std::endl; };
   };
 
   if (saveas!= "") { output.close(); };
@@ -253,7 +260,7 @@ double spectral_flux_integrand(double erg, void * params) {
   f.function = p2->integrand;
   integration_params p = {erg, s, iz};
   f.params = &p;
-  gsl_integration_qag (&f, s->r_lo, s->r_hi, abs_prec1, rel_prec1, int_space_size, int_method_1, w, &result, &error);
+  gsl_integration_qag (&f, s->r_lo, s->r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &result, &error);
   gsl_integration_workspace_free (w);
   return factor*result/normfactor;
 }
