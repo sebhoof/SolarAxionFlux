@@ -173,6 +173,7 @@ class SolarModel
     double Gamma_P_opacity(double omega, double r, int iz);
     double Gamma_P_opacity(double omega, double r);
     double Gamma_P_Primakoff(double omega, double r);
+    double Gamma_P_all_electron(double omega, double r);
     // interpolating the opacity data
     double op_grid_interp_erg (double u, int ite, int jne, int iz);
     double tops_grid_interp_erg (double erg, float T, float rho);

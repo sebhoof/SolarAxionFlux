@@ -139,7 +139,7 @@ double rho_integrand(double rho, void * params) {
   SolarModel *s = p1->s;
 
   // Normalising factor ~ max values, which occur for rho = r_lo, ref_erg_value = 2.0 keV.
-  static double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->r_lo);
+  double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->r_lo);
   double cylinder = rho*rho - rad*rad;
   cylinder = rho/sqrt(cylinder);
 
@@ -161,7 +161,7 @@ double rad_integrand(double rad, void * params) {
 
   double result, error;
   gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
-  //gsl_integration_qags(&f1, rad, r_max, 0.001*int_abs_prec, 0.001*int_rel_prec, int_space_size, p2->w1, &result, &error);
+  //gsl_integration_qags(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, p2->w1, &result, &error);
   //std::cout << "rad = " << rad << ", integral 1 = " << result << std::endl;
 
   result = rad*result;

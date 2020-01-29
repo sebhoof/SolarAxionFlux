@@ -655,3 +655,30 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
   return  prefactor6*phase_factor*rate;
 }
+
+double SolarModel::Gamma_P_all_electron (double erg, double r) {
+  double result = 0;
+  if (opcode == OP) {
+    double element_contrib = 0.0;
+    if (raffelt_approx == false) {
+      for (int iz = 0; iz < 2; iz++) { element_contrib += Gamma_P_ff(erg, r, iz); };
+    } else {
+      element_contrib += Gamma_P_ff(erg, r);
+    };
+    for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += Gamma_P_opacity(erg, r, iz); };
+    result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
+
+  } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
+    double u = erg/temperature_in_keV(r);
+    double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
+    result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
+
+  } else if (opcode == OPAS) {
+    result = Gamma_P_opacity (erg, r);
+
+  } else {
+      terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
+  };
+
+    return result;
+}

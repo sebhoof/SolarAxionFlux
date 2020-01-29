@@ -9,7 +9,7 @@
 #include "utils.hpp"
 //for spectral flux
 const double ref_erg_value = 2.0;
-const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e7;
+const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8;
 const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
 const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;
 struct integration_params { double erg; SolarModel* sol; int iz; };

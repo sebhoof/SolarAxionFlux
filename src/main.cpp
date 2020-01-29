@@ -35,11 +35,15 @@ int main() {
   auto t5 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
-  std::cout << "# Compute counts in CAST2007 experiment from gagg..." << std::endl;
+  std::cout << "# Compute counts in CAST2007 experiment from axion-photon interactions..." << std::endl;
   exp_setup setup = {20, 0.8, 0.3, 0.231738, 9.0, 9.26, "data/CAST2007_EffectiveExposure.dat"};
   axion_photon_counts_full(1.0e-3, 1.0e-10, &setup, &s, false, "counts_from_gagg");
   auto t6 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
+  std::cout << "# Compute counts in CAST2007 experiment from axion-electron interactions..." << std::endl;
+  axion_electron_counts_full(1.0e-3, 1.0e-13, 1.0e-10, &setup, &s, false, "counts_from_gaee");
+  auto t7 = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t7-t6).count() << " minutes." << std::endl;
   double lowerg = 0.1;
   double higherg = 10.0;
 //  std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
