@@ -3,7 +3,7 @@
 void terminate_with_error(std::string err_string) {
   std::cerr << err_string << std::endl;
   exit(EXIT_FAILURE);
-};
+}
 
 void my_handler (const char * reason, const char * file, int line, int gsl_errno) {
     if (gsl_errno == GSL_EDOM) { }
@@ -36,8 +36,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> data, bool 
 void save_to_file(std::string path, std::vector<std::vector<double>> data) { save_to_file(path, data, true); };
 
 // Initialiser for the OneDInterpolator class.
-void OneDInterpolator::init(std::string file, std::string type)
-{
+void OneDInterpolator::init(std::string file, std::string type) {
   // Check if file exists.
   if (not(file_exists(file)))
   {
@@ -74,13 +73,12 @@ void OneDInterpolator::init(std::string file, std::string type)
 };
 
 // Overloaded class creators for the OneDInterpolator class using the init function above.
-OneDInterpolator::OneDInterpolator(std::string file, std::string type) { init(file, type); };
-OneDInterpolator::OneDInterpolator(std::string file) { init(file, "linear"); };
-OneDInterpolator::OneDInterpolator() {};
+OneDInterpolator::OneDInterpolator(std::string file, std::string type) { init(file, type); }
+OneDInterpolator::OneDInterpolator(std::string file) { init(file, "linear"); }
+OneDInterpolator::OneDInterpolator() {}
 
 // Move assignment operator
-OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp)
-{
+OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp) {
   if(this != &interp)
   {
     std::swap(acc,interp.acc);
@@ -92,18 +90,17 @@ OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp)
 }
 
 // Destructor
-OneDInterpolator::~OneDInterpolator()
-{
+OneDInterpolator::~OneDInterpolator() {
     gsl_spline_free (spline);
     gsl_interp_accel_free (acc);
 }
 
 // Routine to access interpolated values.
-double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, x, acc); };
+double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, x, acc); }
 
 // Routines to return upper and lower boundaries of interpolating function
-double OneDInterpolator::lower() { return lo; };
-double OneDInterpolator::upper() { return up; };
+double OneDInterpolator::lower() { return lo; }
+double OneDInterpolator::upper() { return up; }
 
 // ASCII Table Reader by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
@@ -141,6 +138,16 @@ void ASCIItableReader::setcolnames(std::vector<std::string> names) {
   }
 }
 
+bool Element::operator< (const Element& other) const { return (other.name() < el_name) || ( (other.name() == el_name) && (other.a_val() < el_a_value) ); }
+bool Element::operator== (const Element& other) const { return ((other.name() == el_name) && (other.a_val() == el_a_value)); }
+std::string Element::name() const { return el_name; };
+std::string Element::index_name() const { return "X_"+el_name+std::to_string(el_a_value); };
+int Element::a_val() const { return el_a_value; };
+double Element::weight() const { return el_avg_weight.at(*this); };
+int Element::z_val() const { return el_z_value.at(el_name); };
+bool Element::same_z(Element *a) { return el_name==a->name(); };
+
+
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
 SolarModel::SolarModel(std::string file,opacitycode set_opcode) : SolarModel(file,set_opcode,true){};  //if raff approx is not set, then true
@@ -155,17 +162,16 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
   int n_cols = data.getncol();
-  if (n_cols == 35)
-  {
+  num_tracked_elems = n_cols - 6;
+  if (n_cols == 35) {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
                      "X_K", "X_Ca", "X_Sc", "X_Ti", "X_V", "X_Cr", "X_Mn", "X_Fe", "X_Co", "X_Ni");
-  }
-  else if (n_cols == 12)
-  {
+    tracked_elems = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"C",13}, {"N",14}, {"N",15}, {"O",16}, {"O",17}, {"O",18}, {"Ne",0}, {"Na",0}, {"Mg",0}, {"Al",0}, {"Si",0}, {"P",0}, {"S",0}, {"Cl",0}, {"Ar",0}, {"K",0}, {"Ca",0}, {"Sc",0},
+                     {"Ti",0}, {"V",0}, {"Cr",0}, {"Mn",0}, {"Fe",0}, {"Co",0}, {"Ni",0}};
+  } else if (n_cols == 12) {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
-  }
-  else
-  {
+    tracked_elems = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16}};
+  } else {
     terminate_with_error("ERROR! Solar model file '"+file+"' not compatible with this code!");
   };
 
@@ -196,8 +202,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   #endif
 
   // Linearly extrapolate the data in the solar model file to r = 0 if necessary.
-  if (r_lo > 0)
-  {
+  if (r_lo > 0) {
     double r0 = data["radius"][0], r1 = data["radius"][1];
 
     for (int i = 0; i < n_cols; i++)
@@ -211,8 +216,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   };
   const double* radius = &data["radius"][0];
 //   Calculate the necessary quantities -- T(r), kappa_s^2(r) and omega_pl^2(r) -- and store them internally.
-  for (int i = 0; i < pts; i++)
-  {
+  for (int i = 0; i < pts; i++) {
     //  temperature
     temperature.push_back((1.0E-3*K2eV)*data["temperature"][i]);     //temperature
     //  density
@@ -239,8 +243,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     {
       double z2_n = 0.0;
       double n = 0.0;
-      for (auto it = op_elements[k].begin(); it != op_elements[k].end(); ++it)
-      {
+      for (auto it = op_elements[k].begin(); it != op_elements[k].end(); ++it) {
         int j = *it;
         n += data[j+6][i]/A_vals[j];
         z2_n += Z_vals[j]*Z_vals[j]*data[j+6][i]/A_vals[j];
@@ -472,7 +475,7 @@ double SolarModel::Gamma_P_ee(double omega, double r) {
   return prefactor2 * n_e(r)*n_e(r)*exp(-u)*aux_function(u,y) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
-double SolarModel::Gamma_P_Compton (double omega, double r) {
+double SolarModel::Gamma_P_Compton(double omega, double r) {
   if (omega == 0) {return 0;}
   const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
   double u = omega/temperature_in_keV(r);
@@ -480,11 +483,11 @@ double SolarModel::Gamma_P_Compton (double omega, double r) {
   return prefactor3 * v*v*n_e(r)/gsl_expm1(u);
 }
 // Read off interpolated elements for op, tops and opas
-double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
+double SolarModel::op_grid_interp_erg(double u, int ite, int jne, int iz) {
     auto key = std::make_pair(ite,jne);
     if (opacity_lin_interp_op[iz].find(key) == opacity_lin_interp_op[iz].end()) {
         if (unavailable_OP.find(key) == unavailable_OP.end()){
-            std::cout << "OP data for " << op_elements_simple[iz] << ", ite=" << ite << " and jne=" << jne << " not found!"  << std::endl;
+            std::cout << "OP data for " << op_elements_simple[iz] << ", ite = " << ite << " and jne = " << jne << " not found!"  << std::endl;
         }
         return 0;
     }
@@ -494,7 +497,7 @@ double SolarModel::op_grid_interp_erg (double u, int ite, int jne, int iz) {
     if (gsl_isnan(result) == true) {return 0;}
     return result;
 };
-double SolarModel::tops_grid_interp_erg (double erg, float T, float rho) {
+double SolarModel::tops_grid_interp_erg(double erg, float T, float rho) {
   auto key = std::make_pair(T,rho);
   if (opacity_lin_interp_tops.find(key) == opacity_lin_interp_tops.end()) {
       std::cout << "Grid point {" << T << ", " << rho << "} not found" << std::endl;
@@ -506,7 +509,7 @@ double SolarModel::tops_grid_interp_erg (double erg, float T, float rho) {
   if (gsl_isnan(result) == true) {return 0;}
   return result;
 };
-double SolarModel::opas_grid_interp_erg (double erg, double r) {
+double SolarModel::opas_grid_interp_erg(double erg, double r) {
     if (opacity_lin_interp_opas.find(r) == opacity_lin_interp_opas.end()) {
         std::cout << "OPAS data for R=" <<r << " not found!"  << std::endl;
         return 0;
@@ -518,7 +521,7 @@ double SolarModel::opas_grid_interp_erg (double erg, double r) {
     return result;
 };
 //  double linear interpolation on solar grid (currently not used)
-double SolarModel::opacity_table_interpolator_op2 (double omega, double r, int iz) {
+double SolarModel::opacity_table_interpolator_op2(double omega, double r, int iz) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
@@ -544,7 +547,7 @@ double SolarModel::opacity_table_interpolator_op2 (double omega, double r, int i
   return result;
 };
 //  double logarithmic interpolation on solar grid (used for all codes)
-double SolarModel::opacity_table_interpolator_op (double omega, double r, int iz) {
+double SolarModel::opacity_table_interpolator_op(double omega, double r, int iz) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
   double ne = n_e(r);
@@ -627,7 +630,7 @@ double SolarModel::opacity_element (double omega, double r, int iz) {
     return result;
 };
 //  opacity for total solar mixture
-double SolarModel::opacity (double omega, double r){
+double SolarModel::opacity(double omega, double r){
     double result = 0;
     if (opcode == OP) {
         double sum = 0;
@@ -643,7 +646,7 @@ double SolarModel::opacity (double omega, double r){
     return result;
 }
 // opacity contribution from one element; first term of Eq. (2.21) of [arXiv:1310.0823]
-double SolarModel::Gamma_P_opacity (double omega, double r, int iz) {
+double SolarModel::Gamma_P_opacity(double omega, double r, int iz) {
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
@@ -657,7 +660,7 @@ double SolarModel::Gamma_P_opacity (double omega, double r) {
   return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
 }
 //
-double SolarModel::Gamma_P_Primakoff (double erg, double r) {
+double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   if (erg == 0) {return 0;}
   const double prefactor6 = g_agg*g_agg/(32.0*pi);
   double ks_sq = kappa_squared(r);
@@ -670,7 +673,7 @@ double SolarModel::Gamma_P_Primakoff (double erg, double r) {
   return  prefactor6*phase_factor*rate;
 }
 
-double SolarModel::Gamma_P_all_electron (double erg, double r) {
+double SolarModel::Gamma_P_all_electron(double erg, double r) {
   double result = 0;
   if (opcode == OP) {
     double element_contrib = 0.0;
