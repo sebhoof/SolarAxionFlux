@@ -64,9 +64,11 @@ const std::vector<float> ledcop_densities = {10.175, 13.684, 18.308, 24.268, 31.
 const std::vector<std::vector<float>> atomic_grid = {{0.55,10.175}, {0.55,13.684},  {0.55,18.308}, {0.6,10.175}, {0.6,13.684},  {0.6,18.308}, {0.6,24.268}, {0.65,13.684}, {0.65,18.308}, {0.65,24.268}, {0.7,18.308}, {0.7,24.268}, {0.7,31.802}, {0.7,41.156}, {0.8,18.308}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.9,31.802}, {0.9,41.156}, {0.9,52.611}, {0.9,66.544}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.125,52.611}, {1.125,66.544}, {1.125,83.466}, {1.125,103.442}, {1.125,124.995}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.375,103.442}, {1.375,124.995}, {1.375,143.111}, {1.375,150.5}};
 const std::vector<float> atomic_temperatures = {0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 1.0, 1.125, 1.25, 1.375};
 const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5};
-const std::vector<double> opas_radii ={0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
+const std::vector<double> opas_radii = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
 
 bool file_exists(const std::string& filename);
+void save_to_file(std::string path, std::vector<std::vector<double>> data, bool overwrite);
+void save_to_file(std::string path, std::vector<std::vector<double>> data);
 
 // OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
 // Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
@@ -139,7 +141,7 @@ class SolarModel
 {
   public:
     SolarModel();
-    SolarModel(std::string file, opacitycode set_opcode,const bool set_raffelt_approx);
+    SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx);
     SolarModel(std::string file, opacitycode set_opcode);
     ~SolarModel();
     SolarModel& operator=(SolarModel&&);

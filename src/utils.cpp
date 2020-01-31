@@ -15,11 +15,25 @@ void my_handler (const char * reason, const char * file, int line, int gsl_errno
 }
 
 /// Check if a file exists
-bool file_exists(const std::string& filename)
-{
+bool file_exists(const std::string& filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
 }
+
+void save_to_file(std::string path, std::vector<std::vector<double>> data, bool overwrite) {
+  std::cout << "Saving results to " << path << "..." << std::endl;
+  // Each vec in data contains a column etc...
+  if (file_exists(path)) {
+    if (overwrite) {
+      std::cout << "File " << path << "exists and will be overwritten..." << std::endl;
+    } else {
+      std::cout << "File " << path << "exists! Now saving to " << path << "_new" << std::endl;
+      path += "_new";
+    };
+  };
+}
+
+void save_to_file(std::string path, std::vector<std::vector<double>> data) { save_to_file(path, data, true); };
 
 // Initialiser for the OneDInterpolator class.
 void OneDInterpolator::init(std::string file, std::string type)
