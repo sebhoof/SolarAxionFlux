@@ -1,30 +1,27 @@
 #include "experimental_flux.hpp"
 
 double erg_integrand_from_file(double erg, void * params) {
-  const double eVm = gev2cm*1.0e7;
-
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
-  double m = p->mass;
+  double mass = p->mass;
   double length = (p->length)/eVm;
-  double norm_factor = (p->spectral_flux->interpolate(ref_erg_value))*(p->eff_exp->interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*m*m/ref_erg_value)/pi));
+  //double norm_factor = (p->spectral_flux->interpolate(ref_erg_value))*(24.0*60.0*60.0*(p->eff_exp->interpolate(ref_erg_value)))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*m*m/ref_erg_value)/pi));
 
-  double argument = 0.25*1.0e-3*length*m*m/erg;
+  double argument = 0.25*1.0e-3*length*mass*mass/erg;
   double sincsq = gsl_pow_2(gsl_sf_sinc(argument/pi));
-  double exposure = p->eff_exp->interpolate(erg);
+  double exposure = 24.0*60.0*60.0*(p->eff_exp->interpolate(erg));
   // N.B. Here we assume axion is massless in stellar interior:
   double exp_flux = p->spectral_flux->interpolate(erg);
 
-  return exposure*exp_flux*sincsq/norm_factor;
+  //return exposure*exp_flux*sincsq/norm_factor;
+  return exposure*exp_flux*sincsq;
 }
 
 std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
-
-  const double eVm = 1.0e7*gev2cm;
   const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
-  const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
+  //const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
-  const double prefactor = distance_factor*conversion_prob_factor;
+  //const double prefactor = distance_factor*conversion_prob_factor;
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
@@ -33,7 +30,7 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
   double length = (setup->length)/eVm;
   OneDInterpolator eff_exp (setup->eff_exposure_file);
   OneDInterpolator spectral_flux (spectral_flux_file);
-  double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
+  //double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   double gagg_result, gagg_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
@@ -49,9 +46,10 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qag(&f, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w, &gagg_result, &gagg_error);
-    double res = gsl_pow_2(gagg*1.0e19)*prefactor*norm_factor*gagg_result;
-    printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(res));
-    result.push_back(res);
+    //double res = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*prefactor*norm_factor*gagg_result;
+    double counts = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gagg_result;
+    printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
+    result.push_back(counts);
   };
   gsl_integration_workspace_free (w);
 
@@ -60,8 +58,6 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
 
 double erg_integrand(double erg, void * params)
 {
-  const double eVm = 1.0e7*gev2cm;
-
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
   double r_min = s->r_lo, r_max = std::min(p3->r_max, s->r_hi);
@@ -91,7 +87,6 @@ double erg_integrand(double erg, void * params)
 std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
-  const double eVm = 1.0e7*gev2cm;
   const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
@@ -138,11 +133,10 @@ std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setu
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
 
-  const double eVm = 1.0e7*gev2cm;
   const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
-  const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
+  //const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
-  const double prefactor = distance_factor*conversion_prob_factor;
+  //const double prefactor = distance_factor*conversion_prob_factor;
   const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
 
@@ -153,7 +147,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   double length = (setup->length)/eVm;
   OneDInterpolator eff_exp (setup->eff_exposure_file);
   OneDInterpolator spectral_flux (spectral_flux_file);
-  double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
+  //double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   double gaee_result, gaee_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
@@ -173,9 +167,10 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w, &gaee_result, &gaee_error);
-    double res = gsl_pow_2(gaee/1.0e-13)*gsl_pow_2(gagg/1.0e-10)*prefactor*norm_factor*gaee_result;
-    printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(res));
-    result.push_back(res);
+    //double res = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*prefactor*norm_factor*gaee_result;
+    double counts = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gaee_result;
+    printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
+    result.push_back(counts);
   };
   gsl_integration_workspace_free (w);
 
@@ -185,7 +180,6 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
 std::vector<double> axion_electron_counts_full (double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
-  const double eVm = 1.0e7*gev2cm;
   const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
@@ -201,7 +195,7 @@ std::vector<double> axion_electron_counts_full (double mass, double gaee, double
   double length = setup->length;
 
   static double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->r_lo);
-  static double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*24.0*60.0*60.0*(eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
+  static double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
