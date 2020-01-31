@@ -30,3 +30,13 @@ set_target_properties(test_axionflux
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
+
+add_executable(compute_all_spectra compute_all_spectra.cpp ${HEADER_FILES})
+target_include_directories(compute_all_spectra PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+target_link_libraries(compute_all_spectra axionflux)
+set_target_properties(compute_all_spectra
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
+)

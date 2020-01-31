@@ -51,13 +51,88 @@ plt.plot(res5[:,0], res5[:,1]/1.0e8, 'k--', label=r'Metals (AGSS09met)')
 
 plt.title(r'Axion-electron interactions, $g_{aee} = \num{e-13}$')
 plt.xlabel(r'Energy $\omega$ [keV]')
-plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e10}{\per\cm\squared\per\keV\per\s}]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e8}{\per\cm\squared\per\keV\per\s}]')
 plt.xlim([0,10])
 plt.ylim([0,10])
 
 plt.legend()
 
 plt.savefig("validation_gaee.pdf")
+plt.show()
+
+
+gagg_agss09met = np.genfromtxt("gagg_agss09met.dat")
+gagg_agss09met_old = np.genfromtxt("gagg_agss09met_old.dat")
+gagg_agss09ph = np.genfromtxt("gagg_agss09ph.dat")
+gagg_gs98 = np.genfromtxt("gagg_gs98.dat")
+
+plt.plot(gagg_agss09met[:,0], gagg_agss09met[:,1]/1.0e10, 'r-', label=r'AGSS09met')
+plt.plot(gagg_agss09met_old[:,0], gagg_agss09met_old[:,1]/1.0e10, 'b:', label=r'old AGSS09met')
+plt.plot(gagg_agss09ph[:,0], gagg_agss09ph[:,1]/1.0e10, 'g--', label=r'AGSS09ph')
+plt.plot(gagg_gs98[:,0], gagg_gs98[:,1]/1.0e10, 'm-.', label=r'GS98')
+
+plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e10}{\per\cm\squared\per\keV\per\s}]')
+plt.xlim([0,10])
+#plt.ylim([0,8])
+
+plt.legend()
+
+plt.savefig("solar_models_comp_gagg.pdf")
+plt.show()
+
+plt.plot(gagg_agss09met[:,0], gagg_agss09met_old[:,1]/gagg_agss09met[:,1] - 1.0, 'b:', label=r'old AGSS09met')
+plt.plot(gagg_agss09met[:,0], gagg_agss09ph[:,1]/gagg_agss09met[:,1] - 1.0, 'g--', label=r'AGSS09ph')
+plt.plot(gagg_agss09met[:,0], gagg_gs98[:,1]/gagg_agss09met[:,1] - 1.0, 'm-.', label=r'GS98')
+
+plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Relative deviation w.r.t. AGSS09')
+plt.xlim([0,10])
+#plt.ylim([0,8])
+
+plt.legend()
+
+plt.savefig("solar_models_comp_gagg_relative.pdf")
+plt.show()
+
+
+gaee_agss09met = np.genfromtxt("gaee_agss09met.dat")
+gaee_agss09met_old = np.genfromtxt("gaee_agss09met_old.dat")
+gaee_agss09ph = np.genfromtxt("gaee_agss09ph.dat")
+gaee_gs98 = np.genfromtxt("gaee_gs98.dat")
+
+plt.plot(gaee_agss09met[:,0], gaee_agss09met[:,1]/1.0e8, 'r-', label=r'AGSS09met')
+plt.plot(gaee_agss09met_old[:,0], gaee_agss09met_old[:,1]/1.0e8, 'b:', label=r'old AGSS09met')
+plt.plot(gaee_agss09ph[:,0], gaee_agss09ph[:,1]/1.0e8, 'g--', label=r'AGSS09ph')
+plt.plot(gaee_gs98[:,0], gaee_gs98[:,1]/1.0e8, 'm-.', label=r'GS98')
+
+plt.title(r'Axion-electron interactions, $g_{aee} = \num{e-13}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e8}{\per\cm\squared\per\keV\per\s}]')
+plt.xlim([0,10])
+plt.ylim([0,10])
+
+plt.legend()
+
+plt.savefig("solar_models_comp_gaee.pdf")
+plt.show()
+
+
+plt.plot(gaee_agss09met[:,0], gaee_agss09met_old[:,1]/gaee_agss09met[:,1] - 1.0, 'b:', label=r'old AGSS09met')
+plt.plot(gaee_agss09ph[:,0], gaee_agss09ph[:,1]/gaee_agss09met[:,1] - 1.0, 'g--', label=r'AGSS09ph')
+plt.plot(gaee_gs98[:,0], gaee_gs98[:,1]/gaee_agss09met[:,1] - 1.0, 'm-.', label=r'GS98')
+
+plt.title(r'Axion-electron interactions, $g_{aee}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Relative deviation w.r.t. AGSS09')
+plt.xlim([0,10])
+#plt.ylim([0,10])
+
+plt.legend()
+
+plt.savefig("solar_models_comp_gaee_relative.pdf")
 plt.show()
 
 
