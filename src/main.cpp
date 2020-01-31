@@ -15,9 +15,9 @@ int main() {
   auto t2 = std::chrono::high_resolution_clock::now();
   std::cout << "# Setting up the Solar model '" << solar_model_name << "' took "
             << std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count() << " seconds." << std::endl;
-  int n_test_values = 1000;
+  const int n_test_values = 1000;
   std:: vector<double> test_ergs;
-  for (int k=0; k<n_test_values;k++ ) {test_ergs.push_back(0.1+11.9/n_test_values*(k));}
+  for (int k=0; k<n_test_values; k++ ) { test_ergs.push_back(0.1+11.9/n_test_values*(k)); };
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
   std::vector<double> javis_ergs = javis_data[0];
 
@@ -36,8 +36,8 @@ int main() {
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
   std::cout << "# Compute counts in CAST2007 experiment from axion-photon interactions..." << std::endl;
-  exp_setup setup = {20, 0.8, 0.3, 0.231738, 9.0, 9.26, "data/CAST2007_EffectiveExposure.dat"};
-  axion_photon_counts_full(1.0e-3, 1.0e-10, &setup, &s);
+  exp_setup cast_2007_setup = { 20, 0.8, 0.3, 0.231738, 9.0, 9.26, &eff_exposure_cast_2007 };
+  axion_photon_counts_full(1.0e-3, 1.0e-10, &cast_2007_setup, &s);
   auto t6 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
   //std::cout << "# Compute counts in CAST2007 experiment from axion-electron interactions..." << std::endl;
@@ -45,7 +45,7 @@ int main() {
   //auto t7 = std::chrono::high_resolution_clock::now();
   //std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t7-t6).count() << " minutes." << std::endl;
   std::cout << "# Compute counts in CAST2007 experiment from axion-electron interactions (from spectrum file)..." << std::endl;
-  axion_electron_counts(1.0e-3, 1.0e-13, 1.0e-10, &setup, "results/all_gaee.dat");
+  axion_electron_counts(1.0e-3, 1.0e-13, 1.0e-10, &cast_2007_setup, "results/all_gaee.dat");
 
   double lowerg = 0.1;
   double higherg = 10.0;

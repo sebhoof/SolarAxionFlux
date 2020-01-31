@@ -1,40 +1,62 @@
 #include "experimental_flux.hpp"
 
+double conversion_prob_correction(double mass, double erg, double length) {
+  double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
+  return gsl_pow_2(gsl_sf_sinc(argument/pi));
+}
+
+double eff_exposure_cast_2007(double erg) {
+  static OneDInterpolator eff_exp ("data/CAST2007_EffectiveExposure.dat");
+  // Effective exposure file is in cm x days.
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+}
+
 double erg_integrand_from_file(double erg, void * params) {
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
-  double mass = p->mass;
-  double length = (p->length)/eVm;
-  //double norm_factor = (p->spectral_flux->interpolate(ref_erg_value))*(24.0*60.0*60.0*(p->eff_exp->interpolate(ref_erg_value)))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*m*m/ref_erg_value)/pi));
 
-  double argument = 0.25*1.0e-3*length*mass*mass/erg;
-  double sincsq = gsl_pow_2(gsl_sf_sinc(argument/pi));
-  double exposure = 24.0*60.0*60.0*(p->eff_exp->interpolate(erg));
+  double sincsq = conversion_prob_correction(p->mass, erg, p->length);
+  double exposure = p->eff_exposure(erg);
   // N.B. Here we assume axion is massless in stellar interior:
   double exp_flux = p->spectral_flux->interpolate(erg);
 
-  //return exposure*exp_flux*sincsq/norm_factor;
   return exposure*exp_flux*sincsq;
+}
+
+double erg_integrand(double erg, void * params)
+{
+  struct erg_integration_params * p3 = (struct erg_integration_params *)params;
+  SolarModel *s = p3->s;
+  double r_min = s->r_lo, r_max = std::min(p3->r_max, s->r_hi);
+
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(p3->eff_exposure(ref_erg_value))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
+
+  double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
+  double exposure = p3->eff_exposure(erg);
+
+  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
+
+  gsl_function f2;
+  f2.function = &rad_integrand;
+  f2.params = &p2;
+
+  double spectral_flux, spectral_flux_error;
+  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec , 0.1*int_rel_prec , int_space_size, int_method_1, p3->w2, &spectral_flux, &spectral_flux_error);
+
+  return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
 }
 
 std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
-  const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
-  //const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
-  //const double prefactor = distance_factor*conversion_prob_factor;
+  static OneDInterpolator spectral_flux (spectral_flux_file);
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
-  double length = (setup->length)/eVm;
-  OneDInterpolator eff_exp (setup->eff_exposure_file);
-  OneDInterpolator spectral_flux (spectral_flux_file);
-  //double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   double gagg_result, gagg_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, &eff_exp, &spectral_flux };
+  exp_flux_params_file p { mass, setup->length, setup->eff_exposure, &spectral_flux };
   gsl_function f;
   f.function = &erg_integrand_from_file;
   f.params = &p;
@@ -56,49 +78,17 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
   return result;
 }
 
-double erg_integrand(double erg, void * params)
-{
-  struct erg_integration_params * p3 = (struct erg_integration_params *)params;
-  SolarModel *s = p3->s;
-  double r_min = s->r_lo, r_max = std::min(p3->r_max, s->r_hi);
-  double m = p3->mass;
-  double length = (p3->length)/eVm;
-
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*24.0*60.0*60.0*(p3->eff_exp->interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*m*m/ref_erg_value)/pi));
-
-  double argument = 0.25*1.0e-3*length*m*m/erg;
-  double sincsq = gsl_pow_2(gsl_sf_sinc(argument/pi));
-  double exposure = 24.0*60.0*60.0*(p3->eff_exp->interpolate(erg));
-
-  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
-
-  gsl_function f2;
-  f2.function = &rad_integrand;
-  f2.params = &p2;
-
-  double spectral_flux, spectral_flux_error;
-  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec , 0.1*int_rel_prec , int_space_size, int_method_1, p3->w2, &spectral_flux, &spectral_flux_error);
-
-  //std::cout << "erg = " << erg << ", integral 2 = " << 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3 << std::endl;
-
-  return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
-}
-
 std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
-  const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
   const double factor = distance_factor*conversion_prob_factor;
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
-  OneDInterpolator eff_exp (setup->eff_exposure_file);
-  double length = setup->length;
   double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->r_lo);
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*24.0*60.0*60.0*(eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
@@ -106,7 +96,7 @@ std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setu
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
 
-  erg_integration_params p3 = { mass, length, setup->r_max, &eff_exp, s, integrand, w1, w2 };
+  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->eff_exposure, s, integrand, w1, w2 };
   gsl_function f3;
   f3.function = &erg_integrand;
   f3.params = &p3;
@@ -132,26 +122,19 @@ std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setu
 
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
-
-  const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
-  //const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
-  //const double prefactor = distance_factor*conversion_prob_factor;
   const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  static OneDInterpolator spectral_flux (spectral_flux_file);
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
-  double length = (setup->length)/eVm;
-  OneDInterpolator eff_exp (setup->eff_exposure_file);
-  OneDInterpolator spectral_flux (spectral_flux_file);
   //double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   double gaee_result, gaee_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, &eff_exp, &spectral_flux };
+  exp_flux_params_file p { mass, setup->length, setup->eff_exposure, &spectral_flux };
   gsl_function f;
   f.function = &erg_integrand_from_file;
   f.params = &p;
@@ -167,7 +150,6 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w, &gaee_result, &gaee_error);
-    //double res = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*prefactor*norm_factor*gaee_result;
     double counts = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gaee_result;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
@@ -179,10 +161,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
 
 std::vector<double> axion_electron_counts_full (double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
-
-  const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
   const double factor = distance_factor*conversion_prob_factor;
   const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
@@ -191,11 +170,9 @@ std::vector<double> axion_electron_counts_full (double mass, double gaee, double
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
-  OneDInterpolator eff_exp (setup->eff_exposure_file);
-  double length = setup->length;
 
-  static double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->r_lo);
-  static double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
+  double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->r_lo);
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
@@ -203,7 +180,7 @@ std::vector<double> axion_electron_counts_full (double mass, double gaee, double
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
 
-  erg_integration_params p3 = { mass, length, setup->r_max, &eff_exp, s, integrand, w1, w2 };
+  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->eff_exposure, s, integrand, w1, w2 };
   gsl_function f3;
   f3.function = &erg_integrand;
   f3.params = &p3;
