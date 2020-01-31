@@ -4,7 +4,7 @@ from scipy import interpolate
 
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}\usepackage{amssymb}\usepackage{siunitx}\usepackage[cm]{sfmath}\DeclareSIUnit\year{yr}')
-
+conversion = 365.0*24.0*60.0*60.0*1.0e4*1.0e-20
 res1 = np.genfromtxt("primakoff.dat")
 res2 = np.genfromtxt("compton.dat")
 res3 = np.genfromtxt("all_ff.dat")
