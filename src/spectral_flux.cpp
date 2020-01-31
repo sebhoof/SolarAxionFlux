@@ -1,43 +1,48 @@
 #include "spectral_flux.hpp"
 
-// Various integrands for the different contributions/combinations of contributions.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Various integrands for the different contributions/combinations of contributions to the solar axion flux. //
+// All in units of axions / (cm^2 s keV).                                                                    //
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Primakoff contribution [ref].
 double integrand_Primakoff(double r, void * params) {
-  // Retrieve parameters and other integration variables:
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Primakoff(erg, r));
 }
 
+// Compton contribution [ref]
 double integrand_Compton(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Compton(erg, r));
 }
 
+// Weighted Compton contribution [ref]
 double integrand_weightedCompton(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   if (erg == 0) {return 0;}
   SolarModel* sol = (p->sol);
   double u = erg/(sol->temperature_in_keV(r));
+
   return 0.5*gsl_pow_2(r*erg/pi)*0.5*(1.0 - 1.0/gsl_expm1(u))*(sol->Gamma_P_Compton(erg, r));
 }
 
 double integrand_opacity_element(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   int iz = (p->iz);
   SolarModel* sol = (p->sol);
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, iz));
 }
 double integrand_opacity(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double result = 0.0;
   double erg = (p->erg);
@@ -52,12 +57,12 @@ double integrand_opacity(double r, void * params) {
   if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
       result = 0.5*gsl_pow_2(r*erg/pi)* sol->Gamma_P_opacity(erg, r);
   };
+
   return result;
 }
 
-// Includes FF flux and ee contribution
+// Includes FF flux and ee contribution [ref].
 double integrand_all_ff(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
@@ -69,11 +74,11 @@ double integrand_all_ff(double r, void * params) {
   } else {
     sum += sol->Gamma_P_ff(erg, r);
   };
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
 }
 
 double integrand_all_axionelectron(double r, void * params) {
-  // Retrieve parameters and other integration variables.
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
@@ -278,6 +283,10 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz
     return result*normfactor;
 }
 
+
+////////////////////////////////////////////////////////////////////
+// Overloaded versions of the functions above for convenient use. //
+////////////////////////////////////////////////////////////////////
 
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double), std::string saveas) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand, saveas); }
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,int iz, double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, iz, s, integrand, ""); }

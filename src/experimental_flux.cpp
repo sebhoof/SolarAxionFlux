@@ -1,15 +1,22 @@
 #include "experimental_flux.hpp"
 
+// Conversion probability correction for massive axions.
 double conversion_prob_correction(double mass, double erg, double length) {
   double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
   return gsl_pow_2(gsl_sf_sinc(argument/pi));
 }
 
+// Effective exposures (in seconds x cm) for various experiments.
+// CAST 2007 results [hep-ex/0702006; 2004 CCD measurement]
 double eff_exposure_cast_2007(double erg) {
   static OneDInterpolator eff_exp ("data/CAST2007_EffectiveExposure.dat");
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
+
+////////////////////////
+// Wrapper functions. //
+////////////////////////
 
 double erg_integrand_from_file(double erg, void * params) {
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
@@ -22,8 +29,7 @@ double erg_integrand_from_file(double erg, void * params) {
   return exposure*exp_flux*sincsq;
 }
 
-double erg_integrand(double erg, void * params)
-{
+double erg_integrand(double erg, void * params) {
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
   double r_min = s->r_lo, r_max = std::min(p3->r_max, s->r_hi);
@@ -44,6 +50,10 @@ double erg_integrand(double erg, void * params)
 
   return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Functions to calculate the counts in all bins of a helioscope experiment, given an experimental configuration. //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
@@ -68,7 +78,6 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qag(&f, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w, &gagg_result, &gagg_error);
-    //double res = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*prefactor*norm_factor*gagg_result;
     double counts = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gagg_result;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
@@ -78,7 +87,7 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
   return result;
 }
 
-std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setup *setup, SolarModel *s) {
+std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
@@ -130,7 +139,6 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
-  //double norm_factor = (spectral_flux.interpolate(ref_erg_value))*(24.0*60.0*60.0*eff_exp.interpolate(ref_erg_value))*gsl_pow_2(gsl_sf_sinc((0.25*1.0e-3*length*mass*mass/ref_erg_value)/pi));
 
   double gaee_result, gaee_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
@@ -159,7 +167,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   return result;
 }
 
-std::vector<double> axion_electron_counts_full (double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
+std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double factor = distance_factor*conversion_prob_factor;
@@ -197,7 +205,6 @@ std::vector<double> axion_electron_counts_full (double mass, double gaee, double
     //gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size, gagg_method, w3, &gagg_result, &gagg_error);
     gsl_integration_qagp(&f3, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w3, &gaee_result, &gaee_error);
     double counts = factor*norm_factor1*norm_factor3*gsl_pow_2((gagg/1.0e-10)*(gaee/1.0e-13)*(setup->b_field/9.0)*(setup->length/9.26))*gaee_result;
-    //std::cout << "integral 3 = " << gagg_result << std::endl;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
   };

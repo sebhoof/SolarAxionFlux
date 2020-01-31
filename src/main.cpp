@@ -36,7 +36,6 @@ int main() {
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
   std::cout << "# Compute counts in CAST2007 experiment from axion-photon interactions..." << std::endl;
-  exp_setup cast_2007_setup = { 20, 0.8, 0.3, 0.231738, 9.0, 9.26, &eff_exposure_cast_2007 };
   axion_photon_counts_full(1.0e-3, 1.0e-10, &cast_2007_setup, &s);
   auto t6 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
