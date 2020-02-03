@@ -210,7 +210,7 @@ class SolarModel
   private:
     // solar data
     ASCIItableReader data;
-    // spline interpolations (all linear)
+    std::map<Isotope,int> isotope_index_map;
     int num_tracked_isotopes;
     std::vector<Isotope> tracked_isotopes;
     gsl_interp_accel *accel[7];
@@ -226,13 +226,12 @@ class SolarModel
     std::vector<std::vector<float>> tops_grid;
     std::vector<float> tops_temperatures;
     std::vector<float> tops_densities;
-    std::map<std::string,gsl_interp_accel*> n_element_acc;
-    std::map<std::string,gsl_spline*> n_element_lin_interp;
-    std::map<Isotope,int> isotope_index_map;
     std::vector<gsl_interp_accel*> n_isotope_acc;
     std::vector<gsl_spline*> n_isotope_lin_interp;
     std::vector<gsl_interp_accel*> z2_n_isotope_acc;
     std::vector<gsl_spline*> z2_n_isotope_lin_interp;
+    std::map<std::string, gsl_interp_accel*> n_element_acc;
+    std::map<std::string, gsl_spline*> n_element_lin_interp;
 };
 
 #endif // defined __utils_hpp__

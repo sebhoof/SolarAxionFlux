@@ -438,9 +438,21 @@ SolarModel::~SolarModel() {
   for (auto interp : linear_interp) { gsl_spline_free (interp); };
   for (auto interp : n_isotope_lin_interp) { gsl_spline_free (interp); };
   for (auto interp : z2_n_isotope_lin_interp) { gsl_spline_free (interp); };
+  for (auto map : n_element_lin_interp) { gsl_spline_free (map.second); };
+  for (auto map_1 : opacity_lin_interp_op) {
+    for (auto map_2 : map_1.second) { gsl_spline_free (map_2.second); };
+  };
+  for (auto map : opacity_lin_interp_tops) { gsl_spline_free (map.second); };
+  for (auto map : opacity_lin_interp_opas) { gsl_spline_free (map.second); };
   for (auto acc : accel) { gsl_interp_accel_free (acc); };
   for (auto acc : n_isotope_acc) { gsl_interp_accel_free (acc); };
   for (auto acc : z2_n_isotope_acc) { gsl_interp_accel_free (acc); };
+  for (auto map : n_element_acc) { gsl_interp_accel_free (map.second); };
+  for (auto map_1 : opacity_acc_op) {
+    for (auto map_2 : map_1.second) { gsl_interp_accel_free (map_2.second); };
+  };
+  for (auto map : opacity_acc_tops) { gsl_interp_accel_free (map.second); };
+  for (auto map : opacity_acc_opas) { gsl_interp_accel_free (map.second); };
 }
 
 // Isotope index lookup
