@@ -37,11 +37,12 @@ double integrand_weightedCompton(double r, void * params) {
 double integrand_opacity_element(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
-  int iz = (p->iz);
+  std::string el_name = (p->isotope).name();
   SolarModel* sol = (p->sol);
 
-  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, iz));
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, el_name));
 }
+
 double integrand_opacity(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double result = 0.0;
@@ -51,11 +52,11 @@ double integrand_opacity(double r, void * params) {
   if (sol->opcode == OP) {
     double element_contrib = 0.0;
     // Add opacity terms all non-H or He elements (metals)
-    for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_opacity(erg, r, iz); };
+    for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); };
     result = 0.5*gsl_pow_2(r*erg/pi)*element_contrib;
   }
   if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
-      result = 0.5*gsl_pow_2(r*erg/pi)* sol->Gamma_P_opacity(erg, r);
+      result = 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
   };
 
   return result;
@@ -66,32 +67,22 @@ double integrand_all_ff(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-  double sum = 0.0;
-  if (sol->raffelt_approx == false) {
-    for (int iz = 0; iz < 2; iz++) {
-      sum += sol->Gamma_P_ff(erg, r, iz);
-    };
-  } else {
-    sum += sol->Gamma_P_ff(erg, r);
-  };
 
-  return 0.5*gsl_pow_2(r*erg/pi)*(sum + sol->Gamma_P_ee(erg, r));
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_ff(erg, r) + sol->Gamma_P_ee(erg, r));
 }
 
 double integrand_all_axionelectron(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-  if (sol->opcode == OP){
+  if (sol->opcode == OP) {
       double element_contrib = 0.0;
       if (sol->raffelt_approx == false) {
-        for (int iz = 0; iz < 2; iz++) {
-          element_contrib += sol->Gamma_P_ff(erg, r, iz);
-        };
+        element_contrib += sol->Gamma_P_opacity(erg, r, "H") + sol->Gamma_P_opacity(erg, r, "He");
       } else {
         element_contrib += sol->Gamma_P_ff(erg, r);
       };
-      for (int iz = 2; iz < n_op_elements; iz++) { element_contrib += sol->Gamma_P_opacity(erg, r, iz); };
+      for (int i = 2; i < num_op_elements; i++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[i]); };
       return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + sol->Gamma_P_Compton(erg, r) + sol->Gamma_P_ee(erg, r));
   }
   if ((sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)){
@@ -107,7 +98,7 @@ double integrand_all_axionelectron(double r, void * params) {
   return 0;
 }
 
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, int iz, SolarModel &s, double (*integrand)(double, void*), std::string saveas) {
+std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope isotope, SolarModel &s, double (*integrand)(double, void*), std::string saveas) {
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
@@ -123,7 +114,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, int iz, So
 
   for (int i=0; i<ergs.size(); ++i) {
     double integral, error;
-    integration_params p = {ergs[i], &s, iz};
+    integration_params p = {ergs[i], &s, isotope};
     f.params = &p;
     gsl_integration_qag (&f, s.r_lo, s.r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
     result.push_back(factor*integral);
@@ -173,7 +164,7 @@ double rad_integrand(double rad, void * params) {
   return result;
 }
 
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, int iz, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
+std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
   static double norm_factor1 = (s.*integrand)(ref_erg_value, s.r_lo);
@@ -215,13 +206,13 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
 
 /*
 // Javis integrator to check how much different it makes
-void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz,std::string saveas) {
+void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), Isotope isotope, std::string saveas) {
   std::ofstream output;
   if (saveas != ""){
       output.open("results/"+saveas+".dat");}
   for (int i=0; i<ergs.size(); ++i) {
       double result = 0;
-      integration_params p = {ergs[i], &s, iz};
+      integration_params p = {ergs[i], &s, isotope};
       for (int k = 0; k < s.data.getnrow()-1; k++){
           double rlow = s.data["radius"][k];
           double rhigh = s.data["radius"][k+1];
@@ -244,7 +235,7 @@ void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, doubl
   };
   if (saveas!= ""){ output.close();}
 }
- void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), int iz) {calculate_spectral_flux_javi(ergs, s, integrand,iz,"");}
+ void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), Isotope isotope) {calculate_spectral_flux_javi(ergs, s, integrand,iz,"");}
  void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*)) { calculate_spectral_flux_javi(ergs, s, integrand, 0); }
  void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*),std::string saveas) { calculate_spectral_flux_javi(ergs, s, integrand, 0,saveas); }
  */
@@ -256,27 +247,27 @@ double spectral_flux_integrand(double erg, void * params) {
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
   // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
   struct integration_params2 * p2 = (struct integration_params2 *)params;
-  int iz = (p2->iz);
+  Isotope isotope = (p2->isotope);
   SolarModel* s = (p2->sol);
   const double normfactor = 1.0;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
   double result, error;
   gsl_function f;
   f.function = p2->integrand;
-  integration_params p = {erg, s, iz};
+  integration_params p = {erg, s, isotope};
   f.params = &p;
   gsl_integration_qag (&f, s->r_lo, s->r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &result, &error);
   gsl_integration_workspace_free (w);
   return factor*result/normfactor;
 }
 
-double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz){
+double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isotope isotope) {
     const double normfactor = 1.0e20;
     double result, error;
     gsl_function f;
     f.function = spectral_flux_integrand;
     gsl_integration_workspace * w = gsl_integration_workspace_alloc (1e8);
-    integration_params2 p2 = {&s,&integrand_all_axionelectron,iz};
+    integration_params2 p2 = {&s, &integrand_all_axionelectron, isotope};
     f.params = &p2;
     gsl_integration_qag (&f, lowerlimit, upperlimit, abs_prec2, rel_prec2, 1e8, int_method_2, w, &result, &error);
     gsl_integration_workspace_free (w);
@@ -289,14 +280,14 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,int iz
 ////////////////////////////////////////////////////////////////////
 
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double), std::string saveas) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand, saveas); }
-//std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,int iz, double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, iz, s, integrand, ""); }
+//std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,Isotope isotope, double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, isotope, s, integrand, ""); }
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand); }
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand, saveas); }
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,int iz, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, iz, s, integrand, ""); }
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand); }
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs,SolarModel &s, double (*integrand)(double, void*), std::string saveas) { return calculate_spectral_flux(ergs, 0, s, integrand, saveas); }
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs,int iz, SolarModel &s, double (*integrand)(double, void*)) { return calculate_spectral_flux(ergs, iz, s, integrand, ""); }
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs,SolarModel &s, double (*integrand)(double, void*)) { return calculate_spectral_flux(ergs, 0, s, integrand); }
+std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, NONE, r_max, s, integrand, saveas); }
+std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, isotope, r_max, s, integrand, NONE); }
+std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, NONE, r_max, s, integrand, NONE); }
+std::vector<double> calculate_spectral_flux(std::vector<double> ergs,SolarModel &s, double (*integrand)(double, void*), std::string saveas) { std::string NONE = ""; return calculate_spectral_flux(ergs, NONE, s, integrand, saveas); }
+std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope isotope, SolarModel &s, double (*integrand)(double, void*)) { std::string NONE = ""; return calculate_spectral_flux(ergs, isotope, s, integrand, NONE); }
+std::vector<double> calculate_spectral_flux(std::vector<double> ergs,SolarModel &s, double (*integrand)(double, void*)) { std::string NONE = ""; return calculate_spectral_flux(ergs, NONE, s, integrand, NONE); }
 
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_Primakoff); }
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_Primakoff,saveas); }
@@ -304,11 +295,11 @@ std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, So
 std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_Compton,saveas); }
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_weightedCompton); }
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_weightedCompton,saveas); }
-std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, int iz, SolarModel &s) { return calculate_spectral_flux(ergs, iz, s, &integrand_opacity_element); }
-std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, int iz, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, iz, s, &integrand_opacity_element, saveas); }
+std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, std::string element, SolarModel &s) { return calculate_spectral_flux(ergs, element, s, &integrand_opacity_element); }
+std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, std::string element, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, element, s, &integrand_opacity_element, saveas); }
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_all_ff); }
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_ff,saveas); }
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_all_axionelectron); }
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_axionelectron,saveas); }
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_opacity); }
-std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_opacity,saveas); }
+std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_opacity, saveas); }

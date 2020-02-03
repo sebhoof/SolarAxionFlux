@@ -21,28 +21,32 @@ int main() {
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
   std::vector<double> javis_ergs = javis_data[0];
 
-  std::cout << "# Compute Primakoff spectrum..." << std::endl;
+  std::cout << "# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, "primakoff");
-  std::cout << "# Compute Compton spectrum..." << std::endl;
+  std::cout << "# Calculating Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(test_ergs, s, "compton");
-  std::cout << "# Compute FF spectrum..." << std::endl;
+  auto t3 = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating FF spectrum..." << std::endl;
   calculate_spectral_flux_all_ff(test_ergs, s, "all_ff");
+  auto t4 = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the FF spectrum took "
+            << std::chrono::duration_cast<std::chrono::seconds>(t4-t3).count() << " seconds." << std::endl;
   std::cout << "# Compute opacity contribution (only metals in OP case)..." << std::endl;
   calculate_spectral_flux_opacity(test_ergs, s, "metals");
-  auto t4 = std::chrono::high_resolution_clock::now();
+  auto t5 = std::chrono::high_resolution_clock::now();
   std::cout << "# Compute full axion-electron spectrum..." << std::endl;
   calculate_spectral_flux_axionelectron(test_ergs, s, "all_gaee");
-  auto t5 = std::chrono::high_resolution_clock::now();
+  auto t6 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
-            << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
+            << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
   std::cout << "# Compute counts in CAST2007 experiment from axion-photon interactions..." << std::endl;
   axion_photon_counts_full(1.0e-3, 1.0e-10, &cast_2007_setup, &s);
-  auto t6 = std::chrono::high_resolution_clock::now();
-  std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t6-t5).count() << " seconds." << std::endl;
+  auto t7 = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::seconds>(t7-t6).count() << " seconds." << std::endl;
   //std::cout << "# Compute counts in CAST2007 experiment from axion-electron interactions..." << std::endl;
   //axion_electron_counts_full(1.0e-3, 1.0e-13, 1.0e-10, &setup, &s);
-  //auto t7 = std::chrono::high_resolution_clock::now();
-  //std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t7-t6).count() << " minutes." << std::endl;
+  //auto t8 = std::chrono::high_resolution_clock::now();
+  //std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t8-t7).count() << " minutes." << std::endl;
   std::cout << "# Compute counts in CAST2007 experiment from axion-electron interactions (from spectrum file)..." << std::endl;
   axion_electron_counts(1.0e-3, 1.0e-13, 1.0e-10, &cast_2007_setup, "results/all_gaee.dat");
 
