@@ -160,6 +160,44 @@ plt.savefig("solar_models_comp_gaee_relative.pdf")
 plt.show()
 
 
+gaee_op = np.genfromtxt("gaee_OP.dat")
+#gaee_opas = np.genfromtxt("gaee_OPAS.dat")
+gaee_ledcop = np.genfromtxt("gaee_LEDCOP.dat")
+gaee_atomic = np.genfromtxt("gaee_ATOMIC.dat")
+
+plt.plot(gaee_op[:,0], gaee_op[:,1]/1.0e8, 'r-', label=r'OP')
+#plt.plot(gaee_opas[:,0], gaee_opas[:,1]/1.0e8, 'b:', label=r'OPAS')
+plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/1.0e8, 'g--', label=r'LEDCOP')
+plt.plot(gaee_atomic[:,0], gaee_atomic[:,1]/1.0e8, 'm-.', label=r'ATOMIC')
+
+plt.title(r'Axion-electron interactions, $g_{aee} = \num{e-13}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e8}{\per\cm\squared\per\keV\per\s}]')
+plt.xlim([0,10])
+plt.ylim([0,10])
+
+plt.legend()
+
+plt.savefig("opacity_codes_comp_gaee.pdf")
+plt.show()
+
+
+#plt.plot(gaee_opas[:,0], gaee_opas[:,1]/gaee_op[:,1] - 1.0, 'b:', label=r'old AGSS09met')
+plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/gaee_op[:,1] - 1.0, 'g--', label=r'AGSS09ph')
+plt.plot(gaee_atomic[:,0], gaee_atomic[:,1]/gaee_op[:,1] - 1.0, 'm-.', label=r'GS98')
+
+plt.title(r'Axion-electron interactions, $g_{aee}$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Relative deviation w.r.t. OP')
+plt.xlim([0,10])
+#plt.ylim([0,10])
+
+plt.legend()
+
+plt.savefig("opacity_codes_comp_gaee_relative.pdf")
+plt.show()
+
+
 # res1 = np.genfromtxt("primakoff.dat")
 # res2 = np.genfromtxt("compton.dat")
 # res3 = np.genfromtxt("all_ff.dat")

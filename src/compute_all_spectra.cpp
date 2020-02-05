@@ -11,6 +11,10 @@ int main() {
     "data/SolarModel_BS05-OP.dat", "data/SolarModel_BS05-AGSOP.dat"};
   const std::vector<std::string> model_names = {"gs98", "ags05", "agss09met", "agss09met_old", "agss09ph", "bp00", "bp04", "bs05op", "bs05agsop"};
   const int num_models = model_files.size();
+  //const std::vector<opacitycode> opacity_codes = {OP, OPAS, LEDCOP, ATOMIC};
+  const std::vector<opacitycode> opacity_codes = {OP, LEDCOP, ATOMIC};
+  const std::vector<std::string> temp_names = {"OP", "LEDCOP", "ATOMIC"};
+  const int num_opacity_codes = opacity_codes.size();
   const int n_test_values = 1000;
   std::vector<double> test_ergs;
   for (int k = 0; k < n_test_values; k++) { test_ergs.push_back(0.1+11.9/n_test_values*(k)); };
@@ -38,7 +42,27 @@ int main() {
 
   auto t5 = std::chrono::high_resolution_clock::now();
   auto t05 = std::chrono::duration_cast<std::chrono::minutes>(t5-t0).count();
-  std::cout << "# Finished all calculations after " << t05 << " minutes!" << std::endl;
+  std::cout << "# Finished all Solar model calculations after " << t05 << " minutes!" << std::endl;
+
+
+  std::cout << "# Computing axion spectra for all opacity codes..." << std::endl;
+
+  for (int i = 0; i < num_opacity_codes; i++) {
+    auto t7 = std::chrono::high_resolution_clock::now();
+    SolarModel sol ("data/SolarModel_AGSS09met.dat", opacity_codes[i], true);
+    auto t8 = std::chrono::high_resolution_clock::now();
+    auto t78 = std::chrono::duration_cast<std::chrono::seconds>(t8-t7).count();
+    std::cout << "# Setting up model " << model_files[i] << " for opacity code " << temp_names[i] << " took " << t78 << " seconds." << std::endl;
+
+    calculate_spectral_flux_axionelectron(test_ergs, sol, "gaee_"+temp_names[i]);
+    auto t9 = std::chrono::high_resolution_clock::now();
+    auto t89 = std::chrono::duration_cast<std::chrono::seconds>(t9-t8).count();
+    std::cout << "# Computing axion-electron spectra took " << t89 << " seconds." << std::endl;
+  };
+
+  auto t10 = std::chrono::high_resolution_clock::now();
+  auto t510 = std::chrono::duration_cast<std::chrono::minutes>(t10-t5).count();
+  std::cout << "# Finished all opacity code calculations after " << t510 << " minutes!" << std::endl;
 
   return 0;
 }

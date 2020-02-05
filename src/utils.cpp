@@ -138,13 +138,13 @@ void ASCIItableReader::setcolnames(std::vector<std::string> names) {
   }
 }
 
-bool Isotope::operator< (const Isotope& other) const { return (other.name() < el_name) || ( (other.name() == el_name) && (other.a_val() < el_a_value) ); }
-bool Isotope::operator== (const Isotope& other) const { return ((other.name() == el_name) && (other.a_val() == el_a_value)); }
-std::string Isotope::name() const { return el_name; };
-std::string Isotope::index_name() const { return "X_"+el_name+std::to_string(el_a_value); };
-int Isotope::a_val() const { return el_a_value; };
-int Isotope::z_val() const { return el_z_value.at(el_name); };
-bool Isotope::same_z(Isotope *a) { return el_name==a->name(); };
+bool Isotope::operator< (const Isotope& other) const { return (other.name() < element_name) || ( (other.name() == element_name) && (other.a_val() < isotope_a_value) ); }
+bool Isotope::operator== (const Isotope& other) const { return ((other.name() == element_name) && (other.a_val() == isotope_a_value)); }
+std::string Isotope::name() const { return element_name; };
+std::string Isotope::index_name() const { return "X_"+element_name+std::to_string(isotope_a_value); };
+int Isotope::a_val() const { return isotope_a_value; };
+int Isotope::z_val() const { return element_z_value.at(element_name); };
+bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->name(); };
 
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 
@@ -198,11 +198,11 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
   const double factor = 4.0*pi*alpha_EM*gsl_pow_3(keV2cm)/((1.0E+9*eV2g)*atomic_mass_unit);
   // Atomic weight of species i (exact weight if isotope is known OR estimate from average solar abundance from data if available OR estimate from natural terrestrial abundance).
-  const double A_vals [29] = {1.007825, 4.002603, 3.016029, 12.000000, 13.003355, 14.003074, 15.000109, 15.994915, 16.999132, 17.999160,
-                              20.1312812, 22.989769, 24.3055, 26.9815385, 28.085, 30.973762, 32.0675, 35.4515, 36.275403, 39.0983, 40.078, 44.955908, 47.867, 50.9415, 51.9961, 54.938044, 55.845, 58.933194, 58.6934};
+  //const double A_vals [29] = {1.007825, 4.002603, 3.016029, 12.000000, 13.003355, 14.003074, 15.000109, 15.994915, 16.999132, 17.999160,
+  //                            20.1312812, 22.989769, 24.3055, 26.9815385, 28.085, 30.973762, 32.0675, 35.4515, 36.275403, 39.0983, 40.078, 44.955908, 47.867, 50.9415, 51.9961, 54.938044, 55.845, 58.933194, 58.6934};
   // Ionisation of species i assuming full ionisation.
-  const double Z_vals [29] = {1.0,      2.0,      2.0,       6.0,       6.0,       7.0,       7.0,       8.0,       8.0,       8.0,
-                              10.0,       11.0,      12.0,    13.0,       14.0,   15.0,      16.0,    17.0,    18.0,      19.0,    20.0,   21.0,      22.0,   23.0,    24.0,    25.0,      26.0,   27.0,      28.0};
+  //const double Z_vals [29] = {1.0,      2.0,      2.0,       6.0,       6.0,       7.0,       7.0,       8.0,       8.0,       8.0,
+  //                            10.0,       11.0,      12.0,    13.0,       14.0,   15.0,      16.0,    17.0,    18.0,      19.0,    20.0,   21.0,      22.0,   23.0,    24.0,    25.0,      26.0,   27.0,      28.0};
 
   // Linearly extrapolate the data in the solar model file to r = 0 if necessary.
   if (r_lo > 0) {
