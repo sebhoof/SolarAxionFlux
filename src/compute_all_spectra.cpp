@@ -49,10 +49,10 @@ int main() {
 
   for (int i = 0; i < num_opacity_codes; i++) {
     auto t7 = std::chrono::high_resolution_clock::now();
-    SolarModel sol ("data/SolarModel_AGSS09met.dat", opacity_codes[i], true);
+    SolarModel sol ("data/SolarModel_AGSS09.dat", opacity_codes[i], true);
     auto t8 = std::chrono::high_resolution_clock::now();
     auto t78 = std::chrono::duration_cast<std::chrono::seconds>(t8-t7).count();
-    std::cout << "# Setting up model " << model_files[i] << " for opacity code " << temp_names[i] << " took " << t78 << " seconds." << std::endl;
+    std::cout << "# Setting up model AGSS09 for opacity code " << temp_names[i] << " took " << t78 << " seconds." << std::endl;
 
     calculate_spectral_flux_axionelectron(test_ergs, sol, "gaee_"+temp_names[i]);
     auto t9 = std::chrono::high_resolution_clock::now();
