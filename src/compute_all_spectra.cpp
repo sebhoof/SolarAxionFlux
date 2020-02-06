@@ -12,8 +12,8 @@ int main() {
   const std::vector<std::string> model_names = {"gs98", "ags05", "agss09met", "agss09met_old", "agss09ph", "bp00", "bp04", "bs05op", "bs05agsop"};
   const int num_models = model_files.size();
   //const std::vector<opacitycode> opacity_codes = {OP, OPAS, LEDCOP, ATOMIC};
-  const std::vector<opacitycode> opacity_codes = {OP, LEDCOP, ATOMIC};
-  const std::vector<std::string> temp_names = {"OP", "LEDCOP", "ATOMIC"};
+  const std::vector<opacitycode> opacity_codes = {OP, LEDCOP, ATOMIC, OPAS};
+  const std::vector<std::string> temp_names = {"OP", "LEDCOP", "ATOMIC", "OPAS"};
   const int num_opacity_codes = opacity_codes.size();
   const int n_test_values = 1000;
   std::vector<double> test_ergs;
