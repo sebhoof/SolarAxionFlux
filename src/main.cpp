@@ -75,7 +75,7 @@ int main() {
     std::ofstream output;
     output.open("results/compare_opacities.dat");
     output << "fluxes in each bin for four opacity codes" << std::endl;
-    output << "OP OPAS LEDCOP ATOMIC" << std::endl;
+    output << "OP OPAS ATOMIC LEDCOP" << std::endl;
     for (int k=0; k<12; k++) {
         output << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sOP,0) << " "
             << calculate_flux(erg_boundaries[k],erg_boundaries[k+1],sOPAS,0) << " "
