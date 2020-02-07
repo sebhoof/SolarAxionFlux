@@ -177,7 +177,7 @@ gaee_ledcop = np.genfromtxt("gaee_LEDCOP.dat")
 gaee_atomic = np.genfromtxt("gaee_ATOMIC.dat")
 
 plt.plot(gaee_op[:,0], gaee_op[:,1]/1.0e8, 'r-', label=r'OP')
-plt.plot(gaee_opas[:,0], gaee_opas[:,1]/1.0e8, 'b:', label=r'OPAS')
+plt.plot(gaee_opas[gaee_opas[:,0]>=2.0,0], gaee_opas[gaee_opas[:,0]>=2.0,1]/1.0e8, 'b:', label=r'OPAS')
 plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/1.0e8, 'g--', label=r'LEDCOP')
 plt.plot(gaee_atomic[:,0], gaee_atomic[:,1]/1.0e8, 'm-.', label=r'ATOMIC')
 
@@ -193,7 +193,7 @@ plt.savefig("opacity_codes_comp_gaee.pdf")
 plt.show()
 
 
-plt.plot(gaee_opas[:,0], gaee_opas[:,1]/gaee_op[:,1] - 1.0, 'b:', label=r'OPAS')
+plt.plot(gaee_opas[gaee_opas[:,0]>=2.0,0], gaee_opas[gaee_opas[:,0]>=2.0,1]/gaee_op[gaee_opas[:,0]>=2.0,1] - 1.0, 'b:', label=r'OPAS')
 plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/gaee_op[:,1] - 1.0, 'g--', label=r'LEDCOP')
 plt.plot(gaee_atomic[:,0], gaee_atomic[:,1]/gaee_op[:,1] - 1.0, 'm-.', label=r'ATOMIC')
 
