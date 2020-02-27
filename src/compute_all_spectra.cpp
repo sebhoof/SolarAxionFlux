@@ -13,7 +13,7 @@ int main() {
   const int num_models = model_files.size();
   const std::vector<opacitycode> opacity_codes = {OP, OPAS, LEDCOP, ATOMIC};
   const int num_opacity_codes = opacity_codes.size();
-  const int n_test_values = 1000;
+  const int n_test_values = 20000;
   std::vector<double> test_ergs;
   for (int k = 0; k < n_test_values; k++) { test_ergs.push_back(0.1+11.9/n_test_values*(k)); };
 
