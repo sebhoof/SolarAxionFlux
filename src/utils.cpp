@@ -138,12 +138,31 @@ void ASCIItableReader::setcolnames(std::vector<std::string> names) {
   }
 }
 
+void Isotope::init(std::string s, int a) {
+  element_name = s;
+  isotope_a_value = a;
+  // Map of element name -> Z value. CAVE: We run into problems if the const map is defined outside of this function.
+  const std::map<std::string, int> z_value_map { {"H", 1}, {"He", 2}, {"C", 6}, {"N", 7}, {"O", 8}, {"Ne", 10}, {"Na", 11}, {"Mg", 12}, {"Al", 13}, {"Si", 14}, {"P", 15}, {"S", 16}, {"Cl", 17},
+                                                 {"Ar", 18}, {"K", 19}, {"Ca", 20}, {"Sc", 21}, {"Ti", 22}, {"V", 23}, {"Cr", 24}, {"Mn", 25}, {"Fe", 26}, {"Co", 27}, {"Ni", 28} };
+  if (z_value_map.find(s) == z_value_map.end()) {
+    std::string avail_keys = "";
+    for (auto& p: z_value_map) { avail_keys += p.first + " "; };
+    terminate_with_error("ERROR! Element named '"+s+"' not found! Available keys are:\n"+avail_keys);
+  } else {
+    element_z_value = z_value_map.at(s);
+  };
+}
+Isotope::Isotope(std::string s, int a) { init(s,a); };
+Isotope::Isotope(std::pair<std::string,int> p) { init(p.first,p.second); };
+// This is for convenience in order to define elements as an Isotope
+// TODO: if el_a_value < -1, trigger adding up all values for el_name
+Isotope::Isotope(std::string s) { init(s,-1); };
 bool Isotope::operator< (const Isotope& other) const { return (other.name() < element_name) || ( (other.name() == element_name) && (other.a_val() < isotope_a_value) ); }
 bool Isotope::operator== (const Isotope& other) const { return ((other.name() == element_name) && (other.a_val() == isotope_a_value)); }
 std::string Isotope::name() const { return element_name; };
 std::string Isotope::index_name() const { return "X_"+element_name+std::to_string(isotope_a_value); };
 int Isotope::a_val() const { return isotope_a_value; };
-int Isotope::z_val() const { return element_z_value.at(element_name); };
+int Isotope::z_val() const { return element_z_value; };
 bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->name(); };
 
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }

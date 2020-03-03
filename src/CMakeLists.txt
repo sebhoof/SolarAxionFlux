@@ -40,3 +40,15 @@ set_target_properties(compute_all_spectra
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
+
+if(PYBIND11_INSTALLED)
+  pybind11_add_module(pyaxionflux python_wrapper.cpp)
+  target_include_directories(pyaxionflux PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:../include>)
+  target_link_libraries(pyaxionflux PRIVATE axionflux)
+  set_target_properties(pyaxionflux
+      PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
+  )
+endif()

@@ -2,8 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
+fs_title = 12
+fs_axes = 12
+fs_ticks = 10
+
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}\usepackage{amssymb}\usepackage{siunitx}\usepackage[cm]{sfmath}\DeclareSIUnit\year{yr}')
+plt.rc('font', size=10)
+plt.rc('axes', labelsize=fs_axes)
+plt.rc('xtick', labelsize=fs_ticks)
+plt.rc('ytick', labelsize=fs_ticks)
+#plt.rc('legend', fontsize=fs_axes)
+plt.rc('figure', titlesize=fs_title)
+
+def plot_setup():
+    fig, ax = plt.subplots(figsize=(6,5), tight_layout=True)
+    ax.tick_params(which='both', direction='in', bottom=True, top=True, left=True, right=True)
+    #ax.set_aspect_ratio(1.5)
+
 conversion = 365.0*24.0*60.0*60.0*1.0e4*1.0e-20
 res1 = np.genfromtxt("primakoff.dat")
 res2 = np.genfromtxt("compton.dat")
@@ -24,6 +40,7 @@ conv_fac = 1.0e-4/(365.0*24.0*60.0*60.0*1.0e10)
 
 # Primakoff approximation [hep-ex/0702006] based on [astro-ph/0402114]
 omega = np.linspace(0,10,300)
+plot_setup()
 plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),'b:', label=r'Primakoff approx. (BP04)')
 plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], 'r-', label=r'Primakoff (Redondo)')
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
@@ -40,7 +57,7 @@ plt.savefig("validation_gagg.pdf")
 plt.show()
 
 ## Validation plots for axion-electron interactions
-
+plot_setup()
 plt.plot(ref2[:,0], 100.0*conv_fac*(0.5*ref2[:,1]), 'b-', label=r'Compton (Redondo)')
 plt.plot(ref3[:,0], 100.0*conv_fac*ref3[:,1], 'm-', label=r'FF (Redondo)')
 plt.plot(ref4[:,0], 1.0e11*ref4[:,1]*(1.0e-13/0.511e-10)**2/(24.0*60.0*60.0) - 100.0*conv_fac*(0.5*compton(ref4[:,0])), 'g-', label=r'All')
@@ -73,6 +90,7 @@ gagg_bp04 = np.genfromtxt("gagg_bp04.dat")
 gagg_bs05op = np.genfromtxt("gagg_bs05op.dat")
 gagg_bs05agsop = np.genfromtxt("gagg_bs05agsop.dat")
 
+plot_setup()
 plt.plot(gagg_b16agss09[:,0], gagg_b16agss09[:,1]/1.0e10, 'r-', label=r'B16-AGSS09')
 plt.plot(gagg_b16gs98[:,0], gagg_b16gs98[:,1]/1.0e10, '-', color='deepskyblue', label=r'B16-GS98')
 plt.plot(gagg_agss09[:,0], gagg_agss09[:,1]/1.0e10, 'b:', label=r'AGSS09')
@@ -96,6 +114,7 @@ plt.legend()
 plt.savefig("solar_models_comp_gagg.pdf")
 plt.show()
 
+plot_setup()
 plt.plot(gagg_b16gs98[:,0], gagg_b16gs98[:,1]/gagg_b16agss09[:,1] - 1.0, '-', color='deepskyblue', label=r'B16-GS98')
 plt.plot(gagg_agss09[:,0], gagg_agss09[:,1]/gagg_b16agss09[:,1] - 1.0, 'b:', label=r'AGSS09')
 plt.plot(gagg_agss09ph[:,0], gagg_agss09ph[:,1]/gagg_b16agss09[:,1] - 1.0, 'g--', label=r'AGSS09ph')
@@ -131,6 +150,7 @@ gaee_bp04 = np.genfromtxt("gaee_bp04.dat")
 gaee_bs05op = np.genfromtxt("gaee_bs05op.dat")
 gaee_bs05agsop = np.genfromtxt("gaee_bs05agsop.dat")
 
+plot_setup()
 plt.plot(gaee_b16agss09[:,0], gaee_b16agss09[:,1]/1.0e8, 'r-', label=r'B16-AGSS09')
 plt.plot(gaee_b16gs98[:,0], gaee_b16gs98[:,1]/1.0e8, '-', color='deepskyblue', label=r'B16-GS98')
 plt.plot(gaee_agss09[:,0], gaee_agss09[:,1]/1.0e8, 'b:', label=r'AGSS09')
@@ -154,6 +174,7 @@ plt.legend()
 plt.savefig("solar_models_comp_gaee.pdf")
 plt.show()
 
+plot_setup()
 plt.plot(gaee_b16gs98[:,0], gaee_b16gs98[:,1]/gaee_b16agss09[:,1] - 1.0, '-', color='deepskyblue', label=r'B16-GS98')
 plt.plot(gaee_agss09[:,0], gaee_agss09[:,1]/gaee_b16agss09[:,1] - 1.0, 'b:', label=r'AGSS09')
 plt.plot(gaee_agss09ph[:,0], gaee_agss09ph[:,1]/gaee_b16agss09[:,1] - 1.0, 'g--', label=r'AGSS09ph')
@@ -182,6 +203,7 @@ gaee_opas = np.genfromtxt("gaee_OPAS.dat")
 gaee_ledcop = np.genfromtxt("gaee_LEDCOP.dat")
 gaee_atomic = np.genfromtxt("gaee_ATOMIC.dat")
 
+plot_setup()
 plt.plot(gaee_op[:,0], gaee_op[:,1]/1.0e8, 'r-', label=r'OP')
 plt.plot(gaee_opas[gaee_opas[:,0]>=2.0,0], gaee_opas[gaee_opas[:,0]>=2.0,1]/1.0e8, 'b:', label=r'OPAS')
 plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/1.0e8, 'g--', label=r'LEDCOP')
@@ -198,7 +220,7 @@ plt.legend()
 plt.savefig("opacity_codes_comp_gaee.pdf")
 plt.show()
 
-
+plot_setup()
 plt.plot(gaee_opas[gaee_opas[:,0]>=2.0,0], gaee_opas[gaee_opas[:,0]>=2.0,1]/gaee_op[gaee_opas[:,0]>=2.0,1] - 1.0, 'b:', label=r'OPAS')
 plt.plot(gaee_ledcop[:,0], gaee_ledcop[:,1]/gaee_op[:,1] - 1.0, 'g--', label=r'LEDCOP')
 plt.plot(gaee_atomic[:,0], gaee_atomic[:,1]/gaee_op[:,1] - 1.0, 'm-.', label=r'ATOMIC')
