@@ -36,15 +36,14 @@ struct integrand_params {double u; double y;};
 class Isotope {
    public:
       Isotope() {};
-      Isotope(std::string s, int a) { element_name = s; isotope_a_value = a; };
-      Isotope(std::pair<std::string,int> p) { element_name = p.first; isotope_a_value = p.second; };
-      // This is for convenience in order to define elements as an Isotope
-      // TODO: if el_a_value < -1, trigger adding up all values for el_name
-      Isotope(std::string s) { element_name = s; isotope_a_value = -1; };
+      Isotope(std::string s, int a);
+      Isotope(std::pair<std::string,int> p);
+      Isotope(std::string s);
 
       bool operator< (const Isotope& other) const;
       bool operator== (const Isotope& other) const;
 
+      void init(std::string s, int a);
       std::string name() const;
       std::string index_name() const;
       int a_val() const;
@@ -52,17 +51,14 @@ class Isotope {
       bool same_z(Isotope *a);
    private:
       std::string element_name;
+      int element_z_value;
       int isotope_a_value;
 };
 
-// Map of isotope name -> Z value
-const std::map<std::string, int> element_z_value ({ {"H", 1}, {"He", 2}, {"C", 6}, {"N", 7}, {"O", 8}, {"Ne", 10}, {"Na", 11}, {"Mg", 12}, {"Al", 13}, {"Si", 14}, {"P", 15}, {"S", 16}, {"Cl", 17},
-                                               {"Ar", 18}, {"K", 19}, {"Ca", 20}, {"Sc", 21}, {"Ti", 22}, {"V", 23}, {"Cr", 24}, {"Mn", 25}, {"Fe", 26}, {"Co", 27}, {"Ni", 28} });
-
-const std::map<Isotope, double> isotope_avg_weight ({ {{"H",1}, 1.007825}, {{"He",4}, 4.002603}, {{"He",3}, 3.016029}, {{"C",12}, 12.000000}, {{"C",13}, 13.003355}, {{"N",14}, 14.003074}, {{"N",15}, 15.000109}, {{"O",16}, 15.994915},
+const std::map<Isotope, double> isotope_avg_weight { {{"H",1}, 1.007825}, {{"He",4}, 4.002603}, {{"He",3}, 3.016029}, {{"C",12}, 12.000000}, {{"C",13}, 13.003355}, {{"N",14}, 14.003074}, {{"N",15}, 15.000109}, {{"O",16}, 15.994915},
                                                       {{"O",17}, 16.999132}, {{"O",18}, 17.999160}, {{"Ne",0}, 20.1312812}, {{"Na",0}, 22.989769}, {{"Mg",0}, 24.3055}, {{"Al",0}, 26.9815385}, {{"Si",0}, 28.085}, {{"P",0}, 30.973762}, {{"S",0}, 32.0675},
                                                       {{"Cl",0}, 35.4515}, {{"Ar",0}, 36.275403}, {{"K",0}, 39.0983}, {{"Ca",0}, 40.078}, {{"Sc",0}, 44.955908}, {{"Ti",0}, 47.867}, {{"V",0}, 50.9415}, {{"Cr",0}, 51.9961}, {{"Mn",0}, 54.938044},
-                                                      {{"Fe",0}, 55.845}, {{"Co",0}, 58.933194}, {{"Ni",0}, 58.6934} });
+                                                      {{"Fe",0}, 55.845}, {{"Co",0}, 58.933194}, {{"Ni",0}, 58.6934} };
 
 double atomic_weight(Isotope isotope);
 
