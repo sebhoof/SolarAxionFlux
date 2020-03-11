@@ -17,7 +17,7 @@ int main() {
   const std::vector<std::string> model_names = {"gs98", "ags05", "agss09", "agss09ph", "bp98", "bp00", "bp04", "bs05op", "bs05agsop", "b16gs98", "b16agss09"};
   const int num_models = model_files.size();
   const int num_opacity_codes = opacity_codes.size();
-  const int n_test_values = 1000;
+  const int n_test_values = 20000;
   std::vector<double> test_ergs;
   for (int k = 0; k < n_test_values; k++) { test_ergs.push_back(0.1+11.9/n_test_values*(k)); };
 
