@@ -7,6 +7,7 @@
 #include <gsl/gsl_integration.h>
 
 #include "utils.hpp"
+
 //for spectral flux
 const double ref_erg_value = 2.0;
 const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8;
@@ -33,6 +34,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
 
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s);
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas);
+std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas);
 std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s);
 std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas);
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s);
@@ -45,8 +47,17 @@ std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> er
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas);
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s);
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas);
+
+// TODO Define
+// std::vector<double> calculate_spectral_flux_process(std::vector<double> ergs, std::string process_name, Isotope isotope, std::string saveas);
+// or similar to get rid off most functions above.
+
 //for total flux
 struct integration_params2 {SolarModel* sol; double (*integrand)(double, void*); Isotope isotope; };
-double spectral_flux_integrand(double erg, void * params );
-double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s,Isotope isotope);
+double spectral_flux_integrand(double erg, void * params);
+double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isotope isotope);
+
+// For simple integrated flux
+double integrated_Primakoff_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file);
+
 #endif // defined __spectral_flux_hpp__

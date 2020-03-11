@@ -1,5 +1,9 @@
 #include "experimental_flux.hpp"
 
+////////////////////////////////////////
+//  Experimental setup and coherence  //
+////////////////////////////////////////
+
 // Conversion probability correction for massive axions.
 double conversion_prob_correction(double mass, double erg, double length) {
   double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
@@ -7,16 +11,15 @@ double conversion_prob_correction(double mass, double erg, double length) {
 }
 
 // Effective exposures (in seconds x cm) for various experiments.
-// CAST 2007 results [hep-ex/0702006; 2004 CCD measurement]
 double eff_exposure_cast_2007(double erg) {
   static OneDInterpolator eff_exp ("data/CAST2007_EffectiveExposure.dat");
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
-////////////////////////
-// Wrapper functions. //
-////////////////////////
+/////////////////////////
+//  Wrapper functions  //
+/////////////////////////
 
 double erg_integrand_from_file(double erg, void * params) {
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
@@ -51,9 +54,9 @@ double erg_integrand(double erg, void * params) {
   return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Functions to calculate the counts in all bins of a helioscope experiment, given an experimental configuration. //
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  Functions to calculate the counts in all bins of a helioscope experiment  //
+////////////////////////////////////////////////////////////////////////////////
 
 std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
@@ -75,8 +78,6 @@ std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *set
   for (int bin = 0; bin < n_bins; ++bin) {
     erg_lo = erg_hi;
     erg_hi += bin_delta;
-    // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
-    //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qag(&f, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w, &gagg_result, &gagg_error);
     double counts = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gagg_result;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));

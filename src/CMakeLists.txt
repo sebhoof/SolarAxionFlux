@@ -20,13 +20,13 @@ install(EXPORT MyLibraryConfig DESTINATION share/MyLibrary/cmake)
 # This makes the project importable from the build directory
 export(TARGETS axionflux FILE MyLibraryConfig.cmake)
 
-# This is for the unit tests
-add_executable(test_axionflux main.cpp ${HEADER_FILES})
-target_include_directories(test_axionflux PUBLIC
+# Create executable for the unit tests
+add_executable(test_library tests.cpp ${HEADER_FILES})
+target_include_directories(test_library PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-target_link_libraries(test_axionflux axionflux)
-set_target_properties(test_axionflux
+target_link_libraries(test_library axionflux)
+set_target_properties(test_library
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
@@ -41,6 +41,7 @@ set_target_properties(compute_all_spectra
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
 
+# Create the PYBIND11 library
 if(PYBIND11_INSTALLED)
   pybind11_add_module(pyaxionflux python_wrapper.cpp)
   target_include_directories(pyaxionflux PUBLIC

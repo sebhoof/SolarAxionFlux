@@ -10,7 +10,6 @@
 #include "constants.hpp"
 #include "spectral_flux.hpp"
 
-
 // Conversion probability into (massless) axions, (gagg*B*L/2)^2, in a reference magnetic field with B = 9.0 T, L = 9.26 m, and gagg = 10^-10 GeV^-1.
 const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
 const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
@@ -19,8 +18,6 @@ const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm
 double conversion_prob_correction(double mass, double erg, double length);
 
 // Constant numbers for precision etc.
-//const double radint_abs_prec = 1.0e-1, radint_rel_prec = 1.0e-6;
-//const double ergint_abs_prec = 0.0, ergint_rel_prec = 1.0e-3;
 const int ergint_from_file_abs_prec = 0.0;
 const double ergint_from_file_rel_prec = 1.0e-3, ergint_from_file_method = 5;
 
@@ -34,15 +31,14 @@ double erg_integrand_from_file(double erg, void * params);
 double erg_integrand(double erg, void * params);
 
 // Effective exposures and setups (in seconds x cm) for various experiments.
+// CAST 2007 results [hep-ex/0702006; 2004 CCD measurement]
 double eff_exposure_cast_2007 (double erg);
 exp_setup cast_2007_setup = { 20, 0.8, 0.3, 0.231738, 9.0, 9.26, &eff_exposure_cast_2007 };
 
 // Functions to calculate the counts in all bins of a helioscope experiment, given an experimental configuration.
-std::vector<double> axion_photon_counts (double mass, double gagg, exp_setup *setup, std::string spectral_flux_file);
-std::vector<double> axion_photon_counts_full (double mass, double gagg, exp_setup *setup, SolarModel *s);
-std::vector<double> axion_electron_counts (double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file);
-std::vector<double> axion_electron_counts_full (double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s);
-
-
+std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file);
+std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s);
+std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file);
+std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s);
 
 #endif // defined __experimental_flux_hpp__

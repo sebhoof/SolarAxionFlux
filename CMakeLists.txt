@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-project(SolarAxionFlux VERSION 0.1 DESCRIPTION "Calculate the solar axion flux" LANGUAGES CXX)
-if (CMAKE_VERSION VERSION_LESS "3.1")
-   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-   endif ()
-else ()
-   set (CMAKE_CXX_STANDARD 11)
-endif ()
+project(SolarAxionFlux VERSION 0.2 DESCRIPTION "Calculate the solar axion flux from axion-photon and axion-electron interactions" LANGUAGES CXX)
 
+set (CMAKE_CXX_STANDARD 11)
 
 # Must use GNUInstallDirs to install libraries into correct locations on all platforms.
 include(GNUInstallDirs)

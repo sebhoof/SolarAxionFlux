@@ -17,4 +17,5 @@ const double a_Bohr = 5.29177210903e-9;                       // Bohr radius in 
 const double g_aee = 1.0E-13;                                 // axion-electron coupling
 const double g_agg = 1.0E-16;                                 // axion-photon coupling in keV^-1
 const double pi = M_PI;
+
 #endif // defined __constants_hpp__

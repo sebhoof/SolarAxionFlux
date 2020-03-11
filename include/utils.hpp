@@ -22,7 +22,7 @@
 #include "constants.hpp"
 
 void terminate_with_error(std::string err_string);
-void my_handler (const char * reason, const char * file, int line, int gsl_errno);
+void my_handler(const char * reason, const char * file, int line, int gsl_errno);
 const double abs_prec = 0, rel_prec = 1.0e-4;
 const int method = 5;
 struct integrand_params {double u; double y;};
