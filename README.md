@@ -2,7 +2,7 @@
 
 <em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
 
-_**This code is currently still under development!**_
+_**This code is currently still under development by Sebastian Hoof and Lennert Thormaehlen**_
 
 ## Example results
 
