@@ -308,24 +308,13 @@ double integrated_Primakoff_flux_from_file(double erg_min, double erg_max, std::
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,Isotope isotope, double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, isotope, s, integrand, ""); }
 //std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand); }
 std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, NONE, r_max, s, integrand, saveas); }
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, isotope, r_max, s, integrand, NONE); }
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double)) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, NONE, r_max, s, integrand, NONE); }
 std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), std::string saveas) { std::string NONE = ""; return calculate_spectral_flux(ergs, NONE, s, integrand, saveas); }
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope isotope, SolarModel &s, double (*integrand)(double, void*)) { std::string NONE = ""; return calculate_spectral_flux(ergs, isotope, s, integrand, NONE); }
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs,SolarModel &s, double (*integrand)(double, void*)) { std::string NONE = ""; return calculate_spectral_flux(ergs, NONE, s, integrand, NONE); }
-
-std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_Primakoff); }
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_Primakoff, saveas); }
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) { double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff; return calculate_spectral_flux_solar_disc(ergs, r_max, s, integrand, saveas); }
-std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_Compton); }
 std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_Compton,saveas); }
-std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_weightedCompton); }
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_weightedCompton,saveas); }
 std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, std::string element, SolarModel &s) { return calculate_spectral_flux(ergs, element, s, &integrand_opacity_element); }
 std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, std::string element, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, element, s, &integrand_opacity_element, saveas); }
-std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_all_ff); }
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_ff,saveas); }
-std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_all_axionelectron); }
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_axionelectron,saveas); }
-std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s) { return calculate_spectral_flux(ergs, s, &integrand_opacity); }
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_opacity, saveas); }
