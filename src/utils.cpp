@@ -153,9 +153,9 @@ void Isotope::init(std::string s, int a) {
 }
 Isotope::Isotope(std::string s, int a) { init(s,a); };
 Isotope::Isotope(std::pair<std::string,int> p) { init(p.first,p.second); };
-// This is for convenience in order to define elements as an Isotope
-// TODO: if el_a_value < -1, trigger adding up all values for el_name
-Isotope::Isotope(std::string s) { init(s,-1); };
+// This is for convenience in order to define elements as an Isotope; for now: empty contructor
+// TODO: do init(s,-1) here or allow strings like "He_3" etc. Also, new feature: if el_a_value < -1, trigger adding up all values for the same el_name
+Isotope::Isotope(std::string s) { };
 bool Isotope::operator< (const Isotope& other) const { return (other.name() < element_name) || ( (other.name() == element_name) && (other.a_val() < isotope_a_value) ); }
 bool Isotope::operator== (const Isotope& other) const { return ((other.name() == element_name) && (other.a_val() == isotope_a_value)); }
 std::string Isotope::name() const { return element_name; };
