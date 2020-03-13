@@ -74,7 +74,6 @@ void OneDInterpolator::init(std::string file, std::string type) {
 
 // Overloaded class creators for the OneDInterpolator class using the init function above.
 OneDInterpolator::OneDInterpolator(std::string file, std::string type) { init(file, type); }
-OneDInterpolator::OneDInterpolator(std::string file) { init(file, "linear"); }
 OneDInterpolator::OneDInterpolator() {}
 
 // Move assignment operator
@@ -170,7 +169,6 @@ double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
-SolarModel::SolarModel(std::string file,opacitycode set_opcode) : SolarModel(file,set_opcode,true){};  //if raff approx is not set, then true
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")){
       std::cout << "Warning: The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;

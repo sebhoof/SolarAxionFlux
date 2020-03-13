@@ -89,8 +89,7 @@ class OneDInterpolator
 {
   public:
     // Overloaded class creators for the OneDInterpolator class using the init function below.
-    OneDInterpolator(std::string file, std::string type);
-    OneDInterpolator(std::string file);
+    OneDInterpolator(std::string file, std::string type = "linear");
     OneDInterpolator();
     OneDInterpolator& operator=(OneDInterpolator&&);
     // Destructor
@@ -154,8 +153,7 @@ class SolarModel
 {
   public:
     SolarModel();
-    SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx);
-    SolarModel(std::string file, opacitycode set_opcode);
+    SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx = true);
     ~SolarModel();
     SolarModel& operator=(SolarModel&&);
     // Delete copy constructor and assignment operator to avoid shallow copies
