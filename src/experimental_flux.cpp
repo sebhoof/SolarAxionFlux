@@ -42,7 +42,8 @@ double erg_integrand(double erg, void * params) {
   double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
   double exposure = p3->eff_exposure(erg);
 
-  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
+  //struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
+  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, NULL };
 
   gsl_function f2;
   f2.function = &rad_integrand;

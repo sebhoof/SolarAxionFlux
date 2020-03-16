@@ -134,12 +134,13 @@ double rho_integrand(double rho, void * params) {
   double rad = (p1->rad);
   SolarModel *s = p1->s;
 
-  // Normalising factor ~ max values, which occur for rho = r_lo, ref_erg_value = 2.0 keV.
-  double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->r_lo);
+  // Normalising factor ~ max values, which occur for rho = r_lo
+  // double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->r_lo);
+  const double norm_factor1 = 1.0;
   double cylinder = rho*rho - rad*rad;
   cylinder = rho/sqrt(cylinder);
 
-  //std::cout << "rho = " << rho << ", erg = " << erg << ", res = " << cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1 << std::endl;
+  //std::cout << "# DEBUG INFO: rho = " << rho << ", erg = " << erg << ", res = " << cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1 << std::endl;
 
   //return cylinder*(p1->integrand(erg, rho));
   return cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1;
@@ -156,9 +157,10 @@ double rad_integrand(double rad, void * params) {
   f1.params = p2;
 
   double result, error;
-  gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
+  //gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
   //gsl_integration_qags(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, p2->w1, &result, &error);
-  //std::cout << "rad = " << rad << ", integral 1 = " << result << std::endl;
+  gsl_integration_cquad(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, p2->w1, &result, &error, NULL);
+  //std::cout << "# DEBUG INFO: rad = " << rad << ", integral 1 = " << result << std::endl;
 
   result = rad*result;
   return result;
@@ -167,16 +169,17 @@ double rad_integrand(double rad, void * params) {
 std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  static double norm_factor1 = (s.*integrand)(ref_erg_value, s.r_lo);
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
   std::vector<double> result;
 
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
+  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size);
 
   double r_min = s.r_lo;
   r_max = std::min(r_max, s.r_hi);
+  //double norm_factor1 = (s.*integrand)(ref_erg_value, r_min);
+  const double norm_factor1 = 1.0;
 
   //solar_disc_integration_params p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
   //double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
@@ -188,17 +191,21 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   std::ofstream output;
   if (saveas != "") { output.open(saveas); };
 
+  //std::cout << "# DEBUG INFO: r in [" << r_min << ", " << r_max << "] ..." << std::endl;
+
   for (int i=0; i<ergs.size(); ++i) {
     double integral, error;
     p2.erg = ergs[i];
     f2.params = &p2;
-    gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w2, &integral, &error);
+    // was 0.1*factor
+    gsl_integration_qag (&f2, r_min, r_max, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w2, &integral, &error);
     result.push_back(factor*norm_factor1*integral);
     if (saveas!= ""){ output << ergs[i] << " " << factor*norm_factor1*integral << std::endl; };
   };
 
   if (saveas!= "") { output.close(); };
-  gsl_integration_workspace_free (w1);
+  //gsl_integration_workspace_free (w1);
+  gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
 
   return result;
@@ -275,7 +282,8 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isoto
 }
 
 double flux_from_file_integrand(double erg, void * params) {
-  OneDInterpolator * interp = (OneDInterpolator *)interp;
+  OneDInterpolator * interp = (OneDInterpolator *)params;
+  //std::cout << "DEBUG INFO. flux_from_file_integrand(" << erg << " keV) = " << interp->interpolate(erg) << " ." << std::endl;
   return interp->interpolate(erg);
 }
 

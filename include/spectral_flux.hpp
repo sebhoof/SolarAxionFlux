@@ -9,12 +9,13 @@
 #include "utils.hpp"
 
 //for spectral flux
-const double ref_erg_value = 2.0;
-const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8;
+const double ref_erg_value = 2.0, ref_r_value = 0.05;
+const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8, int_space_size_cquad = 1e6;
 const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
 const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;
 struct integration_params { double erg; SolarModel* sol; Isotope isotope; };
-struct solar_disc_integration_params { double erg; double rad; double r_max; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; };
+//struct solar_disc_integration_params { double erg; double rad; double r_max; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; };
+struct solar_disc_integration_params { double erg; double rad; double r_max; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_cquad_workspace* w1; };
 
 double rho_integrand(double rho, void * params);
 double rad_integrand(double rad, void * params);
