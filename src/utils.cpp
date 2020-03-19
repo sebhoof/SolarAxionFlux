@@ -176,6 +176,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   }
 //  set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equations 16 a-c or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
+  solarmodel_name = file;
   data = ASCIItableReader(file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
@@ -207,6 +208,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   std::vector<double> n_e_Raff;
   std::vector<double> z2_n_Raff;
   std::vector<double> density;
+  std::vector<double> alpha;
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
   std::vector<double> n_total;
@@ -245,10 +247,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     //  electron density from Raffelt
     double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
     n_e_Raff.push_back(ne_Raff);
-    //  electron density form pressure (currently not used)
+    //  electron density from pressure (currently not used)
     double radiation_pressure = 4.0/3.0*5.678e-15*pow(data["temperature"][i],4.0); //radiation pressure
     double ne = 0.0, ion_number_dens = 0.0;
-
     //  electron density from summing over all elements (full ionisation)
     for (int j = 0; j < num_tracked_isotopes; j++) {
       // Isotope corresponds to column (index in 'tracked_isotopes' + 6) in data!
@@ -438,6 +439,19 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           gsl_spline_init (opacity_lin_interp_opas[rad], omega, s, opas_pts);
       }
   }
+  //alpha
+  if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),file) != std::end(alpha_data_available)) {
+     data_alpha =  ASCIItableReader("data/alpha"+file.substr(file.find("_")));
+     int n_cols_alpha = data_alpha.getncol();
+     data_alpha.setcolnames("radius", "alpha");
+     int pts_alpha = data_alpha.getnrow();
+     const double* radius_alpha = &data_alpha["radius"][0];
+     for (int i = 0; i < pts_alpha; i++) {alpha.push_back(data_alpha["alpha"][i]);}
+     accel[7] = gsl_interp_accel_alloc ();
+     linear_interp[7] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
+     const double* alpha_vals = &alpha[0];
+     gsl_spline_init (linear_interp[7], radius_alpha, alpha_vals, pts_alpha);
+  }
 }
 
 // Move assignment operator
@@ -486,16 +500,14 @@ double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_
 double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
 // N.B. Convenience function below (may be slow for many calls!)
 double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
-
+// returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
-  double sum = 0.0;
-  if (raffelt_approx == false) {
-    //for (int iz = 0; iz < num_op_elements; iz++) { sum += SolarModel::z2_n_iz(r,iz); };
-    sum = gsl_spline_eval(linear_interp[6], r, accel[6]);
-  } else {
-    sum = gsl_spline_eval(linear_interp[3], r, accel[3]);
-  };
-  return sum;
+    if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),solarmodel_name) != std::end(alpha_data_available)) {
+        return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
+    }
+    else {
+        return  gsl_spline_eval(linear_interp[3], r, accel[3]);  // Raffelt approsimation
+    }
 }
 
 // Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
@@ -510,6 +522,17 @@ double SolarModel::n_electron(double r) {
 }
 
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
+double SolarModel::H_mass_fraction(double r) {
+    return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);}
+double SolarModel::He_mass_fraction(double r){
+    return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);
+}
+double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
+double SolarModel::alpha(double r) {
+    if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),solarmodel_name) != std::end(alpha_data_available)) {
+        return gsl_spline_eval(linear_interp[7], r, accel[7]);
+    } else { return 4.0;}
+}
 
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
