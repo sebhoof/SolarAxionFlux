@@ -455,7 +455,6 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   linear_interp[7] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
   const double* alpha_vals = &alpha[0];
   gsl_spline_init (linear_interp[7], radius_alpha, alpha_vals, pts_alpha);
-  }
 }
 
 // Move assignment operator
