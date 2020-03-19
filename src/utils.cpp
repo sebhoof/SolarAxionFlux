@@ -440,17 +440,21 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
       }
   }
   //alpha
-  if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),file) != std::end(alpha_data_available)) {
+  if (std::find(std::begin(alpha_available),std::end(alpha_available),file) != std::end(alpha_available)) {
      data_alpha =  ASCIItableReader("data/alpha"+file.substr(file.find("_")));
-     int n_cols_alpha = data_alpha.getncol();
-     data_alpha.setcolnames("radius", "alpha");
-     int pts_alpha = data_alpha.getnrow();
-     const double* radius_alpha = &data_alpha["radius"][0];
-     for (int i = 0; i < pts_alpha; i++) {alpha.push_back(data_alpha["alpha"][i]);}
-     accel[7] = gsl_interp_accel_alloc ();
-     linear_interp[7] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
-     const double* alpha_vals = &alpha[0];
-     gsl_spline_init (linear_interp[7], radius_alpha, alpha_vals, pts_alpha);
+  }
+  else {
+     data_alpha =  ASCIItableReader("data/alpha_B16-AGSS09.dat");
+  }
+  int n_cols_alpha = data_alpha.getncol();
+  data_alpha.setcolnames("radius", "alpha");
+  int pts_alpha = data_alpha.getnrow();
+  const double* radius_alpha = &data_alpha["radius"][0];
+  for (int i = 0; i < pts_alpha; i++) {alpha.push_back(data_alpha["alpha"][i]);}
+  accel[7] = gsl_interp_accel_alloc ();
+  linear_interp[7] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
+  const double* alpha_vals = &alpha[0];
+  gsl_spline_init (linear_interp[7], radius_alpha, alpha_vals, pts_alpha);
   }
 }
 
@@ -502,7 +506,7 @@ double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval
 double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
 // returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
-    if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),solarmodel_name) != std::end(alpha_data_available)) {
+    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
         return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
     }
     else {
@@ -529,7 +533,7 @@ double SolarModel::He_mass_fraction(double r){
 }
 double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
 double SolarModel::alpha(double r) {
-    if (std::find(std::begin(alpha_data_available),std::end(alpha_data_available),solarmodel_name) != std::end(alpha_data_available)) {
+    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
         return gsl_spline_eval(linear_interp[7], r, accel[7]);
     } else { return 4.0;}
 }
@@ -568,7 +572,7 @@ double aux_function(double u, double y) {
   return result;
 }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823]
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   if (omega == 0) { return 0; }
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -577,7 +581,7 @@ double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
-// N.B. Convenience function below (may be slow for many calls!)
+// N.B. Convenience function below (may be slow for many calls!)  (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return Gamma_P_ff(omega, r, isotope_index); }
 
 double SolarModel::Gamma_P_ff(double omega, double r) {
@@ -586,7 +590,7 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
 
   if (omega == 0) { return 0; }
 
-  if (raffelt_approx == false) {
+  if (raffelt_approx == false) { //(assuming full ionisation)
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
     result = Gamma_P_ff(omega, r, iso_ind_1) + Gamma_P_ff(omega, r, iso_ind_2) + Gamma_P_ff(omega, r, iso_ind_3);
   } else {
