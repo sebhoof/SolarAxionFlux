@@ -509,7 +509,7 @@ double SolarModel::z2_n(double r) {
         return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
     }
     else {
-        return  gsl_spline_eval(linear_interp[3], r, accel[3]);  // Raffelt approsimation
+        return  gsl_spline_eval(linear_interp[6], r, accel[6]);  // full ionisation
     }
 }
 
