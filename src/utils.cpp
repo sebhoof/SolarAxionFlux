@@ -349,19 +349,19 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     const double* z2_n_isotope_vals = &z2_n_isotope[j][0];
     gsl_spline_init (z2_n_isotope_lin_interp[j], radius, z2_n_isotope_vals, pts);
   };
-
-  //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
-  //  OP opacities
-  if (opcode == OP) {
-    for (int k = 0; k < num_op_elements; k++) {
-
-      // Initialise interpolator for n_element
+  // Initialise interpolator for n_element
+  for (int k = 0; k < num_op_elements; k++) {
       std::string element = op_element_names[k];
       n_element_acc[element] = gsl_interp_accel_alloc();
       n_element_lin_interp[element] = gsl_spline_alloc(gsl_interp_linear, pts);
       const double* n_element_vals = &n_op_element[k][0];
       gsl_spline_init (n_element_lin_interp.at(element), radius, n_element_vals, pts);
-
+  }
+  //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
+  //  OP opacities
+  if (opcode == OP) {
+    for (int k = 0; k < num_op_elements; k++) {
+      std::string element = op_element_names[k];
       // Initialise grid values
       std::map<std::pair<int,int>, gsl_interp_accel*> temp_acc;
       std::map<std::pair<int,int>, gsl_spline*> temp_interp;
@@ -721,6 +721,8 @@ double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   double rho = density(r);
   int lenT = tops_temperatures.size();
   int lenrho = tops_densities.size();
+  tops_temperatures[0];
+  tops_densities[0];
   if ((rho <= tops_densities[0]) || (temperature<=tops_temperatures[0]))  { return 0; }
   float Tlow,Tup;
   for (int k = 0; k < lenT; k++) {
