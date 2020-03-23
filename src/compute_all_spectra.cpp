@@ -11,19 +11,18 @@ int main() {
         "data/SolarModel_BP98.dat", "data/SolarModel_BP00.dat", "data/SolarModel_BP04.dat", "data/SolarModel_BS05-OP.dat", "data/SolarModel_BS05-AGSOP.dat", "data/SolarModel_B16-GS98.dat",
         "data/SolarModel_B16-AGSS09.dat"};
   // List all opacity codes
-  const std::vector<opacitycode> opacity_codes = {OP, OPAS, LEDCOP, ATOMIC};
+  const std::vector<opacitycode> opacity_codes = {OP, OPAS, LEDCOP, ATOMIC};  
 
   // Set up energy values of the spectra, etc.
   const std::vector<std::string> model_names = {"gs98", "ags05", "agss09", "agss09ph", "bp98", "bp00", "bp04", "bs05op", "bs05agsop", "b16gs98", "b16agss09"};
   const int num_models = model_files.size();
   const int num_opacity_codes = opacity_codes.size();
-  const int n_test_values = 20000;
+  const int n_test_values = 500;
   std::vector<double> test_ergs;
+  
   for (int k = 0; k < n_test_values; k++) { test_ergs.push_back(0.1+11.9/n_test_values*(k)); };
-
   auto t0 = std::chrono::high_resolution_clock::now();
   std::cout << "# Computing axion spectra for all Solar models..." << std::endl;
-
   for (int i = 0; i < num_models; i++) {
     auto t1 = std::chrono::high_resolution_clock::now();
     SolarModel sol (model_files[i], OP, true);
@@ -41,7 +40,6 @@ int main() {
     auto t34 = std::chrono::duration_cast<std::chrono::seconds>(t4-t3).count();
     std::cout << "# Computing axion-electron spectra took " << t34 << " seconds." << std::endl;
   };
-
   auto t5 = std::chrono::high_resolution_clock::now();
   auto t05 = std::chrono::duration_cast<std::chrono::minutes>(t5-t0).count();
   std::cout << "# Finished all Solar model calculations after " << t05 << " minutes!" << std::endl;

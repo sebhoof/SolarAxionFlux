@@ -176,6 +176,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   }
 //  set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equations 16 a-c or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
+  solarmodel_name = file;
   data = ASCIItableReader(file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
@@ -207,6 +208,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   std::vector<double> n_e_Raff;
   std::vector<double> z2_n_Raff;
   std::vector<double> density;
+  std::vector<double> alpha;
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
   std::vector<double> n_total;
@@ -245,10 +247,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     //  electron density from Raffelt
     double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
     n_e_Raff.push_back(ne_Raff);
-    //  electron density form pressure (currently not used)
+    //  electron density from pressure (currently not used)
     double radiation_pressure = 4.0/3.0*5.678e-15*pow(data["temperature"][i],4.0); //radiation pressure
     double ne = 0.0, ion_number_dens = 0.0;
-
     //  electron density from summing over all elements (full ionisation)
     for (int j = 0; j < num_tracked_isotopes; j++) {
       // Isotope corresponds to column (index in 'tracked_isotopes' + 6) in data!
@@ -348,19 +349,19 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     const double* z2_n_isotope_vals = &z2_n_isotope[j][0];
     gsl_spline_init (z2_n_isotope_lin_interp[j], radius, z2_n_isotope_vals, pts);
   };
-
-  //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
-  //  OP opacities
-  if (opcode == OP) {
-    for (int k = 0; k < num_op_elements; k++) {
-
-      // Initialise interpolator for n_element
+  // Initialise interpolator for n_element
+  for (int k = 0; k < num_op_elements; k++) {
       std::string element = op_element_names[k];
       n_element_acc[element] = gsl_interp_accel_alloc();
       n_element_lin_interp[element] = gsl_spline_alloc(gsl_interp_linear, pts);
       const double* n_element_vals = &n_op_element[k][0];
       gsl_spline_init (n_element_lin_interp.at(element), radius, n_element_vals, pts);
-
+  }
+  //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
+  //  OP opacities
+  if (opcode == OP) {
+    for (int k = 0; k < num_op_elements; k++) {
+      std::string element = op_element_names[k];
       // Initialise grid values
       std::map<std::pair<int,int>, gsl_interp_accel*> temp_acc;
       std::map<std::pair<int,int>, gsl_spline*> temp_interp;
@@ -438,6 +439,22 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           gsl_spline_init (opacity_lin_interp_opas[rad], omega, s, opas_pts);
       }
   }
+  //alpha
+  if (std::find(std::begin(alpha_available),std::end(alpha_available),file) != std::end(alpha_available)) {
+     data_alpha =  ASCIItableReader("data/alpha"+file.substr(file.find("_")));
+  }
+  else {
+     data_alpha =  ASCIItableReader("data/alpha_B16-AGSS09.dat");
+  }
+  int n_cols_alpha = data_alpha.getncol();
+  data_alpha.setcolnames("radius", "alpha");
+  int pts_alpha = data_alpha.getnrow();
+  const double* radius_alpha = &data_alpha["radius"][0];
+  for (int i = 0; i < pts_alpha; i++) {alpha.push_back(data_alpha["alpha"][i]);}
+  accel[7] = gsl_interp_accel_alloc ();
+  linear_interp[7] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
+  const double* alpha_vals = &alpha[0];
+  gsl_spline_init (linear_interp[7], radius_alpha, alpha_vals, pts_alpha);
 }
 
 // Move assignment operator
@@ -486,16 +503,14 @@ double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_
 double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
 // N.B. Convenience function below (may be slow for many calls!)
 double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
-
+// returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
-  double sum = 0.0;
-  if (raffelt_approx == false) {
-    //for (int iz = 0; iz < num_op_elements; iz++) { sum += SolarModel::z2_n_iz(r,iz); };
-    sum = gsl_spline_eval(linear_interp[6], r, accel[6]);
-  } else {
-    sum = gsl_spline_eval(linear_interp[3], r, accel[3]);
-  };
-  return sum;
+    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
+        return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
+    }
+    else {
+        return  gsl_spline_eval(linear_interp[6], r, accel[6]);  // full ionisation
+    }
 }
 
 // Routine to return the number density of ion iz in the zone around the distance r from the centre of the Sun.
@@ -510,6 +525,17 @@ double SolarModel::n_electron(double r) {
 }
 
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
+double SolarModel::H_mass_fraction(double r) {
+    return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);}
+double SolarModel::He_mass_fraction(double r){
+    return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);
+}
+double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
+double SolarModel::alpha(double r) {
+    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
+        return gsl_spline_eval(linear_interp[7], r, accel[7]);
+    } else { return 4.0;}
+}
 
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
@@ -545,7 +571,7 @@ double aux_function(double u, double y) {
   return result;
 }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823]
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   if (omega == 0) { return 0; }
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -554,7 +580,7 @@ double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
-// N.B. Convenience function below (may be slow for many calls!)
+// N.B. Convenience function below (may be slow for many calls!)  (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return Gamma_P_ff(omega, r, isotope_index); }
 
 double SolarModel::Gamma_P_ff(double omega, double r) {
@@ -563,7 +589,7 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
 
   if (omega == 0) { return 0; }
 
-  if (raffelt_approx == false) {
+  if (raffelt_approx == false) { //(assuming full ionisation)
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
     result = Gamma_P_ff(omega, r, iso_ind_1) + Gamma_P_ff(omega, r, iso_ind_2) + Gamma_P_ff(omega, r, iso_ind_3);
   } else {
@@ -695,6 +721,8 @@ double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   double rho = density(r);
   int lenT = tops_temperatures.size();
   int lenrho = tops_densities.size();
+  tops_temperatures[0];
+  tops_densities[0];
   if ((rho <= tops_densities[0]) || (temperature<=tops_temperatures[0]))  { return 0; }
   float Tlow,Tup;
   for (int k = 0; k < lenT; k++) {
