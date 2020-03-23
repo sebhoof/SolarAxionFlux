@@ -42,8 +42,7 @@ double erg_integrand(double erg, void * params) {
   double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
   double exposure = p3->eff_exposure(erg);
 
-  //struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
-  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, NULL };
+  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
 
   gsl_function f2;
   f2.function = &rad_integrand;
@@ -101,7 +100,8 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->r_lo);
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
+  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size);
 
@@ -124,7 +124,8 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
     result.push_back(counts);
   };
 
-  gsl_integration_workspace_free (w1);
+  //gsl_integration_workspace_free (w1);
+  gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 
@@ -184,7 +185,8 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->r_lo);
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
+  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size);
 
@@ -211,7 +213,8 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
     result.push_back(counts);
   };
 
-  gsl_integration_workspace_free (w1);
+  //gsl_integration_workspace_free (w1);
+  gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 

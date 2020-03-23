@@ -105,7 +105,7 @@ double OneDInterpolator::upper() { return up; }
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (in.fail()) {
-    std::cout << "ERROR. Failed loading: " << filename << std::endl;
+    std::cout << "ERROR! Failed loading: " << filename << std::endl;
     exit(-1);
   }
   std::string line;
@@ -171,7 +171,7 @@ double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")){
-      std::cout << "Warning: The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
+      std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
   }
 //  set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equations 16 a-c or alternatively sum over all elements assuming full ionisation
@@ -603,7 +603,7 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
     if (opacity_lin_interp_op.find(element) == opacity_lin_interp_op.end()) {
       terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
-      std::cout << "WARNING! OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
+      std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
     } else {
       gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);   // error handler modified to avoid boundary error (fill value = 0)
       result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
@@ -744,7 +744,7 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
 double SolarModel::opacity_element(double omega, double r, std::string element) {
     gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);    //other ahndler to avoid boundary errors
     if (opcode != OP) {
-        std::cout << "Warning: Chosen opacity code does not provide opacities for indivdual elements" << std::endl;
+        std::cout << "WARNING. Chosen opacity code does not provide opacities for indivdual elements" << std::endl;
         return 0;
     }
     const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
@@ -755,6 +755,7 @@ double SolarModel::opacity_element(double omega, double r, std::string element) 
 };
 
 // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
+// TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...
 double SolarModel::opacity_element(double omega, double r, Isotope isotope) { return opacity_element(omega, r, isotope.name()); }
 
 //  opacity for total solar mixture
@@ -802,6 +803,7 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
 
 double SolarModel::Gamma_P_all_electron(double erg, double r) {
   double result = 0;
+  //auto t1 = std::chrono::high_resolution_clock::now();
   if (opcode == OP) {
     double element_contrib = 0.0;
     if (raffelt_approx == false) {
@@ -810,9 +812,14 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
     } else {
       element_contrib += Gamma_P_ff(erg, r);
     };
+    //auto t2 = std::chrono::high_resolution_clock::now();
+    //std::cout << "# DEBUG Gamma_el | Gamma_ff      took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << " ms." << std::endl;
     for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); };
+    //auto t3 = std::chrono::high_resolution_clock::now();
+    //std::cout << "# DEBUG Gamma_el | Gamma_opacity took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() << " ms." << std::endl;
     result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
-
+    //auto t4 = std::chrono::high_resolution_clock::now();
+    //std::cout << "# DEBUG Gamma_el | Gamma_C+ee   took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4-t3).count() << " ms." << std::endl;
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
     double u = erg/temperature_in_keV(r);
     double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);

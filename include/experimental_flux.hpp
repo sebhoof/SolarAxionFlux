@@ -23,7 +23,8 @@ const double ergint_from_file_rel_prec = 1.0e-3, ergint_from_file_method = 5;
 
 // Data structs to pass variables to functions and integrators.
 struct exp_setup { int n_bins; double bin_lo; double bin_delta; double r_max; double b_field; double length; double (*eff_exposure)(double); };
-struct erg_integration_params { double mass; double length; double r_max; double (*eff_exposure)(double); SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; gsl_integration_workspace* w2; };
+//struct erg_integration_params { double mass; double length; double r_max; double (*eff_exposure)(double); SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; gsl_integration_workspace* w2; };
+struct erg_integration_params { double mass; double length; double r_max; double (*eff_exposure)(double); SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_cquad_workspace* w1; gsl_integration_workspace* w2; };
 struct exp_flux_params_file { double mass; double length; double (*eff_exposure)(double); OneDInterpolator* spectral_flux; };
 
 // Wrapper functions for integrating the axion spectra.

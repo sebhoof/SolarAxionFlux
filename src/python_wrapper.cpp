@@ -4,7 +4,7 @@ void test_module() {
   std::cout << "This is the Solar Axion Flux library v0.2 Python interface. Test successful!" << std::endl;
 }
 
-void py11_save_Primakoff_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root) {
+void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root, std::string process) {
   // Setup steps
   std::cout << "Setting up Solar model..." << std::endl;
   SolarModel s (solar_model_file,OP);
@@ -30,7 +30,13 @@ void py11_save_Primakoff_spectral_flux_for_different_radii(double erg_min, doubl
     //output.open(output_file);
     //output << "# Solar axion spectrum using solar model '" << solar_model_file << "' and r_max = " << r << "." << std::endl;
     //output.close();
-    calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
+    if (process == "Primakoff") {
+      calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
+    } else if (process == "electron") {
+      calculate_spectral_flux_axionelectron(ergs, s, r, output_file);
+    } else {
+      terminate_with_error("ERROR! the process '"+process+"' is currently not a valid option. Choose 'Primakoff' or 'electron'.");
+    };
   };
 }
 
@@ -38,6 +44,6 @@ PYBIND11_MODULE(pyaxionflux, m) {
     m.doc() = "Solar Axion Flux library functions";
 
     m.def("test_module", &test_module, "A simple routine to test the Python interface.");
-    m.def("Primakoff_flux", &integrated_Primakoff_flux_from_file, "Integrated Primakoff flux from file with signature (erg_min, erg_max, filename).");
-    m.def("integrand_Primakoff_flux", &py11_save_Primakoff_spectral_flux_for_different_radii, "Integrated Primakoff flux from file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root).");
+    m.def("integrate_spectrum", &integrated_flux_from_file, "Integrated Primakoff flux from file with signature (erg_min, erg_max, filename, includes_electron_interactions = true).");
+    m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrated Primakoff flux from file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
 }

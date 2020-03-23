@@ -156,11 +156,14 @@ double rad_integrand(double rad, void * params) {
   f1.function = &rho_integrand;
   f1.params = p2;
 
+  //auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
+  size_t n_evals;
   //gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, int_method_1, p2->w1, &result, &error);
-  //gsl_integration_qags(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, int_space_size, p2->w1, &result, &error);
-  gsl_integration_cquad(&f1, rad, r_max, 0.01*int_abs_prec, 0.01*int_rel_prec, p2->w1, &result, &error, NULL);
-  //std::cout << "# DEBUG INFO: rad = " << rad << ", integral 1 = " << result << std::endl;
+  //gsl_integration_qags(&f1, rad, r_max, 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, p2->w1, &result, &error);
+  gsl_integration_cquad(&f1, rad, r_max, 0.1*int_abs_prec, 0.1*int_rel_prec, p2->w1, &result, &error, &n_evals);
+  //auto t2 = std::chrono::high_resolution_clock::now();
+  //std::cout << "# DEBUG INFO: rad = " << rad << ", integral 1 = " << result << " after " << n_evals << " evals (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << " ms)." << std::endl;
 
   result = rad*result;
   return result;
@@ -287,7 +290,10 @@ double flux_from_file_integrand(double erg, void * params) {
   return interp->interpolate(erg);
 }
 
-double integrated_Primakoff_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file) {
+double integrated_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file, bool includes_electron_interactions) {
+  // Peak positions for axion electron interactions
+  const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
+                                 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
   double result, error;
 
   OneDInterpolator spectral_flux (spectral_flux_file);
@@ -300,7 +306,15 @@ double integrated_Primakoff_flux_from_file(double erg_min, double erg_max, std::
   f.function = &flux_from_file_integrand;
   f.params = &spectral_flux;
 
-  gsl_integration_qag(&f, erg_min, erg_max, abs_prec2, rel_prec2, int_space_size, int_method_1, w, &result, &error);
+  if (includes_electron_interactions) {
+    std::vector<double> relevant_peaks;
+    relevant_peaks.push_back(erg_min);
+    for (int i = 0; i < 32; i++) { if ( (erg_min < all_peaks[i]) && (all_peaks[i] < erg_max) ) { relevant_peaks.push_back(all_peaks[i]); }; };
+    relevant_peaks.push_back(erg_max);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), abs_prec2, rel_prec2, int_space_size, w, &result, &error);
+  } else {
+    gsl_integration_qag(&f, erg_min, erg_max, abs_prec2, rel_prec2, int_space_size, int_method_1, w, &result, &error);
+  };
 
   gsl_integration_workspace_free (w);
 
@@ -325,4 +339,5 @@ std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, st
 std::vector<double> calculate_spectral_flux_element(std::vector<double> ergs, std::string element, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, element, s, &integrand_opacity_element, saveas); }
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_ff,saveas); }
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_all_axionelectron,saveas); }
+std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) { double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron; return calculate_spectral_flux_solar_disc(ergs, r_max, s, integrand, saveas); }
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_opacity, saveas); }
