@@ -154,14 +154,14 @@ class SolarModel
 {
   public:
     SolarModel();
-    SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx = true);
+    SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx = false);
     ~SolarModel();
     SolarModel& operator=(SolarModel&&);
     // Delete copy constructor and assignment operator to avoid shallow copies
     SolarModel(const SolarModel&) = delete;
     SolarModel operator=(const SolarModel&) = delete;
     // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
-    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is true
+    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is false
     const opacitycode opcode;
     double r_lo, r_hi;
     int lookup_isotope_index(Isotope isotope);
