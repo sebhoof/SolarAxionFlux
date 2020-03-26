@@ -161,7 +161,7 @@ class SolarModel
     SolarModel(const SolarModel&) = delete;
     SolarModel operator=(const SolarModel&) = delete;
     // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
-    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) egs. 16 a-c, default is true
+    bool raffelt_approx;  // whether to use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is true
     const opacitycode opcode;
     double r_lo, r_hi;
     int lookup_isotope_index(Isotope isotope);
@@ -218,8 +218,8 @@ class SolarModel
     std::map<Isotope,int> isotope_index_map;
     int num_tracked_isotopes;
     std::vector<Isotope> tracked_isotopes;
-    gsl_interp_accel *accel[8];
-    gsl_spline *linear_interp[8];
+    gsl_interp_accel *accel[7];
+    gsl_spline *linear_interp[7];
     //std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
     //std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
