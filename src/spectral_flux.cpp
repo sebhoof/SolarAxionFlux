@@ -183,7 +183,6 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   r_max = std::min(r_max, s.r_hi);
   //double norm_factor1 = (s.*integrand)(ref_erg_value, r_min);
   const double norm_factor1 = 1.0;
-
   //solar_disc_integration_params p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
   //double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
   //solar_disc_integration_params p2 { 0.0, 0.0, r_max, &s, func_ptr, w1 };
@@ -213,43 +212,6 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
 
   return result;
 };
-
-/*
-// Javis integrator to check how much different it makes
-void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), Isotope isotope, std::string saveas) {
-  std::ofstream output;
-  if (saveas != ""){
-      output.open("results/"+saveas+".dat");}
-  for (int i=0; i<ergs.size(); ++i) {
-      double result = 0;
-      integration_params p = {ergs[i], &s, isotope};
-      for (int k = 0; k < s.data.getnrow()-1; k++){
-          double rlow = s.data["radius"][k];
-          double rhigh = s.data["radius"][k+1];
-          double integrandlow, integrandhigh;
-          double ulow = ergs[i]/(s.data["temperature"][k]*(1.0E-3*K2eV));
-          double uhigh = ergs[i]/(s.data["temperature"][k+1]*(1.0E-3*K2eV));
-          if ((0.12 < ulow) && (ulow < 18)) {
-              integrandlow = integrand(rlow,&p);
-          } else {
-              integrandlow = 0;
-          }
-          if ((0.12 < uhigh) && (uhigh < 18)) {
-              integrandhigh = integrand(rhigh,&p);
-          } else {
-              integrandhigh = 0;
-          }
-          result += 0.5*(integrandlow + integrandhigh) * (rhigh-rlow);
-      }
-      if (saveas!= ""){ output << ergs[i] << " " << factor*result << std::endl;}
-  };
-  if (saveas!= ""){ output.close();}
-}
- void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), Isotope isotope) {calculate_spectral_flux_javi(ergs, s, integrand,iz,"");}
- void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*)) { calculate_spectral_flux_javi(ergs, s, integrand, 0); }
- void calculate_spectral_flux_javi(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*),std::string saveas) { calculate_spectral_flux_javi(ergs, s, integrand, 0,saveas); }
- */
-
  // Generic integrator to compute the spectral flux in some energy range.
 double spectral_flux_integrand(double erg, void * params) {
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
