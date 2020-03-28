@@ -406,7 +406,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
       }
   }
   //alpha
-  if (std::find(std::begin(alpha_available),std::end(alpha_available),file) != std::end(alpha_available)) {
+  if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
      data_alpha =  ASCIItableReader("data/alpha"+file.substr(file.find("_")));
   }
   else {
@@ -471,7 +471,7 @@ double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval
 double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
 // returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
-    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
+    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
         return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
     }
     else {
@@ -498,7 +498,7 @@ double SolarModel::He_mass_fraction(double r){
 }
 double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
 double SolarModel::alpha(double r) {
-    if (std::find(std::begin(alpha_available),std::end(alpha_available),solarmodel_name) != std::end(alpha_available)) {
+    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
         return gsl_spline_eval(linear_interp[6], r, accel[6]);
     } else { return 4.0;}
 }
