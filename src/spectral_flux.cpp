@@ -110,15 +110,18 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
 
   std::ofstream output;
-  if (saveas != "") { output.open(saveas); };
+  if (saveas != "") {
+    output.open(saveas);
+    output << "# Spectral flux over full solar volume by " << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
+  };
 
-  for (int i=0; i<ergs.size(); ++i) {
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
     double integral, error;
-    integration_params p = {ergs[i], &s, isotope};
+    integration_params p = {*erg, &s, isotope};
     f.params = &p;
     gsl_integration_qag (&f, s.r_lo, s.r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
     result.push_back(factor*integral);
-    if (saveas!= ""){ output << ergs[i] << " " << factor*integral << std::endl; };
+    if (saveas!= ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
   };
 
   if (saveas!= "") { output.close(); };
@@ -191,7 +194,10 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   f2.function = &rad_integrand;
 
   std::ofstream output;
-  if (saveas != "") { output.open(saveas); };
+  if (saveas != "") {
+    output.open(saveas);
+    output << "# Spectral flux over full solar disc, r in [" << r_min << ", " << r_max << "] R_sol." << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
+  };
 
   //std::cout << "# DEBUG INFO: r in [" << r_min << ", " << r_max << "] ..." << std::endl;
 
@@ -254,8 +260,8 @@ double flux_from_file_integrand(double erg, void * params) {
 
 double integrated_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file, bool includes_electron_interactions) {
   // Peak positions for axion electron interactions
-  const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  const std::vector<double> all_peaks = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
+                                         5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
   double result, error;
 
   OneDInterpolator spectral_flux (spectral_flux_file);
@@ -271,7 +277,7 @@ double integrated_flux_from_file(double erg_min, double erg_max, std::string spe
   if (includes_electron_interactions) {
     std::vector<double> relevant_peaks;
     relevant_peaks.push_back(erg_min);
-    for (int i = 0; i < 32; i++) { if ( (erg_min < all_peaks[i]) && (all_peaks[i] < erg_max) ) { relevant_peaks.push_back(all_peaks[i]); }; };
+    for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_min < *peak_erg) && (*peak_erg < erg_max) ) { relevant_peaks.push_back(*peak_erg); }; };
     relevant_peaks.push_back(erg_max);
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), abs_prec2, rel_prec2, int_space_size, w, &result, &error);
   } else {

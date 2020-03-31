@@ -1,6 +1,10 @@
 #ifndef __constants_hpp__
 #define __constants_hpp__
 
+#include <string>
+
+const std::string LIBRARY_NAME = "SolarAxionFlux v0.1b";
+
 const double hbar = 6.582119514e-25;                          // in GeV * s
 const double radius_sol = 6.9598e8;                           // in metres
 const double distance_sol = 1.495978707e11;                   // in metres

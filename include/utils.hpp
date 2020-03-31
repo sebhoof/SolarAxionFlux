@@ -8,11 +8,9 @@
 #include <map>
 #include <set>
 #include <sstream>
-#include <chrono> // TODO comment this out
+#include <chrono> // TODO comment this out one day...
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <sys/stat.h> // Only to check if file exists
 
 #include <gsl/gsl_math.h>
 //#include <gsl/gsl_sf_exp.h>
@@ -28,10 +26,7 @@ const double abs_prec = 0, rel_prec = 1.0e-4;
 const int method = 5;
 struct integrand_params {double u; double y;};
 
-// Note: For future versions, use a list of 'Isotope's that are available in a SolarModel
-// el_a_value=0 is a default for 'only tracked in bulk';
-// Columns is Solar model can stay as they are.
-// -> Variable iz becomes type 'Isotope'
+// For the future: el_a_value=0 is a default for 'only tracked in bulk';
 // For the OP code, just use the op list with names(!) as below and automatically sum over all Isotopes with iz[0] == IsotopeName!
 // If a_val() > 0, use this, else get default bulk value from global table (maybe create own namespace).
 class Isotope {
@@ -81,8 +76,7 @@ const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.
 const std::vector<double> opas_radii = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
 
 bool file_exists(const std::string& filename);
-void save_to_file(std::string path, std::vector<std::vector<double>> data, bool overwrite);
-void save_to_file(std::string path, std::vector<std::vector<double>> data);
+void save_to_file(std::string path, std::vector<std::vector<double>> data, std::string comment = "", bool overwrite = true);
 
 // OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
 // Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
@@ -114,10 +108,11 @@ class OneDInterpolator
     double up;
 };
 
+// Credit to C. Weniger for the inital version of ASCIItableReader
 class ASCIItableReader {
   public:
     ASCIItableReader(std::string filename) { read(filename); };
-    ASCIItableReader() {};  // Dummy initializer
+    ASCIItableReader() {};
     ~ASCIItableReader() {}
 
     int read(std::string filename);

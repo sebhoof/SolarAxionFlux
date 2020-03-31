@@ -20,7 +20,7 @@ bool file_exists(const std::string& filename) {
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
-void save_to_file(std::string path, std::vector<std::vector<double>> data, bool overwrite) {
+void save_to_file(std::string path, std::vector<std::vector<double>> data, std::string comment, bool overwrite) {
   std::cout << "Saving results to " << path << "..." << std::endl;
   // Each vec in data contains a column etc...
   if (file_exists(path)) {
@@ -32,8 +32,6 @@ void save_to_file(std::string path, std::vector<std::vector<double>> data, bool 
     };
   };
 }
-
-void save_to_file(std::string path, std::vector<std::vector<double>> data) { save_to_file(path, data, true); };
 
 // Initialiser for the OneDInterpolator class.
 void OneDInterpolator::init(std::string file, std::string type) {
