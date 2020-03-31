@@ -21,7 +21,7 @@ bool file_exists(const std::string& filename) {
 }
 
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
-  std::cout << "Saving results to " << path << "..." << std::endl;
+  //std::cout << "Saving results to " << path << "..." << std::endl;
 
   if (file_exists(path)) {
     if (overwrite) {
@@ -49,7 +49,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
     if (n_rows > 0) {
       for (int i=0; i<n_rows; ++i) {
         output << buffer[0][i];
-        for (int j=0; j<n_cols; ++j) {
+        for (int j=1; j<n_cols; ++j) {
           output << " " << buffer[j][i];
         };
         output << std::endl;
@@ -73,11 +73,11 @@ void OneDInterpolator::init(std::string file, std::string type) {
   };
   // Read numerical values from data file.
   ASCIItableReader tab (file);
-  tab.setcolnames("x", "y");
+  //tab.setcolnames("x", "y"); -> Would raise warning if we try to interpolate data with errors
   // Initialise gsl interpolation routine.
-  int pts = tab["x"].size();
-  const double* x = &tab["x"][0];
-  const double* y = &tab["y"][0];
+  int pts = tab[0].size();
+  const double* x = &tab[0][0];
+  const double* y = &tab[1][0];
   acc = gsl_interp_accel_alloc ();
   if (type == "cspline")
   {
@@ -94,8 +94,8 @@ void OneDInterpolator::init(std::string file, std::string type) {
   };
   gsl_spline_init (spline, x, y, pts);
   // Get first and last value of the "x" component.
-  lo = tab["x"].front();
-  up = tab["x"].back();
+  lo = tab[0].front();
+  up = tab[0].back();
 };
 
 // Overloaded class creators for the OneDInterpolator class using the init function above.

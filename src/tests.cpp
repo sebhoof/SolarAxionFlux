@@ -57,4 +57,3 @@ int main() {
   std::cout << "# Finished testing!" << std::endl;
   return 0;
 }
-

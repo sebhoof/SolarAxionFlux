@@ -103,31 +103,36 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
   // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
-  std::vector<double> result;
+  std::vector<double> results, errors;
 
   gsl_function f;
   f.function = integrand;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
 
   std::ofstream output;
-  if (saveas != "") {
-    output.open(saveas);
-    output << "# Spectral flux over full solar volume by " << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
-  };
+  //if (saveas != "") {
+  //  output.open(saveas);
+  //  output << "# Spectral flux over full solar volume by " << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
+  //};
 
   for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
     double integral, error;
     integration_params p = {*erg, &s, isotope};
     f.params = &p;
     gsl_integration_qag (&f, s.r_lo, s.r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
-    result.push_back(factor*integral);
-    if (saveas!= ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
+    results.push_back(factor*integral);
+    errors.push_back(factor*error);
+    //if (saveas != ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
   };
 
-  if (saveas!= "") { output.close(); };
+  //if (saveas!= "") { output.close(); };
   gsl_integration_workspace_free (w);
 
-  return result;
+  std::vector<std::vector<double>> buffer = {ergs, results, errors};
+  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [axions / cm^2 s keV], axion flux error estimate [axions / cm^2 s keV]";
+  if (saveas != ""){ save_to_file(saveas, buffer, comment); };
+
+  return results;
 }
 
 double rho_integrand(double rho, void * params) {
@@ -176,7 +181,7 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  std::vector<double> result;
+  std::vector<double> results, errors;
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size);
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
@@ -193,11 +198,11 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   gsl_function f2;
   f2.function = &rad_integrand;
 
-  std::ofstream output;
-  if (saveas != "") {
-    output.open(saveas);
-    output << "# Spectral flux over full solar disc, r in [" << r_min << ", " << r_max << "] R_sol." << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
-  };
+  //std::ofstream output;
+  //if (saveas != "") {
+  //  output.open(saveas);
+  //  output << "# Spectral flux over full solar disc, r in [" << r_min << ", " << r_max << "] R_sol." << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
+  //};
 
   //std::cout << "# DEBUG INFO: r in [" << r_min << ", " << r_max << "] ..." << std::endl;
 
@@ -207,16 +212,21 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
     f2.params = &p2;
     // was 0.1*factor
     gsl_integration_qag (&f2, r_min, r_max, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w2, &integral, &error);
-    result.push_back(factor*norm_factor1*integral);
-    if (saveas != ""){ output << ergs[i] << " " << factor*norm_factor1*integral << " " << factor*norm_factor1*error << std::endl; };
+    results.push_back(factor*norm_factor1*integral);
+    errors.push_back(factor*norm_factor1*error);
+    //if (saveas != ""){ output << ergs[i] << " " << factor*norm_factor1*integral << " " << factor*norm_factor1*error << std::endl; };
   };
 
-  if (saveas != "") { output.close(); };
+  //if (saveas != "") { output.close(); };
   //gsl_integration_workspace_free (w1);
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
 
-  return result;
+  std::vector<std::vector<double>> buffer = {ergs, results, errors};
+  std::string comment = "Spectral flux over full solar disc, r in ["+std::to_string(r_min)+", "+std::to_string(r_max)+"] R_sol by "+LIBRARY_NAME+". Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]";
+  if (saveas != ""){ save_to_file(saveas, buffer, comment); };
+
+  return results;
 };
  // Generic integrator to compute the spectral flux in some energy range.
 double spectral_flux_integrand(double erg, void * params) {

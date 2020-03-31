@@ -76,7 +76,7 @@ const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.
 const std::vector<double> opas_radii = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};
 
 bool file_exists(const std::string& filename);
-void save_to_file(std::string path, std::vector<std::vector<double>> data, std::string comment = "", bool overwrite = true);
+void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment = "", bool overwrite = true);
 
 // OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
 // Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
