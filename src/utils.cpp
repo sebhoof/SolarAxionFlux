@@ -490,7 +490,18 @@ double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_
 double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
 // Routine to return the screening paramter kappa^2 in units of keV^2 (kappa^-1 = Debye-Hueckel radius).
 double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
-
+// alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
+double SolarModel::alpha(double r) {
+    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
+        return gsl_spline_eval(linear_interp[6], r, accel[6]);
+    } else { return 4.0;}
+}
+double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
+double SolarModel::H_mass_fraction(double r) {
+    return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);}
+double SolarModel::He_mass_fraction(double r){
+    return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);
+}
 // Routine to return the number density times charge^2 of ion iz in the zone around the distance r from the centre of the Sun (full ionisation)
 double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
 // N.B. Convenience function below (may be slow for many calls!)
@@ -515,20 +526,7 @@ double SolarModel::n_electron(double r) {
     if (raffelt_approx == false) { return gsl_spline_eval(linear_interp[1], r, accel[1]);}
     else { return gsl_spline_eval(linear_interp[2], r, accel[2]);}
 }
-
-double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
-double SolarModel::H_mass_fraction(double r) {
-    return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);}
-double SolarModel::He_mass_fraction(double r){
-    return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);
-}
 double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
-double SolarModel::alpha(double r) {
-    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
-        return gsl_spline_eval(linear_interp[6], r, accel[6]);
-    } else { return 4.0;}
-}
-
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
 

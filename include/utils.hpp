@@ -178,6 +178,7 @@ class SolarModel
     double H_mass_fraction(double r);
     double He_mass_fraction(double r);
     double metallicity(double r);
+    // alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
     double alpha(double r);
     // Routine to return electron density
     double n_electron(double r);
