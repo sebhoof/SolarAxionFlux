@@ -20,17 +20,45 @@ bool file_exists(const std::string& filename) {
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
-void save_to_file(std::string path, std::vector<std::vector<double>> data, std::string comment, bool overwrite) {
+void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
   std::cout << "Saving results to " << path << "..." << std::endl;
-  // Each vec in data contains a column etc...
+
   if (file_exists(path)) {
     if (overwrite) {
-      std::cout << "File " << path << "exists and will be overwritten..." << std::endl;
+      std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
     } else {
-      std::cout << "File " << path << "exists! Now saving to " << path << "_new" << std::endl;
+      std::cout << "File " << path << " exists! Now saving to " << path << "_new" << std::endl;
       path += "_new";
     };
   };
+
+  std::ofstream output;
+  output.open(path);
+  if (comment != "") {
+    size_t pos = 0;
+    const std::string newline = "\n";
+    const std::string comment_newline = "\n# ";
+    while ((pos = comment.find(newline, pos)) != std::string::npos) {
+     comment.replace(pos, newline.length(), comment_newline);
+     pos += comment_newline.length();
+   };
+   output << "# " << comment << std::endl; };
+  int n_cols = buffer.size();
+  if (n_cols > 0) {
+    int n_rows = buffer[0].size();
+    if (n_rows > 0) {
+      for (int i=0; i<n_rows; ++i) {
+        output << buffer[0][i];
+        for (int j=0; j<n_cols; ++j) {
+          output << " " << buffer[j][i];
+        };
+        output << std::endl;
+      };
+    } else {
+      std::cout << "WARNING! The data you are trying to write to " << path << " is empty! Created an empty file." << std::endl;
+    };
+  };
+  output.close();
 }
 
 // Initialiser for the OneDInterpolator class.
