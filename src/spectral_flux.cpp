@@ -39,7 +39,7 @@ double integrand_opacity_element(double r, void * params) {
   double erg = (p->erg);
   std::string el_name = (p->isotope).name();
   SolarModel* sol = (p->sol);
-
+    
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, el_name));
 }
 
@@ -48,7 +48,6 @@ double integrand_opacity(double r, void * params) {
   double result = 0.0;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-
   if (sol->opcode == OP) {
     double element_contrib = 0.0;
     // Add opacity terms all non-H or He elements (metals)
@@ -62,12 +61,12 @@ double integrand_opacity(double r, void * params) {
   return result;
 }
 
-// Includes FF flux and ee contribution [ref].
+// Includes FF flux and ee contribution as in arxiv[1310.0823].
 double integrand_all_ff(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-
+    
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_ff(erg, r) + sol->Gamma_P_ee(erg, r));
 }
 
@@ -75,27 +74,8 @@ double integrand_all_axionelectron(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-  if (sol->opcode == OP) {
-      double element_contrib = 0.0;
-      if (sol->raffelt_approx == false) {
-        element_contrib += sol->Gamma_P_opacity(erg, r, "H") + sol->Gamma_P_opacity(erg, r, "He");
-      } else {
-        element_contrib += sol->Gamma_P_ff(erg, r);
-      };
-      for (int i = 2; i < num_op_elements; i++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[i]); };
-      return 0.5*gsl_pow_2(r*erg/pi)*(element_contrib + sol->Gamma_P_Compton(erg, r) + sol->Gamma_P_ee(erg, r));
-  }
-  if ((sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)){
-      double u = erg/(sol->temperature_in_keV(r));
-      double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-      return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg,r) + reducedCompton + sol->Gamma_P_ee(erg, r));
-  }
-    if (sol->opcode == OPAS) {
-        double u = erg/(sol->temperature_in_keV(r));
-        double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * sol->Gamma_P_Compton(erg, r);
-        return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg,r);
-    }
-  return 0;
+    
+  return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_all_electron(erg,r);
 }
 
 std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope isotope, SolarModel &s, double (*integrand)(double, void*), std::string saveas) {

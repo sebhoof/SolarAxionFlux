@@ -820,34 +820,20 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
 
 double SolarModel::Gamma_P_all_electron(double erg, double r) {
   double result = 0;
-  //auto t1 = std::chrono::high_resolution_clock::now();
   if (opcode == OP) {
     double element_contrib = 0.0;
-    if (raffelt_approx == false) {
-      static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
-      element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
-    } else {
-      element_contrib += Gamma_P_ff(erg, r);
-    };
-    //auto t2 = std::chrono::high_resolution_clock::now();
-    //std::cout << "# DEBUG Gamma_el | Gamma_ff      took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << " ms." << std::endl;
+    static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
+    element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
     for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); };
-    //auto t3 = std::chrono::high_resolution_clock::now();
-    //std::cout << "# DEBUG Gamma_el | Gamma_opacity took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() << " ms." << std::endl;
     result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
-    //auto t4 = std::chrono::high_resolution_clock::now();
-    //std::cout << "# DEBUG Gamma_el | Gamma_C+ee   took " << std::chrono::duration_cast<std::chrono::milliseconds>(t4-t3).count() << " ms." << std::endl;
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
     double u = erg/temperature_in_keV(r);
     double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
     result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
-
   } else if (opcode == OPAS) {
     result = Gamma_P_opacity (erg, r);
-
   } else {
       terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
   };
-
     return result;
 }
