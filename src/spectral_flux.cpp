@@ -202,7 +202,7 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
     // was 0.1*factor
     gsl_integration_qag (&f2, r_min, r_max, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w2, &integral, &error);
     result.push_back(factor*norm_factor1*integral);
-    if (saveas != ""){ output << ergs[i] << " " << factor*norm_factor1*integral << " " << actor*norm_factor1*error << std::endl; };
+    if (saveas != ""){ output << ergs[i] << " " << factor*norm_factor1*integral << " " << factor*norm_factor1*error << std::endl; };
   };
 
   if (saveas != "") { output.close(); };
