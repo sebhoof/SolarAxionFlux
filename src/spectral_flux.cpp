@@ -39,7 +39,7 @@ double integrand_opacity_element(double r, void * params) {
   double erg = (p->erg);
   std::string el_name = (p->isotope).name();
   SolarModel* sol = (p->sol);
-    
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, el_name));
 }
 
@@ -66,7 +66,7 @@ double integrand_all_ff(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-    
+
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_ff(erg, r) + sol->Gamma_P_ee(erg, r));
 }
 
@@ -74,7 +74,7 @@ double integrand_all_axionelectron(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-    
+
   return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_all_electron(erg,r);
 }
 

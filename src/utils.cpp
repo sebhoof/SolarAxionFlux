@@ -494,14 +494,11 @@ double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_
 double SolarModel::alpha(double r) {
     if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
         return gsl_spline_eval(linear_interp[6], r, accel[6]);
-    } else { return 4.0;}
+    } else { return 4.0; }
 }
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
-double SolarModel::H_mass_fraction(double r) {
-    return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);}
-double SolarModel::He_mass_fraction(double r){
-    return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r);
-}
+double SolarModel::H_mass_fraction(double r) { return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
+double SolarModel::He_mass_fraction(double r){ return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
 // Routine to return the number density times charge^2 of ion iz in the zone around the distance r from the centre of the Sun (full ionisation)
 double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
 // N.B. Convenience function below (may be slow for many calls!)
@@ -563,6 +560,7 @@ double aux_function(double u, double y) {
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
+  //std::cout << "DEBUG INFO. FF at (" << omega << ", " << r << ", " << isotope_index << ") calculation..." << std::endl;
   if (omega == 0) { return 0; }
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
@@ -593,6 +591,7 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
+  //std::cout << "DEBUG INFO. ee at (" << omega << ", " << r << ") calculation..." << std::endl;
   if (omega == 0) {return 0;}
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
@@ -602,6 +601,7 @@ double SolarModel::Gamma_P_ee(double omega, double r) {
 
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_Compton(double omega, double r) {
+  //std::cout << "DEBUG INFO. Compton at (" << omega << ", " << r << ") calculation..." << std::endl;
   if (omega == 0) {return 0;}
   const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
   double u = omega/temperature_in_keV(r);
@@ -791,6 +791,7 @@ double SolarModel::opacity(double omega, double r) {
 }
 // opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_opacity(double omega, double r, std::string element) {
+  //std::cout << "DEBUG INFO. Opacity at (" << omega << ", " << r << ", " << element << ") calculation..." << std::endl;
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
