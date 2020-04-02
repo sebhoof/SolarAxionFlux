@@ -104,8 +104,7 @@ OneDInterpolator::OneDInterpolator() {}
 
 // Move assignment operator
 OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp) {
-  if(this != &interp)
-  {
+  if(this != &interp) {
     std::swap(acc,interp.acc);
     std::swap(spline,interp.spline);
     std::swap(lo,interp.lo);
@@ -837,4 +836,65 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
       terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
   };
     return result;
+}
+
+AxionMCGenerator::AxionMCGenerator() {};
+
+AxionMCGenerator::AxionMCGenerator(std::string spectrum_file) {
+  ASCIItableReader spectrum_data (spectrum_file);
+  int pts = spectrum_data.getnrow();
+  inv_cdf_data_erg = std::vector<double> (pts);
+  inv_cdf_data_x = std::vector<double> (pts);
+
+  double norm = 0.0;
+  inv_cdf_data_erg[0] = spectrum_data[0][0];
+  inv_cdf_data_x[0] = 0.0;
+  for(int i=1; i<pts; ++i) {
+    // Trapozoidal rule integration.
+    norm += 0.5 * (spectrum_data[0][i] - spectrum_data[0][i-1]) * (spectrum_data[1][i] + spectrum_data[1][i-1]);
+    inv_cdf_data_erg[i] = spectrum_data[0][i];
+    inv_cdf_data_x[i] = norm;
+  };
+
+  integrated_norm = norm;
+  for (int i=0; i<pts; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+}
+
+AxionMCGenerator::~AxionMCGenerator() {
+  gsl_spline_free(inv_cdf);
+  gsl_interp_accel_free(inv_cdf_acc);
+}
+
+void AxionMCGenerator::init(std::string inv_cdf_file) {
+  ASCIItableReader inv_cdf_data (inv_cdf_file);
+  int pts = inv_cdf_data.getnrow();
+  inv_cdf_data_x = inv_cdf_data[0];
+  inv_cdf_data_erg = inv_cdf_data[1];
+  const double* prob = &inv_cdf_data_x[0];
+  const double* erg = &inv_cdf_data_erg[0];
+
+  inv_cdf_acc = gsl_interp_accel_alloc();
+  inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
+  gsl_spline_init(inv_cdf, prob, erg, pts);
+}
+
+void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
+  const std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME;
+  std::vector<std::vector<double>> buffer;
+  buffer.push_back(inv_cdf_data_x);
+  buffer.push_back(inv_cdf_data_erg);
+  save_to_file(inv_cdf_file, buffer, comment);
+}
+
+double AxionMCGenerator::evaluate_inv_cdf(double x) { return gsl_spline_eval(inv_cdf, x, inv_cdf_acc); };
+
+std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
+  std::vector<double> result;
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<double> dis(0, 1);
+  for (int i=0; i<n; ++i) { result.push_back(evaluate_inv_cdf(dis(gen))); };
+
+  return result;
 }

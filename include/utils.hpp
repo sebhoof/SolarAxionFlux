@@ -9,6 +9,7 @@
 #include <set>
 #include <sstream>
 #include <chrono> // TODO comment this out one day...
+#include <random>
 
 #include <sys/stat.h> // Only to check if file exists
 
@@ -145,8 +146,7 @@ class ASCIItableReader {
 
 
 // SolarModel class: Provides a container to store a (tabulated) Solar model and functions to return its properties.
-class SolarModel
-{
+class SolarModel {
   public:
     SolarModel();
     SolarModel(std::string file, opacitycode set_opcode, const bool set_raffelt_approx = false);
@@ -233,6 +233,24 @@ class SolarModel
     std::vector<gsl_spline*> z2_n_isotope_lin_interp;
     std::map<std::string, gsl_interp_accel*> n_element_acc;
     std::map<std::string, gsl_spline*> n_element_lin_interp;
+};
+
+class AxionMCGenerator {
+  public:
+    AxionMCGenerator();
+    //AxionMCGenerator(SolarModel s);
+    AxionMCGenerator(std::string spectrum_file);
+    ~AxionMCGenerator();
+    void init(std::string inv_cdf_file);
+    void save_inv_cdf_to_file(std::string inv_cdf_file);
+    double evaluate_inv_cdf(double x);
+    std::vector<double> draw_axion_energies(int n);
+  private:
+    double integrated_norm;
+    std::vector<double> inv_cdf_data_x;
+    std::vector<double> inv_cdf_data_erg;
+    gsl_interp_accel* inv_cdf_acc;
+    gsl_spline* inv_cdf;
 };
 
 #endif // defined __utils_hpp__
