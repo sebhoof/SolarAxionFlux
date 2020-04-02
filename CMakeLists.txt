@@ -18,40 +18,37 @@ find_package(GSL REQUIRED)
 include_directories("${GSL_INCLUDE_DIRS}")
 set(LIBRARIES ${LIBRARIES} ${GSL_LIBRARIES})
 
-# Check for Python 3 and PYBIND11
-set(INTERNAL_PYBIND11_DIR "${PROJECT_SOURCE_DIR}/include/pybind11")
-find_package(PythonInterp 3 QUIET)
-if(PYTHONINTERP_FOUND)
-  FetchContent_Declare(pybind11
-                       GIT_REPOSITORY https://github.com/pybind/pybind11.git
-                       GIT_TAG v2.4.3
-                       GIT_PROGRESS ON
-                       GIT_SHALLOW ON
-                       GIT_SUBMODULES ""
-                       GIT_CONFIG advice.detachedHead=False
-                       SOURCE_DIR ${INTERNAL_PYBIND11_DIR})
+# Add an option to disable Python support
+option(PYTHON_SUPPORT "Adds a Python module library using the PYBIND11 headers." ON)
 
-  if(EXISTS ${INTERNAL_PYBIND11_DIR})
-    message("-- Python 3 and pybind11 found!")
-    set(PYBIND11_INSTALLED 1)
-    add_subdirectory(${INTERNAL_PYBIND11_DIR})
+# Check for Python 3 and PYBIND11 (if desired)
+set(INTERNAL_PYBIND11_DIR "${PROJECT_SOURCE_DIR}/include/pybind11")
+if(PYTHON_SUPPORT)
+  find_package(PythonInterp 3 QUIET)
+  if(PYTHONINTERP_FOUND)
+    FetchContent_Declare(pybind11
+                         GIT_REPOSITORY https://github.com/pybind/pybind11.git
+                         GIT_TAG v2.4.3
+                         GIT_PROGRESS ON
+                         GIT_SHALLOW ON
+                         GIT_SUBMODULES ""
+                         GIT_CONFIG advice.detachedHead=False
+                         SOURCE_DIR ${INTERNAL_PYBIND11_DIR})
+
+    if(EXISTS ${INTERNAL_PYBIND11_DIR})
+      message("-- Python 3 and pybind11 found!")
+      set(PYBIND11_INSTALLED 1)
+      add_subdirectory(${INTERNAL_PYBIND11_DIR})
+    else()
+      message("-- Python 3 found! Will now download pybind11 header files...")
+      FetchContent_Populate(pybind11)
+      add_subdirectory(${INTERNAL_PYBIND11_DIR})
+    endif()
   else()
-    message("-- Python 3 found! Will now download pybind11 header files...")
-    #execute_process(RESULT_VARIABLE res COMMAND git clone https://github.com/pybind/pybind11.git ${INTERNAL_PYBIND11_DIR})
-    #  if(${res} STREQUAL "0")
-    #    execute_process(COMMAND ${CMAKE_COMMAND} -E chdir ${INTERNAL_PYBIND11_DIR} git checkout -q v2.4.3)
-    #    set(PYBIND11_INSTALLED 1)
-    #    add_subdirectory(${INTERNAL_PYBIND11_DIR})
-    #  else()
-    #    message("Failed to download and install PYBIND11. Skipping PYBIND11 integration...")
-    #  endif()
-  # add_subdirectory(${INTERNAL_PYBIND11_DIR})
-  # FetchContent_GetProperties(pybind11)
-    FetchContent_Populate(pybind11)
-    add_subdirectory(${INTERNAL_PYBIND11_DIR})
+    message("-- Optional program Python 3 not found. Skipping pybind11 integration...")
   endif()
 else()
-  message("-- Optional program Python 3 not found. Skipping pybind11 integration...")
+  message("-- PYTHON_SUPPORT has been set to OFF. Skipping pybind11 integration...")
 endif()
 
 add_subdirectory(src)

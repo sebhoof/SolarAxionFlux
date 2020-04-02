@@ -17,7 +17,7 @@ A quick guide on how to install and test the code (requires CMAKE v3.12 or highe
 * Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`, where `[foldername]` can be replaced by a folder name of your choice.
 * Follow this up by `cd [foldername]`, `mkdir build`, and `cd build/`.
 * In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
-* The `test_axionflux` executable in the `bin` directory runs a simple test program. It needs to be executed from the `[foldername]` directory to find the Solar models located in `data/`, i.e. `./bin/test_library`.
+* The `test_library` executable in the `bin` directory runs a simple test program. It needs to be executed from the `[foldername]` directory to find the Solar models located in `data/`, i.e. `./bin/test_library`.
 
 ## References
 
