@@ -848,7 +848,7 @@ AxionMCGenerator::AxionMCGenerator(std::string spectrum_file) {
 
   double norm = 0.0;
   inv_cdf_data_erg[0] = spectrum_data[0][0];
-  inv_cdf_data_x[0] = 0.0;
+  inv_cdf_data_x[0] = norm;
   for(int i=1; i<pts; ++i) {
     // Trapozoidal rule integration.
     norm += 0.5 * (spectrum_data[0][i] - spectrum_data[0][i-1]) * (spectrum_data[1][i] + spectrum_data[1][i-1]);
@@ -858,6 +858,8 @@ AxionMCGenerator::AxionMCGenerator(std::string spectrum_file) {
 
   integrated_norm = norm;
   for (int i=0; i<pts; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+
+  init_inv_cdf_interpolator();
 }
 
 AxionMCGenerator::~AxionMCGenerator() {
@@ -867,15 +869,29 @@ AxionMCGenerator::~AxionMCGenerator() {
 
 void AxionMCGenerator::init(std::string inv_cdf_file) {
   ASCIItableReader inv_cdf_data (inv_cdf_file);
-  int pts = inv_cdf_data.getnrow();
   inv_cdf_data_x = inv_cdf_data[0];
   inv_cdf_data_erg = inv_cdf_data[1];
-  const double* prob = &inv_cdf_data_x[0];
-  const double* erg = &inv_cdf_data_erg[0];
 
-  inv_cdf_acc = gsl_interp_accel_alloc();
-  inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
-  gsl_spline_init(inv_cdf, prob, erg, pts);
+  if (inv_cdf_data_x.end()[-2] > 1.0) { terminate_with_error("ERROR! Sanity check for MC generator failed! The second to last entry of your inverse CDF is greater than 1."); };
+  integrated_norm = 1.0;
+
+  init_inv_cdf_interpolator();
+}
+
+void AxionMCGenerator::init_inv_cdf_interpolator() {
+  int pts = inv_cdf_data_x.size();
+  if (pts >= 2) {
+    const double* prob = &inv_cdf_data_x[0];
+    const double* erg = &inv_cdf_data_erg[0];
+
+    inv_cdf_acc = gsl_interp_accel_alloc();
+    inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
+    gsl_spline_init(inv_cdf, prob, erg, pts);
+
+    mc_generator_ready = true;
+  } else {
+    terminate_with_error("ERROR! You tried to initialise the MC generator with less than two data points.");
+  };
 }
 
 void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
@@ -886,15 +902,35 @@ void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
   save_to_file(inv_cdf_file, buffer, comment);
 }
 
-double AxionMCGenerator::evaluate_inv_cdf(double x) { return gsl_spline_eval(inv_cdf, x, inv_cdf_acc); };
+double AxionMCGenerator::evaluate_inv_cdf(double x) {
+  double result;
+  if (mc_generator_ready) {
+    result = gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
+  } else {
+    terminate_with_error("ERROR! Your MC generator has not been initialised properly!");
+  };
+  return result;
+}
 
 std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
   std::vector<double> result;
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<double> dis(0, 1);
-  for (int i=0; i<n; ++i) { result.push_back(evaluate_inv_cdf(dis(gen))); };
+  auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  std::mt19937 rng (seed);
+  std::uniform_real_distribution<double> unif(0, 1);
 
+  //std::cout << "Test U[0,1]: " << unif(rng) << std::endl;
+  for (int i=0; i<n; ++i) { result.push_back(evaluate_inv_cdf( unif(rng) )); };
+
+  return result;
+}
+
+double AxionMCGenerator::get_norm() {
+  double result;
+  if (mc_generator_ready) {
+    result = integrated_norm;
+  } else {
+    terminate_with_error("ERROR! Your MC generator has not been initialised properly!");
+  };
   return result;
 }

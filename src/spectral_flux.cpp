@@ -307,9 +307,22 @@ AxionMCGenerator::AxionMCGenerator(SolarModel s, double (SolarModel::*process)(d
   for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_erg[i] = omega_min + i*omega_delta; };
 
   if (r_max < 1.0) {
-    calculate_spectral_flux_solar_disc(inv_cdf_data_erg, r_max, s, process, "");
+    inv_cdf_data_x = calculate_spectral_flux_solar_disc(inv_cdf_data_erg, r_max, s, process, "");
   } else {
     // TODO: Use non-disc integration here AND/OR(!) check in calculate_spectral_flux_solar_disc if r_max > s.r_hi and switch there!
-    calculate_spectral_flux_solar_disc(inv_cdf_data_erg, 1.0, s, process, "");
+    inv_cdf_data_x = calculate_spectral_flux_solar_disc(inv_cdf_data_erg, 1.0, s, process, "");
   };
+
+  double norm = 0.0;
+  inv_cdf_data_x[0] = norm;
+  for(int i=1; i<n_omega_vals; ++i) {
+    // Trapozoidal rule integration.
+    norm += 0.5 * omega_delta * (inv_cdf_data_x[i] + inv_cdf_data_x[i-1]);
+    inv_cdf_data_x[i] = norm;
+  };
+
+  integrated_norm = norm;
+  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+
+  init_inv_cdf_interpolator();
 }

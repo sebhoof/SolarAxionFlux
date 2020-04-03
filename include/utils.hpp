@@ -246,7 +246,10 @@ class AxionMCGenerator {
     void save_inv_cdf_to_file(std::string inv_cdf_file);
     double evaluate_inv_cdf(double x);
     std::vector<double> draw_axion_energies(int n);
+    double get_norm();
   private:
+    void init_inv_cdf_interpolator();
+    bool mc_generator_ready = false;
     double integrated_norm;
     std::vector<double> inv_cdf_data_x;
     std::vector<double> inv_cdf_data_erg;
