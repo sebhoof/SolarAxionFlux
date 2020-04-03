@@ -31,10 +31,15 @@ struct exp_flux_params_file { double mass; double length; double (*eff_exposure)
 double erg_integrand_from_file(double erg, void * params);
 double erg_integrand(double erg, void * params);
 
+//double convolution_kernel(double erg, void * params);
+
 // Effective exposures and setups (in seconds x cm) for various experiments.
 // CAST 2007 results [hep-ex/0702006; 2004 CCD measurement]
 double eff_exposure_cast_2007 (double erg);
 exp_setup cast_2007_setup = { 20, 0.8, 0.3, 0.231738, 9.0, 9.26, &eff_exposure_cast_2007 };
+
+// Functions to calculate the spectrum with finite energy resolution convolution kernel.
+//std::vector<double>
 
 // Functions to calculate the counts in all bins of a helioscope experiment, given an experimental configuration.
 std::vector<double> axion_photon_counts(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file);

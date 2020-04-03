@@ -238,7 +238,8 @@ class SolarModel {
 class AxionMCGenerator {
   public:
     AxionMCGenerator();
-    //AxionMCGenerator(SolarModel s);
+    // Compute custom spectrum in energy range of interest
+    AxionMCGenerator(SolarModel s, double (SolarModel::*process)(double, double), double omega_min, double omega_max, double omega_delta = 0.001, double r_max = 1.0);
     AxionMCGenerator(std::string spectrum_file);
     ~AxionMCGenerator();
     void init(std::string inv_cdf_file);
