@@ -21,6 +21,8 @@ int main() {
   ASCIItableReader javis_data("results/2013_redondo_all.dat");
   std::vector<double> javis_ergs = javis_data[0];
 
+  std::cout << "\n# Test isotope- and element-specific functions..." << std::endl;
+  std::cout << "Ratio of 3He and total He (3He + 4He) number densities at 0.5 Rsol: " << s.n_iz(0.5, {"He", 3}) / s.n_element(0.5, "He") << " (should be approx. 0.000251)." << std::endl;
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, "results/primakoff.dat");
   std::cout << "\n# Generating MC object from Primakoff spectrum file, drawing 10 random axions energies, and saving inverse cdf data..." << std::endl;
@@ -45,7 +47,7 @@ int main() {
   auto t5 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_test_values << " energy values) took "
             << std::chrono::duration_cast<std::chrono::seconds>(t5-t4).count() << " seconds." << std::endl;
-  std::cout << "\n# Computing counts in CAST2007 experiment from axion-photon interactions (full caclulation)..." << std::endl;
+  std::cout << "\n# Computing counts in CAST2007 experiment from axion-photon interactions (full calculation)..." << std::endl;
   axion_photon_counts_full(1.0e-3, 1.0e-10, &cast_2007_setup, &s);
   auto t6 = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t6-t5).count() << " minutes." << std::endl;

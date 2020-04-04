@@ -208,6 +208,7 @@ class SolarModel {
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
   private:
+    void init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const double* x, const double* y);
     void init_numbered_interp(const int index, const double* x, const double* y);
     // solar data
     std::string solarmodel_name;
@@ -219,8 +220,6 @@ class SolarModel {
     std::vector<Isotope> tracked_isotopes;
     gsl_interp_accel *accel[7];
     gsl_spline *linear_interp[7];
-    //std::vector< std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
-    //std::vector< std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map<std::pair<float,float>, gsl_interp_accel*> opacity_acc_tops;
@@ -230,6 +229,7 @@ class SolarModel {
     std::vector<std::vector<float>> tops_grid;
     std::vector<float> tops_temperatures;
     std::vector<float> tops_densities;
+    // TODO. Maybe convert n_isotope and z2_n_isotope into maps like n_element with std::map<Isotope, ...> etc.
     std::vector<gsl_interp_accel*> n_isotope_acc;
     std::vector<gsl_spline*> n_isotope_lin_interp;
     std::vector<gsl_interp_accel*> z2_n_isotope_acc;

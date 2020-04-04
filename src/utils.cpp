@@ -300,27 +300,20 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   init_numbered_interp(4, radius, &n_total[0]); // Number density of all ions (currently not used)
   init_numbered_interp(5, radius, &z2_n_total[0]); // Z^2 x number density (full ionisation)
 
-//  Quantities depending on specfific isotope
+  //  Quantities depending on specfific isotope or element
+  n_isotope_acc.resize(num_tracked_isotopes);
+  n_isotope_lin_interp.resize(num_tracked_isotopes);
+  z2_n_isotope_acc.resize(num_tracked_isotopes);
+  z2_n_isotope_lin_interp.resize(num_tracked_isotopes);
   for (int j = 0; j < num_tracked_isotopes; j++) {
-    // Ion density for each isotope
-    n_isotope_acc.push_back( gsl_interp_accel_alloc() );
-    n_isotope_lin_interp.push_back( gsl_spline_alloc(gsl_interp_linear, pts) );
-    const double* n_isotope_vals = &n_isotope[j][0];
-    gsl_spline_init (n_isotope_lin_interp[j], radius, n_isotope_vals, pts);
-    // Ion density weighted by charge^2 for each isotope (full ionisation)
-    z2_n_isotope_acc.push_back( gsl_interp_accel_alloc() );
-    z2_n_isotope_lin_interp.push_back( gsl_spline_alloc(gsl_interp_linear, pts) );
-    const double* z2_n_isotope_vals = &z2_n_isotope[j][0];
-    gsl_spline_init (z2_n_isotope_lin_interp[j], radius, z2_n_isotope_vals, pts);
+    init_interp(n_isotope_acc[j], n_isotope_lin_interp[j], radius, &n_isotope[j][0]); // Ion density for each isotope
+    init_interp(z2_n_isotope_acc[j], z2_n_isotope_lin_interp[j], radius, &z2_n_isotope[j][0]); // Ion density weighted by charge^2 for each isotope (full ionisation)
   };
-  // Initialise interpolator for n_element
+  // N.B. The maps don't need to be resized or similar, since the access operator '[]' will silently create the map if it is missing.
   for (int k = 0; k < num_op_elements; k++) {
       std::string element = op_element_names[k];
-      n_element_acc[element] = gsl_interp_accel_alloc();
-      n_element_lin_interp[element] = gsl_spline_alloc(gsl_interp_linear, pts);
-      const double* n_element_vals = &n_op_element[k][0];
-      gsl_spline_init (n_element_lin_interp.at(element), radius, n_element_vals, pts);
-  }
+      init_interp(n_element_acc[element], n_element_lin_interp[element], radius, &n_op_element[k][0]); // Ion density for each element (= summed isotopes with same Z)
+  };
   //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
   //  OP opacities
   if (opcode == OP) {
@@ -447,12 +440,14 @@ SolarModel::~SolarModel() {
   for (auto map : opacity_acc_opas) { gsl_interp_accel_free (map.second); };
 }
 
-// Initialied one of the numbered interpolators
-void SolarModel::init_numbered_interp(const int index, const double* x, const double* y) {
-  accel[index] = gsl_interp_accel_alloc();
-  linear_interp[index] = gsl_spline_alloc(gsl_interp_linear, num_interp_pts);
-  gsl_spline_init(linear_interp[index], x, y, num_interp_pts);
+// Initialise the interpolators
+void SolarModel::init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const double* x, const double* y) {
+  acc = gsl_interp_accel_alloc();
+  interp = gsl_spline_alloc(gsl_interp_linear, num_interp_pts);
+  gsl_spline_init(interp, x, y, num_interp_pts);
 }
+
+void SolarModel::init_numbered_interp(const int index, const double* x, const double* y) { init_interp(accel[index], linear_interp[index], x, y); }
 
 // Isotope index lookup
 int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map.at(isotope); }
