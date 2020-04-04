@@ -300,6 +300,10 @@ std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> er
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) { double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron; return calculate_spectral_flux_solar_disc(ergs, r_max, s, integrand, saveas); }
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux(ergs, s, &integrand_opacity, saveas); }
 
+////////////////////////////////////
+// Monte Carlo-related functions. //
+////////////////////////////////////
+
 // TODO: AxionMCGenerator uses a method from this file... not very elegant, re-organise code?
 AxionMCGenerator::AxionMCGenerator(SolarModel s, double (SolarModel::*process)(double, double), double omega_min, double omega_max, double omega_delta, double r_max) {
   int n_omega_vals = int((omega_max-omega_min)/omega_delta);

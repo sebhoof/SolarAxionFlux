@@ -5,7 +5,11 @@ void terminate_with_error(std::string err_string) {
   exit(EXIT_FAILURE);
 }
 
-void my_handler (const char * reason, const char * file, int line, int gsl_errno) {
+void terminate_with_error_if(bool condition, std::string err_string) {
+  if (condition) { terminate_with_error(err_string); };
+}
+
+void my_handler(const char * reason, const char * file, int line, int gsl_errno) {
     if (gsl_errno == GSL_EDOM) { }
     else {
         std::cout << reason << " in " << file << " line: " << line << std::endl;
@@ -14,7 +18,7 @@ void my_handler (const char * reason, const char * file, int line, int gsl_errno
     }
 }
 
-/// Check if a file exists
+// Check if a file exists
 bool file_exists(const std::string& filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
@@ -64,13 +68,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
 // Initialiser for the OneDInterpolator class.
 void OneDInterpolator::init(std::string file, std::string type) {
   // Check if file exists.
-  if (not(file_exists(file)))
-  {
-    //DarkBit_error().raise(LOCAL_INFO, "ERROR! File '"+file+"' not found!");
-    terminate_with_error("ERROR! File '"+file+"' not found!");
-  } else {
-    //logger() << LogTags::debug << "Reading data from file '"+file+"' and interpolating it with '"+type+"' method." << EOM;
-  };
+  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' not found!");
   // Read numerical values from data file.
   ASCIItableReader tab (file);
   //tab.setcolnames("x", "y"); -> Would raise warning if we try to interpolate data with errors
@@ -79,17 +77,11 @@ void OneDInterpolator::init(std::string file, std::string type) {
   const double* x = &tab[0][0];
   const double* y = &tab[1][0];
   acc = gsl_interp_accel_alloc ();
-  if (type == "cspline")
-  {
+  if (type == "cspline") {
     spline = gsl_spline_alloc (gsl_interp_cspline, pts);
-  }
-  else if (type == "linear")
-  {
+  } else if (type == "linear") {
     spline = gsl_spline_alloc (gsl_interp_linear, pts);
-  }
-  else
-  {
-    //DarkBit_error().raise(LOCAL_INFO, "ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
+  } else {
     terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
   };
   gsl_spline_init (spline, x, y, pts);
@@ -122,11 +114,11 @@ OneDInterpolator::~OneDInterpolator() {
 // Routine to access interpolated values.
 double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, x, acc); }
 
-// Routines to return upper and lower boundaries of interpolating function
+// Routines to return upper and lower boundaries of interpolating function.
 double OneDInterpolator::lower() { return lo; }
 double OneDInterpolator::upper() { return up; }
 
-// ASCII Table Reader by Christoph Weniger
+// ASCII Table Reader originally by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (in.fail()) {
@@ -195,7 +187,7 @@ double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
-  if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")){
+  if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")) {
       std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
   }
@@ -228,15 +220,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
 
   // Extract the temperature (has to be converted into keV), density, electron density, and ion density * charge^2  from the files.
   // Initialise necessary variables for the screening scale calculation.
-  std::vector<double> temperature;
-  std::vector<double> n_e;
-  std::vector<double> n_e_Raff;
-  std::vector<double> density;
-  std::vector<double> alpha;
+  std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total, alpha;
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
-  std::vector<double> n_total;
-  std::vector<double> z2_n_total;
   std::vector<std::vector<double>> n_op_element (num_op_elements);
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
   const double factor = 4.0*pi*alpha_EM*gsl_pow_3(keV2cm)/((1.0E+9*eV2g)*atomic_mass_unit);
@@ -252,6 +238,8 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     r_lo = 0.0;
     pts += 1;
   };
+  num_interp_pts = pts;
+
   const double* radius = &data["radius"][0];
   //   Calculate the necessary quantities and store them internally.
   for (int i = 0; i < pts; i++) {
@@ -260,7 +248,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     //  density
     density.push_back(data["rho"][i]);
     //  electron density
-    // there are three ways of computing the lectron density,
+    // there are three ways of computing the electron density,
     //      1) raffelt approximation (assuming only fully ionised hydrogen and helium (Y = 1 - X)) (raffelt_approx = true)
     //      2) assuming full ionisation and summing over all elements (raffelt_approx = false)
     //      3) deduce from the pressure column of the model. first subtract radiation and ion oressure. (currently not implemented)
@@ -304,38 +292,13 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     };
   };
 
-
-  //  Set up the interpolating functions quantities independent of iz.
-  //  temperature
-  accel[0] = gsl_interp_accel_alloc ();
-  linear_interp[0] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* temp_vals = &temperature[0];
-  gsl_spline_init (linear_interp[0], radius, temp_vals, pts);
-  //  n_e from summing over elements (full ionisation)
-  accel[1] = gsl_interp_accel_alloc ();
-  linear_interp[1] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* n_e_vals = &n_e[0];
-  gsl_spline_init (linear_interp[1], radius, n_e_vals, pts);
-  //  n_e from Raffelt
-  accel[2] = gsl_interp_accel_alloc ();
-  linear_interp[2] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* n_e_vals_Raff = &n_e_Raff[0];
-  gsl_spline_init (linear_interp[2], radius, n_e_vals_Raff, pts);
-  //  density
-  accel[3] = gsl_interp_accel_alloc ();
-  linear_interp[3] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* density_vals = &density[0];
-  gsl_spline_init (linear_interp[3], radius, density_vals, pts);
-  // Number density of all ions (currently not used)
-  accel[4] = gsl_interp_accel_alloc ();
-  linear_interp[4] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* n_total_vals = &n_total[0];
-  gsl_spline_init (linear_interp[4], radius, n_total_vals, pts);
-  // Z^2 x Number density
-  accel[5] = gsl_interp_accel_alloc ();
-  linear_interp[5] = gsl_spline_alloc (gsl_interp_linear, pts);
-  const double* z2_n_total_vals = &z2_n_total[0];
-  gsl_spline_init (linear_interp[5], radius, z2_n_total_vals, pts);
+  // Set up the interpolating functions quantities independent of iz.
+  init_numbered_interp(0, radius, &temperature[0]); // Temperature
+  init_numbered_interp(1, radius, &n_e[0]); // n_e from summing over elements (full ionisation)
+  init_numbered_interp(2, radius, &n_e_Raff[0]); // n_e from Raffelt
+  init_numbered_interp(3, radius, &density[0]); // Density
+  init_numbered_interp(4, radius, &n_total[0]); // Number density of all ions (currently not used)
+  init_numbered_interp(5, radius, &z2_n_total[0]); // Z^2 x number density (full ionisation)
 
 //  Quantities depending on specfific isotope
   for (int j = 0; j < num_tracked_isotopes; j++) {
@@ -484,6 +447,13 @@ SolarModel::~SolarModel() {
   for (auto map : opacity_acc_opas) { gsl_interp_accel_free (map.second); };
 }
 
+// Initialied one of the numbered interpolators
+void SolarModel::init_numbered_interp(const int index, const double* x, const double* y) {
+  accel[index] = gsl_interp_accel_alloc();
+  linear_interp[index] = gsl_spline_alloc(gsl_interp_linear, num_interp_pts);
+  gsl_spline_init(linear_interp[index], x, y, num_interp_pts);
+}
+
 // Isotope index lookup
 int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map.at(isotope); }
 
@@ -510,8 +480,7 @@ double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = look
 double SolarModel::z2_n(double r) {
     if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
         return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
-    }
-    else {
+    } else {
         return  gsl_spline_eval(linear_interp[5], r, accel[5]);  // full ionisation
     }
 }
@@ -654,7 +623,7 @@ double SolarModel::opas_grid_interp_erg(double erg, double r) {
     gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);   // error handler modified to avoid boundary error (fill value = 0)
     double result = gsl_spline_eval(opacity_lin_interp_opas.at(r), erg, opacity_acc_opas.at(r));
     gsl_set_error_handler (old_handler);    //  reset the error handler
-    if (gsl_isnan(result) == true) {return 0;}
+    if (gsl_isnan(result) == true) { return 0; }
     return result;
 };
 
@@ -876,7 +845,7 @@ void AxionMCGenerator::init(std::string inv_cdf_file) {
   inv_cdf_data_x = inv_cdf_data[0];
   inv_cdf_data_erg = inv_cdf_data[1];
 
-  if (inv_cdf_data_x.end()[-2] > 1.0) { terminate_with_error("ERROR! Sanity check for MC generator failed! The second to last entry of your inverse CDF is greater than 1."); };
+  terminate_with_error_if(inv_cdf_data_x.end()[-2] > 1.0, "ERROR! Sanity check for MC generator failed! The second to last entry of your inverse CDF is greater than 1.");
   integrated_norm = 1.0;
 
   init_inv_cdf_interpolator();
@@ -884,18 +853,16 @@ void AxionMCGenerator::init(std::string inv_cdf_file) {
 
 void AxionMCGenerator::init_inv_cdf_interpolator() {
   int pts = inv_cdf_data_x.size();
-  if (pts >= 2) {
-    const double* prob = &inv_cdf_data_x[0];
-    const double* erg = &inv_cdf_data_erg[0];
+  terminate_with_error_if(not(pts >= 2), "ERROR! You tried to initialise the MC generator with less than two data points.");
 
-    inv_cdf_acc = gsl_interp_accel_alloc();
-    inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
-    gsl_spline_init(inv_cdf, prob, erg, pts);
+  const double* prob = &inv_cdf_data_x[0];
+  const double* erg = &inv_cdf_data_erg[0];
 
-    mc_generator_ready = true;
-  } else {
-    terminate_with_error("ERROR! You tried to initialise the MC generator with less than two data points.");
-  };
+  inv_cdf_acc = gsl_interp_accel_alloc();
+  inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
+  gsl_spline_init(inv_cdf, prob, erg, pts);
+
+  mc_generator_ready = true;
 }
 
 void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
@@ -907,13 +874,8 @@ void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
 }
 
 double AxionMCGenerator::evaluate_inv_cdf(double x) {
-  double result;
-  if (mc_generator_ready) {
-    result = gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
-  } else {
-    terminate_with_error("ERROR! Your MC generator has not been initialised properly!");
-  };
-  return result;
+  terminate_with_error_if(not(mc_generator_ready), "ERROR! Your MC generator has not been initialised properly!");
+  return gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
 }
 
 std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
@@ -930,11 +892,6 @@ std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
 }
 
 double AxionMCGenerator::get_norm() {
-  double result;
-  if (mc_generator_ready) {
-    result = integrated_norm;
-  } else {
-    terminate_with_error("ERROR! Your MC generator has not been initialised properly!");
-  };
-  return result;
+  terminate_with_error_if(not(mc_generator_ready), "ERROR! Your MC generator has not been initialised properly!");
+  return integrated_norm;
 }

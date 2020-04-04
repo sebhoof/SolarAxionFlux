@@ -8,10 +8,10 @@
 #include <map>
 #include <set>
 #include <sstream>
-#include <chrono> // TODO comment this out one day...
+#include <chrono>
 #include <random>
 
-#include <sys/stat.h> // Only to check if file exists
+#include <sys/stat.h> // Needed to check if file exists before we can expect C++14 std
 
 #include <gsl/gsl_math.h>
 //#include <gsl/gsl_sf_exp.h>
@@ -22,6 +22,7 @@
 #include "constants.hpp"
 
 void terminate_with_error(std::string err_string);
+void terminate_with_error_if(bool condition, std::string err_string);
 void my_handler(const char * reason, const char * file, int line, int gsl_errno);
 const double abs_prec = 0, rel_prec = 1.0e-4;
 const int method = 5;
@@ -207,12 +208,14 @@ class SolarModel {
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
   private:
+    void init_numbered_interp(const int index, const double* x, const double* y);
     // solar data
     std::string solarmodel_name;
     ASCIItableReader data;
     ASCIItableReader data_alpha;
     std::map<Isotope,int> isotope_index_map;
     int num_tracked_isotopes;
+    int num_interp_pts;
     std::vector<Isotope> tracked_isotopes;
     gsl_interp_accel *accel[7];
     gsl_spline *linear_interp[7];
@@ -256,5 +259,15 @@ class AxionMCGenerator {
     gsl_interp_accel* inv_cdf_acc;
     gsl_spline* inv_cdf;
 };
+
+/* REQUIRES e.g. the BOOST library
+// TODO: Replace this with one's own routines?
+// Inverse CDF for the Primakoff spectrum approximation
+// d Phi_a (omega) / d omega ~ omega^a * exp(-b * omega/keV)
+double inv_cdf_Primakoff_analytic_approx(double x, double a, double b) {
+  double ap1 = 1.0 + a;
+  return boost::gamma_q_inv(ap1, (1.0 - x)/pow(b,ap1) ) / b;
+}
+*/
 
 #endif // defined __utils_hpp__
