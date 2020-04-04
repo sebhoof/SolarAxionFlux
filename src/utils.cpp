@@ -260,6 +260,10 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     //  density
     density.push_back(data["rho"][i]);
     //  electron density
+    // there are three ways of computing the lectron density,
+    //      1) raffelt approximation (assuming only fully ionised hydrogen and helium (Y = 1 - X)) (raffelt_approx = true)
+    //      2) assuming full ionisation and summing over all elements (raffelt_approx = false)
+    //      3) deduce from the pressure column of the model. first subtract radiation and ion oressure. (currently not implemented)
     double rhorel = data["rho"][i]/((1.0E+9*eV2g)*atomic_mass_unit);
     //  electron density from Raffelt
     double ne_Raff = 0.5 * (1.0 + data["X_H1"][i]) * data["rho"][i] /(atomic_mass_unit*eV2g*1.0E+9);
