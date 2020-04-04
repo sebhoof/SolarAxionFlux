@@ -269,7 +269,7 @@ double integrated_flux_from_file(double erg_min, double erg_max, std::string spe
     relevant_peaks.push_back(erg_min);
     for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_min < *peak_erg) && (*peak_erg < erg_max) ) { relevant_peaks.push_back(*peak_erg); }; };
     relevant_peaks.push_back(erg_max);
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), abs_prec2, rel_prec2, int_space_size, w, &result, &error);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &result, &error);
   } else {
     gsl_integration_qag(&f, erg_min, erg_max, abs_prec2, rel_prec2, int_space_size, int_method_1, w, &result, &error);
   };
