@@ -525,7 +525,7 @@ double aux_function(double u, double y) {
   return result;
 }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)  for one isotope
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   //std::cout << "DEBUG INFO. FF at (" << omega << ", " << r << ", " << isotope_index << ") calculation..." << std::endl;
   if (omega == 0) { return 0; }
@@ -535,19 +535,21 @@ double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for on isotope
 // N.B. Convenience function below (may be slow for many calls!)  (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return Gamma_P_ff(omega, r, isotope_index); }
 
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_P_ff(double omega, double r) {
   double result = 0.0;
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
 
   if (omega == 0) { return 0; }
 
-  if (raffelt_approx == false) { //(assuming full ionisation)
+  if (raffelt_approx == false) { //(assuming full ionisation)  and only take H and He
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
     result = Gamma_P_ff(omega, r, iso_ind_1) + Gamma_P_ff(omega, r, iso_ind_2) + Gamma_P_ff(omega, r, iso_ind_3);
-  } else {
+  } else { //contributions from all elements, no full ionisation assumed when alpha available
     double u = omega/temperature_in_keV(r);
     double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
     result = prefactor1 * n_electron(r)*z2_n(r)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
@@ -773,19 +775,6 @@ double SolarModel::Gamma_P_opacity(double omega, double r) {
   return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
 }
 
-double SolarModel::Gamma_P_Primakoff(double erg, double r) {
-  if (erg == 0) {return 0;}
-  const double prefactor6 = g_agg*g_agg/(32.0*pi);
-  double ks_sq = kappa_squared(r);
-  double w_pl_sq = omega_pl_squared(r);
-  double T_in_keV = temperature_in_keV(r);
-  double x = 4.0*(erg*erg)/ks_sq;
-  if (w_pl_sq/(erg*erg) > 1.0) {return 0;}
-  double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
-  double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
-  return  prefactor6*phase_factor*rate;
-}
-
 double SolarModel::Gamma_P_all_electron(double erg, double r) {
   double result = 0;
   if (opcode == OP) {
@@ -804,6 +793,19 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
       terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
   };
     return result;
+}
+
+double SolarModel::Gamma_P_Primakoff(double erg, double r) {
+  if (erg == 0) {return 0;}
+  const double prefactor6 = g_agg*g_agg/(32.0*pi);
+  double ks_sq = kappa_squared(r);
+  double w_pl_sq = omega_pl_squared(r);
+  double T_in_keV = temperature_in_keV(r);
+  double x = 4.0*(erg*erg)/ks_sq;
+  if (w_pl_sq/(erg*erg) > 1.0) {return 0;}
+  double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
+  double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
+  return  prefactor6*phase_factor*rate;
 }
 
 AxionMCGenerator::AxionMCGenerator() {};
