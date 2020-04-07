@@ -3,6 +3,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(HEADER_FILES ${CMAKE_SOURCE_DIR}/include/spectral_flux.hpp ${CMAKE_SOURCE_DIR}/include/experimental_flux.hpp ${CMAKE_SOURCE_DIR}/include/utils.hpp ${CMAKE_SOURCE_DIR}/include/constants.hpp)
 
 add_library(axionflux SHARED spectral_flux.cpp experimental_flux.cpp utils.cpp ${HEADER_FILES})
+set_target_properties(axionflux PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 target_include_directories(axionflux PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:../include>)
