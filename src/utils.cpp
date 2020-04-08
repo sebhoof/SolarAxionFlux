@@ -76,17 +76,13 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
   output.close();
 }
 
-// Initialiser for the OneDInterpolator class.
-void OneDInterpolator::init(std::string file, std::string type) {
-  // Check if file exists.
-  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' not found!");
-  // Read numerical values from data file.
-  ASCIItableReader tab (file);
-  //tab.setcolnames("x", "y"); -> Would raise warning if we try to interpolate data with errors
+OneDInterpolator::OneDInterpolator() {}
+
+void OneDInterpolator::init(std::vector<double> x, std::vector<double> y, std::string type) {
   // Initialise gsl interpolation routine.
-  int pts = tab[0].size();
-  const double* x = &tab[0][0];
-  const double* y = &tab[1][0];
+  int pts = x.size();
+  const double* x_ptr = &x[0];
+  const double* y_ptr = &y[0];
   acc = gsl_interp_accel_alloc ();
   if (type == "cspline") {
     spline = gsl_spline_alloc (gsl_interp_cspline, pts);
@@ -95,15 +91,24 @@ void OneDInterpolator::init(std::string file, std::string type) {
   } else {
     terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
   };
-  gsl_spline_init (spline, x, y, pts);
+  gsl_spline_init (spline, x_ptr, y_ptr, pts);
   // Get first and last value of the "x" component.
-  lo = tab[0].front();
-  up = tab[0].back();
-};
+  lo = x.front();
+  up = x.back();
+}
 
-// Overloaded class creators for the OneDInterpolator class using the init function above.
-OneDInterpolator::OneDInterpolator(std::string file, std::string type) { init(file, type); }
-OneDInterpolator::OneDInterpolator() {}
+// Initialiser for the OneDInterpolator class.
+OneDInterpolator::OneDInterpolator(std::string file, std::string type) {
+  // Check if file exists.
+  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' not found!");
+  // Read numerical values from data file.
+  ASCIItableReader tab (file);
+  //tab.setcolnames("x", "y"); -> Would raise warning if we try to interpolate data with errors
+
+  init(tab[0], tab[1], type);
+}
+
+OneDInterpolator::OneDInterpolator(std::vector<double> x, std::vector<double> y, std::string type) { init(x, y, type); }
 
 // Move assignment operator
 OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp) {
@@ -902,4 +907,15 @@ std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
 double AxionMCGenerator::get_norm() {
   terminate_with_error_if(not(mc_generator_ready), "ERROR! Your MC generator has not been initialised properly!");
   return integrated_norm;
+}
+
+std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi) {
+  const std::vector<double> all_peaks = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163,
+                                         5.64394, 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  std::vector<double> result;
+  result.push_back(erg_lo);
+  for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_lo < *peak_erg) && (*peak_erg < erg_hi) ) { result.push_back(*peak_erg); }; };
+  result.push_back(erg_hi);
+
+  return result;
 }

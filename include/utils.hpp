@@ -1,7 +1,7 @@
 // ------------
 //  DISCLAIMER
 // ------------
-// The ASCIItableReader and SolarModel classes are based on classes with the same name in GAMBIT, which was published under a BSD license (reproduced below).
+// The ASCIItableReader, OneDInterpolator and SolarModel classes are based on classes with the same name in GAMBIT, which was published under a BSD license (reproduced below).
 // Copyright (c) 2017, The GAMBIT Collaboration All rights reserved.
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -98,6 +98,7 @@ class OneDInterpolator
   public:
     // Overloaded class creators for the OneDInterpolator class using the init function below.
     OneDInterpolator(std::string file, std::string type = "linear");
+    OneDInterpolator(std::vector<double> x, std::vector<double> y, std::string type = "linear");
     OneDInterpolator();
     OneDInterpolator& operator=(OneDInterpolator&&);
     // Destructor
@@ -112,7 +113,7 @@ class OneDInterpolator
     double upper();
   private:
     // Initialiser for the OneDInterpolator class.
-    void init(std::string file, std::string type);
+    void init(std::vector<double> x, std::vector<double> y, std::string type);
     // The gsl objects for the interpolating functions.
     gsl_interp_accel *acc;
     gsl_spline *spline;
@@ -121,7 +122,6 @@ class OneDInterpolator
     double up;
 };
 
-// Credit to C. Weniger for the inital version of ASCIItableReader
 class ASCIItableReader {
   public:
     ASCIItableReader(std::string filename) { read(filename); };
@@ -270,6 +270,8 @@ class AxionMCGenerator {
     gsl_interp_accel* inv_cdf_acc;
     gsl_spline* inv_cdf;
 };
+
+std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
 
 /* REQUIRES e.g. the BOOST library
 // TODO: Replace this with one's own routines?
