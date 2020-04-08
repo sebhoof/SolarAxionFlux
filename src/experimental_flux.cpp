@@ -346,3 +346,78 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
 
   return result;
 }
+
+double safe_log10(double x, double lgx0) {
+  double result = lgx0;
+  if (x > 0) { result = log10(x); };
+  return result;
+}
+
+std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts, double gaee = 0) {
+  std::vector<double> result;
+
+  static std::string reference_counts_bak = "";
+  static int n_cols, n_bins;
+  static std::vector<double> log_masses;
+  static double lgm0;
+  static std::vector<std::vector<double>> ref_counts_gagg;
+  static std::vector<OneDInterpolator> interp_ref_counts_gagg;
+  static std::vector<std::vector<double>> ref_counts_gaee;
+  static std::vector<OneDInterpolator> interp_ref_counts_gaee;
+
+  bool new_reference_counts = (reference_counts != reference_counts_bak);
+
+  if (new_reference_counts) {
+    reference_counts_bak = reference_counts;
+    ASCIItableReader data (reference_counts);
+    n_cols = data.getncol();
+    int n_rows = data.getnrow();
+
+    std::vector<double> m = data[0];
+    sort(m.begin(), m.end());
+    m.erase(unique(m.begin(), m.end()), m.end());
+    int n_masses = m.size();
+    // TODO: Need checks/safeguards for n_masses = 1 and n_masses = 1 with m[0] = 0.
+    log_masses = std::vector<double> (n_masses);
+    lgm0 = -10; // Axions with m = 10^-10 eV are as good as massless.
+    if ((m[0] > 0) && (m[0] < 1.0e-10)) { lgm0 = log10(m[0]); };
+    for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); };
+
+    std::vector<double> bins = data[1];
+    sort(bins.begin(), bins.end());
+    bins.erase(unique(bins.begin(), bins.end()), bins.end());
+    n_bins = bins.size();
+    interp_ref_counts_gagg = std::vector<OneDInterpolator> (n_bins);
+    ref_counts_gagg.resize(n_bins, std::vector<double> (n_masses, 0));
+    if (n_cols > 3) {
+      interp_ref_counts_gaee = std::vector<OneDInterpolator> (n_bins);
+      ref_counts_gaee.resize(n_bins, std::vector<double> (n_masses, 0));
+    };
+
+    for (int i=0; i<n_rows; ++i) {
+      auto itj = std::find(bins.begin(), bins.end(), data[1][i]);
+      int j = std::distance(bins.begin(), itj);
+      auto itk = std::find(m.begin(), m.end(), data[0][i]);
+      int k = std::distance(m.begin(), itk);
+      ref_counts_gagg[j][k] = data[2][i];
+      if (n_cols > 3) { ref_counts_gaee[j][k] = data[3][i]; };
+    };
+
+    for (int j=0; j<n_bins; ++j) {
+      interp_ref_counts_gagg[j] = OneDInterpolator(log_masses, ref_counts_gagg[j]);
+      if (n_cols > 3) { interp_ref_counts_gaee[j] = OneDInterpolator(log_masses, ref_counts_gaee[j]); };
+    };
+  };
+
+  double gagg_rel_sq = gagg*gagg/1.0e-22;
+  double gaee_rel_sq = gaee*gaee/1.0e-26;
+  double lgm = safe_log10(mass,lgm0);
+
+  for (int i = 0; i < n_bins; ++i) {
+    double temp = gagg_rel_sq*interp_ref_counts_gagg[i].interpolate(lgm);
+    if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); };
+    result.push_back(gagg_rel_sq*temp);
+  };
+
+  return result;
+}

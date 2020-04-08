@@ -134,7 +134,6 @@ double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, 
 double OneDInterpolator::lower() { return lo; }
 double OneDInterpolator::upper() { return up; }
 
-// ASCII Table Reader originally by Christoph Weniger
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (in.fail()) {

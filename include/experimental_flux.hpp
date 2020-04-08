@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <gsl/gsl_sf_trig.h>
 #include <gsl/gsl_integration.h>
@@ -47,6 +48,8 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
 std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s);
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file);
 std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s);
-std::vector<std::vector<double>> axion_photon_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee = "", std::string saveas = "");
+std::vector<std::vector<double>> experimental_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee = "", std::string saveas = "");
+
+std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts_gagg, double gaee = 0, std::string reference_counts_gaee = "");
 
 #endif // defined __experimental_flux_hpp__
