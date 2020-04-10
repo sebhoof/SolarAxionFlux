@@ -76,23 +76,28 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
   output.close();
 }
 
-OneDInterpolator::OneDInterpolator() {}
+OneDInterpolator::OneDInterpolator() {
+  // NOTE. Allocate memory in the default constructor for the move-assign operator (via std::swap) works with the destructor.
+  acc = gsl_interp_accel_alloc();
+  spline = gsl_spline_alloc(gsl_interp_linear, 2);
+}
 
-void OneDInterpolator::init(std::vector<double> x, std::vector<double> y, std::string type) {
+void OneDInterpolator::init(const std::vector<double> &x, const std::vector<double> &y, std::string type) {
   // Initialise gsl interpolation routine.
   int pts = x.size();
   const double* x_ptr = &x[0];
   const double* y_ptr = &y[0];
-  acc = gsl_interp_accel_alloc ();
+  acc = gsl_interp_accel_alloc();
   if (type == "cspline") {
+    //spline_type = gsl_interp_cspline;
     spline = gsl_spline_alloc (gsl_interp_cspline, pts);
   } else if (type == "linear") {
-    spline = gsl_spline_alloc (gsl_interp_linear, pts);
+    //spline_type = gsl_interp_linear;
+    spline = gsl_spline_alloc(gsl_interp_linear, pts);
   } else {
     terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
   };
-  gsl_spline_init (spline, x_ptr, y_ptr, pts);
-  // Get first and last value of the "x" component.
+  gsl_spline_init(spline, x_ptr, y_ptr, pts);
   lo = x.front();
   up = x.back();
 }
@@ -108,23 +113,32 @@ OneDInterpolator::OneDInterpolator(std::string file, std::string type) {
   init(tab[0], tab[1], type);
 }
 
-OneDInterpolator::OneDInterpolator(std::vector<double> x, std::vector<double> y, std::string type) { init(x, y, type); }
+OneDInterpolator::OneDInterpolator(const std::vector<double> &x, const std::vector<double> &y, std::string type) { init(x, y, type); }
+
+// Move constructor
+//OneDInterpolator::OneDInterpolator(OneDInterpolator&& src) {
+//    std::cout << "Entering custom move constructor..." << std::endl;
+//    lo = std::move(src.lo);
+//    up = std::move(src.up);
+//    acc = std::move(src.acc);
+//    spline = std::move(src.spline);
+//}
 
 // Move assignment operator
-OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& interp) {
-  if(this != &interp) {
-    std::swap(acc,interp.acc);
-    std::swap(spline,interp.spline);
-    std::swap(lo,interp.lo);
-    std::swap(up,interp.up);
+OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& src) {
+  if(this != &src) {
+    std::swap(acc,src.acc);
+    std::swap(spline,src.spline);
+    std::swap(lo,src.lo);
+    std::swap(up,src.up);
   }
   return *this;
 }
 
 // Destructor
 OneDInterpolator::~OneDInterpolator() {
-    gsl_spline_free (spline);
-    gsl_interp_accel_free (acc);
+    gsl_spline_free(spline);
+    gsl_interp_accel_free(acc);
 }
 
 // Routine to access interpolated values.
@@ -435,24 +449,24 @@ SolarModel& SolarModel::operator=(SolarModel &&model) {
 
 // Class destructor
 SolarModel::~SolarModel() {
-  for (auto interp : linear_interp) { gsl_spline_free (interp); };
-  for (auto interp : n_isotope_lin_interp) { gsl_spline_free (interp); };
-  for (auto interp : z2_n_isotope_lin_interp) { gsl_spline_free (interp); };
-  for (auto map : n_element_lin_interp) { gsl_spline_free (map.second); };
+  for (auto interp : linear_interp) { gsl_spline_free(interp); };
+  for (auto interp : n_isotope_lin_interp) { gsl_spline_free(interp); };
+  for (auto interp : z2_n_isotope_lin_interp) { gsl_spline_free(interp); };
+  for (auto map : n_element_lin_interp) { gsl_spline_free(map.second); };
   for (auto map_1 : opacity_lin_interp_op) {
-    for (auto map_2 : map_1.second) { gsl_spline_free (map_2.second); };
+    for (auto map_2 : map_1.second) { gsl_spline_free(map_2.second); };
   };
-  for (auto map : opacity_lin_interp_tops) { gsl_spline_free (map.second); };
-  for (auto map : opacity_lin_interp_opas) { gsl_spline_free (map.second); };
-  for (auto acc : accel) { gsl_interp_accel_free (acc); };
-  for (auto acc : n_isotope_acc) { gsl_interp_accel_free (acc); };
-  for (auto acc : z2_n_isotope_acc) { gsl_interp_accel_free (acc); };
-  for (auto map : n_element_acc) { gsl_interp_accel_free (map.second); };
+  for (auto map : opacity_lin_interp_tops) { gsl_spline_free(map.second); };
+  for (auto map : opacity_lin_interp_opas) { gsl_spline_free(map.second); };
+  for (auto acc : accel) { gsl_interp_accel_free(acc); };
+  for (auto acc : n_isotope_acc) { gsl_interp_accel_free(acc); };
+  for (auto acc : z2_n_isotope_acc) { gsl_interp_accel_free(acc); };
+  for (auto map : n_element_acc) { gsl_interp_accel_free(map.second); };
   for (auto map_1 : opacity_acc_op) {
-    for (auto map_2 : map_1.second) { gsl_interp_accel_free (map_2.second); };
+    for (auto map_2 : map_1.second) { gsl_interp_accel_free(map_2.second); };
   };
-  for (auto map : opacity_acc_tops) { gsl_interp_accel_free (map.second); };
-  for (auto map : opacity_acc_opas) { gsl_interp_accel_free (map.second); };
+  for (auto map : opacity_acc_tops) { gsl_interp_accel_free(map.second); };
+  for (auto map : opacity_acc_opas) { gsl_interp_accel_free(map.second); };
 }
 
 // Initialise the interpolators

@@ -98,8 +98,10 @@ class OneDInterpolator
   public:
     // Overloaded class creators for the OneDInterpolator class using the init function below.
     OneDInterpolator(std::string file, std::string type = "linear");
-    OneDInterpolator(std::vector<double> x, std::vector<double> y, std::string type = "linear");
+    OneDInterpolator(const std::vector<double> &x, const std::vector<double> &y, std::string type = "linear");
     OneDInterpolator();
+    //OneDInterpolator (OneDInterpolator&&) = default;
+    //OneDInterpolator (OneDInterpolator&&);
     OneDInterpolator& operator=(OneDInterpolator&&);
     // Destructor
     ~OneDInterpolator();
@@ -113,13 +115,12 @@ class OneDInterpolator
     double upper();
   private:
     // Initialiser for the OneDInterpolator class.
-    void init(std::vector<double> x, std::vector<double> y, std::string type);
+    void init(const std::vector<double> &x, const std::vector<double> &y, std::string type);
     // The gsl objects for the interpolating functions.
     gsl_interp_accel *acc;
     gsl_spline *spline;
     // Upper and lower boundaries available for the interpolating function.
-    double lo;
-    double up;
+    double lo, up;
 };
 
 class ASCIItableReader {

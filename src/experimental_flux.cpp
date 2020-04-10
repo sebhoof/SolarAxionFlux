@@ -292,7 +292,6 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
       spectral_flux_gaee = OneDInterpolator(ergs, flux_gaee);
       save_to_file(spectral_flux_file_gaee+"_conv", {ergs, flux_gaee}, "");
     };
-
   } else {
     spectral_flux_gagg = OneDInterpolator(spectral_flux_file_gagg);
     if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); };
@@ -353,26 +352,30 @@ double safe_log10(double x, double lgx0) {
   return result;
 }
 
-std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts, double gaee = 0) {
+std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts_file, double gaee) {
   std::vector<double> result;
 
-  static std::string reference_counts_bak = "";
-  static int n_cols, n_bins;
-  static std::vector<double> log_masses;
+  // Only setup the interpolators once while the function is being used...
+  static std::string reference_counts_file_bak = "";
+  static int n_cols;
+  static int n_bins;
   static double lgm0;
+  static std::vector<double> log_masses;
   static std::vector<std::vector<double>> ref_counts_gagg;
   static std::vector<OneDInterpolator> interp_ref_counts_gagg;
   static std::vector<std::vector<double>> ref_counts_gaee;
   static std::vector<OneDInterpolator> interp_ref_counts_gaee;
 
-  bool new_reference_counts = (reference_counts != reference_counts_bak);
-
-  if (new_reference_counts) {
-    reference_counts_bak = reference_counts;
-    ASCIItableReader data (reference_counts);
+  // ... unless the user decides to change the reference counts file.
+  bool new_reference_counts_file = (reference_counts_file != reference_counts_file_bak);
+  if (new_reference_counts_file) {
+    reference_counts_file_bak = reference_counts_file;
+    ASCIItableReader data (reference_counts_file);
     n_cols = data.getncol();
     int n_rows = data.getnrow();
 
+    // Make sure that the table is processed correctly with any formatting.
+    // Extract unique mass values from the file.
     std::vector<double> m = data[0];
     sort(m.begin(), m.end());
     m.erase(unique(m.begin(), m.end()), m.end());
@@ -382,18 +385,21 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     lgm0 = -10; // Axions with m = 10^-10 eV are as good as massless.
     if ((m[0] > 0) && (m[0] < 1.0e-10)) { lgm0 = log10(m[0]); };
     for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); };
-
+    // Extract unique energy bin values from the file.
     std::vector<double> bins = data[1];
     sort(bins.begin(), bins.end());
     bins.erase(unique(bins.begin(), bins.end()), bins.end());
     n_bins = bins.size();
+
+    // Resize the vectors according to the inputs of the file.
     interp_ref_counts_gagg = std::vector<OneDInterpolator> (n_bins);
-    ref_counts_gagg.resize(n_bins, std::vector<double> (n_masses, 0));
+    ref_counts_gagg.resize(n_bins, std::vector<double> (n_masses));
     if (n_cols > 3) {
       interp_ref_counts_gaee = std::vector<OneDInterpolator> (n_bins);
-      ref_counts_gaee.resize(n_bins, std::vector<double> (n_masses, 0));
+      ref_counts_gaee.resize(n_bins, std::vector<double> (n_masses));
     };
 
+    // Assign the data from the file to the appropriate places.
     for (int i=0; i<n_rows; ++i) {
       auto itj = std::find(bins.begin(), bins.end(), data[1][i]);
       int j = std::distance(bins.begin(), itj);
@@ -404,15 +410,20 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     };
 
     for (int j=0; j<n_bins; ++j) {
+      //OneDInterpolator temp_gagg (log_masses, ref_counts_gagg[j]);
+      //interp_ref_counts_gagg[j] = std::move(temp_gagg);
       interp_ref_counts_gagg[j] = OneDInterpolator(log_masses, ref_counts_gagg[j]);
-      if (n_cols > 3) { interp_ref_counts_gaee[j] = OneDInterpolator(log_masses, ref_counts_gaee[j]); };
+      if (n_cols > 3) {
+        OneDInterpolator temp_gaee (log_masses, ref_counts_gaee[j]);
+        interp_ref_counts_gaee[j] = std::move(temp_gaee);
+      };
     };
   };
 
-  double gagg_rel_sq = gagg*gagg/1.0e-22;
+  // Reference values are gagg = 10^-10/GeV and gaee = 10^-13.
+  double gagg_rel_sq = gagg*gagg/1.0e-20;
   double gaee_rel_sq = gaee*gaee/1.0e-26;
   double lgm = safe_log10(mass,lgm0);
-
   for (int i = 0; i < n_bins; ++i) {
     double temp = gagg_rel_sq*interp_ref_counts_gagg[i].interpolate(lgm);
     if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); };

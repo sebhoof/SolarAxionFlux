@@ -13,7 +13,7 @@
 
 // Conversion probability into (massless) axions, (gagg*B*L/2)^2, in a reference magnetic field with B = 9.0 T, L = 9.26 m, and gagg = 10^-10 GeV^-1.
 const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
-const double conversion_prob_factor = gsl_pow_2(0.5*1.0e-19*(9.0/eV2T)*(9.26/eVm));
+const double conversion_prob_factor = gsl_pow_2(0.5*(1.0e-3*g_agg)*(9.0/eV2T)*(9.26/eVm));
 
 // Conversion probability correction for massive axions.
 double conversion_prob_correction(double mass, double erg, double length);
@@ -48,8 +48,8 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
 std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s);
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file);
 std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s);
-std::vector<std::vector<double>> experimental_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee = "", std::string saveas = "");
+std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee = "", std::string saveas = "");
 
-std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts_gagg, double gaee = 0, std::string reference_counts_gaee = "");
+std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts_file, double gaee = 0);
 
 #endif // defined __experimental_flux_hpp__
