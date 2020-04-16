@@ -51,6 +51,10 @@ int main() {
   //axion_photon_counts_full(1.0e-3, 1.0e-10, &cast_2007_setup, &s);
   //auto t6 = std::chrono::high_resolution_clock::now();
   //std::cout << "# Calculating the counts took " << std::chrono::duration_cast<std::chrono::minutes>(t6-t5).count() << " minutes." << std::endl;
+  //double lowerg = 0.1;
+  //double higherg = 10.0;
+  //std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
+  //std::cout << calculate_flux(lowerg,higherg,s,{}) << std::endl;
   std::cout << "\n# Computing reference counts in CAST2007 experiment from all interactions (from files)..." << std::endl;
   std::vector<double> axion_masses = {1.0e-6, 2.0e-6, 5.0e-6, 1.0e-5, 2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4, 5.0e-4, 1.0e-3, 2.0e-3, 5.0e-3, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0};
   axion_reference_counts_from_file(&cast_2007_setup, axion_masses, "results/primakoff.dat", "results/all_gaee.dat", "results/reference_counts_cast2007.dat");
@@ -72,10 +76,6 @@ int main() {
   std::cout << "Counts (all): " << counts[0]; for (auto c = counts.begin()+1; c != counts.end(); ++c) { std::cout << " | " << *c; }; std::cout << std::endl;
   //std::cout << "# Setup step does not have to be repeated; one additional calculation took " << std::chrono::duration_cast<std::chrono::seconds>(t8-t7).count() << " seconds." << std::endl;
 
-  //double lowerg = 0.1;
-  //double higherg = 10.0;
-  //std::cout << "# Calculating full flux between " << lowerg << " keV and " << higherg << " keV." << std::endl;
-  //std::cout << calculate_flux(lowerg,higherg,s,0);
   auto t_end = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Finished testing! Total runtime: " << std::chrono::duration_cast<std::chrono::minutes>(t_end-t_start).count() << " mins." << std::endl;
   return 0;

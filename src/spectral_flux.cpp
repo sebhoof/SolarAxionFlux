@@ -224,7 +224,7 @@ double spectral_flux_integrand(double erg, void * params) {
   f.function = p2->integrand;
   integration_params p = {erg, s, isotope};
   f.params = &p;
-  gsl_integration_qag (&f, s->r_lo, s->r_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &result, &error);
+  gsl_integration_qag (&f, s->r_lo, s->r_hi, 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w, &result, &error);
   gsl_integration_workspace_free (w);
   return factor*result/normfactor;
 }
@@ -234,10 +234,11 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isoto
     double result, error;
     gsl_function f;
     f.function = spectral_flux_integrand;
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc (1e8);
+    gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
     integration_params2 p2 = {&s, &integrand_all_axionelectron, isotope};
+    //integration_params2 p2 = {&s, &integrand_Primakoff, isotope};
     f.params = &p2;
-    gsl_integration_qag (&f, lowerlimit, upperlimit, abs_prec2, rel_prec2, 1e8, int_method_2, w, &result, &error);
+    gsl_integration_qag (&f, lowerlimit, upperlimit, int_abs_prec, int_rel_prec, int_space_size, int_method_2, w, &result, &error);
     gsl_integration_workspace_free (w);
     return result*normfactor;
 }
