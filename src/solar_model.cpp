@@ -645,7 +645,7 @@ double SolarModel::Gamma_P_opacity(double omega, double r) {
 }
 
 double SolarModel::Gamma_P_all_electron(double erg, double r) {
-  double result = 0;
+  double result = 0.0;
   if (opcode == OP) {
     double element_contrib = 0.0;
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
@@ -702,6 +702,7 @@ double SolarModel::get_r_hi() { return r_hi; }
 double SolarModel::get_gagg_ref_value_in_inverse_GeV() { return 1.0e6*g_agg; }
 double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
+std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
 bool SolarModel::is_initialised() { return initialisation_status; };
 
 double rho_integrand_1d(double rho, void * params) {

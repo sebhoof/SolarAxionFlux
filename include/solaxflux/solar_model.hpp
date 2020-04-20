@@ -27,7 +27,6 @@ class SolarModel {
     // Delete copy constructor and assignment operator to avoid shallow copies
     SolarModel(const SolarModel&) = delete;
     SolarModel operator=(const SolarModel&) = delete;
-    const opacitycode opcode;
 
     // Solar properties
     int lookup_isotope_index(Isotope isotope);
@@ -88,10 +87,12 @@ class SolarModel {
     double get_gagg_ref_value_in_inverse_GeV();
     double get_gaee_ref_value();
     std::string get_solaxlib_name_and_version();
+    std::string get_opacitycode_name();
     bool is_initialised();
   private:
     void init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const double* x, const double* y);
     void init_numbered_interp(const int index, const double* x, const double* y);
+    const opacitycode opcode;
     bool initialisation_status = false;
     // Use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is false
     bool raffelt_approx;

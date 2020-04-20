@@ -45,20 +45,23 @@ double integrand_opacity_element(double r, void * params) {
 
 double integrand_opacity(double r, void * params) {
   struct integration_params * p = (struct integration_params *)params;
-  double result = 0.0;
+  //double result = 0.0;
   double erg = (p->erg);
   SolarModel* sol = (p->sol);
-  if (sol->opcode == OP) {
-    double element_contrib = 0.0;
-    // Add opacity terms all non-H or He elements (metals)
-    for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); };
-    result = 0.5*gsl_pow_2(r*erg/pi)*element_contrib;
-  }
-  if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
-      result = 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
-  };
 
-  return result;
+  // TODO: Check if this is conistent now!
+  //if (sol->opcode == OP) {
+  //  double element_contrib = 0.0;
+  //  // Add opacity terms all non-H or He elements (metals)
+  //  for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); };
+  //  result = 0.5*gsl_pow_2(r*erg/pi)*element_contrib;
+  //}
+  //if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
+  //    result = 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
+  //};
+
+  //return result;
+  return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
 }
 
 // Includes FF flux and ee contribution as in arxiv[1310.0823].
