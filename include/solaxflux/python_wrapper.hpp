@@ -3,6 +3,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include "solar_model.hpp"
 #include "spectral_flux.hpp"
 #include "experimental_flux.hpp"
 

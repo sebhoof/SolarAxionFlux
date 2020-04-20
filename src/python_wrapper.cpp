@@ -14,12 +14,12 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
   for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); };
 
-  if ( (rad_min < s.r_lo) || (rad_max > s.r_hi) ) {
+  if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) {
     std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl;
   };
   // Check min/mac and avoid Python roundoff errors
-  rad_min = std::min(std::max(rad_min, 1.000001*s.r_lo), 0.999999*s.r_hi);
-  rad_max = std::max(std::min(rad_max, 0.999999*s.r_hi), 1.000001*s.r_lo);
+  rad_min = std::min(std::max(rad_min, 1.000001*s.get_r_lo()), 0.999999*s.get_r_hi());
+  rad_max = std::max(std::min(rad_max, 0.999999*s.get_r_hi()), 1.000001*s.get_r_lo());
   std::cout << "Energies: " <<  n_ergs+1 << " values in [" << erg_min << ", " << erg_max << "] keV, " << n_rads << " radii [" << rad_min << ", " << rad_max << ") R_sol."<< std::endl;
   double rad_stepsize = (rad_max - rad_min)/double(n_rads);
 

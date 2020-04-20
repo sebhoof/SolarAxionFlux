@@ -1,12 +1,13 @@
 set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
-set(HEADER_FILES ${CMAKE_SOURCE_DIR}/include/spectral_flux.hpp ${CMAKE_SOURCE_DIR}/include/experimental_flux.hpp ${CMAKE_SOURCE_DIR}/include/utils.hpp ${CMAKE_SOURCE_DIR}/include/constants.hpp)
+set(HEADER_FILES_DIR ${CMAKE_SOURCE_DIR}/include/solaxflux)
+set(HEADER_FILES ${HEADER_FILES_DIR}/spectral_flux.hpp ${HEADER_FILES_DIR}/experimental_flux.hpp ${HEADER_FILES_DIR}/solar_model.hpp ${HEADER_FILES_DIR}/utils.hpp ${HEADER_FILES_DIR}/constants.hpp)
 
-add_library(axionflux SHARED spectral_flux.cpp experimental_flux.cpp utils.cpp ${HEADER_FILES})
+add_library(axionflux SHARED experimental_flux.cpp spectral_flux.cpp solar_model.cpp utils.cpp ${HEADER_FILES})
 set_target_properties(axionflux PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 target_include_directories(axionflux PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:../include>)
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/solaxflux>
+    $<INSTALL_INTERFACE:include/solaxflux>)
 target_link_libraries(axionflux ${LIBRARIES})
 
 install(TARGETS axionflux EXPORT MyLibraryConfig
@@ -24,8 +25,8 @@ export(TARGETS axionflux FILE MyLibraryConfig.cmake)
 # Create executable for the unit tests
 add_executable(test_library tests.cpp ${HEADER_FILES})
 target_include_directories(test_library PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/solaxflux>
+    $<INSTALL_INTERFACE:include/solaxflux>)
 target_link_libraries(test_library axionflux)
 set_target_properties(test_library
     PROPERTIES
@@ -36,8 +37,8 @@ set_target_properties(test_library
 if(PYBIND11_INSTALLED)
   pybind11_add_module(pyaxionflux python_wrapper.cpp)
   target_include_directories(pyaxionflux PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-      $<INSTALL_INTERFACE:../include>)
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/solaxflux>
+      $<INSTALL_INTERFACE:include/solaxflux>)
   target_link_libraries(pyaxionflux PRIVATE axionflux)
   set_target_properties(pyaxionflux
       PROPERTIES

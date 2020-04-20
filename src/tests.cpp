@@ -3,11 +3,13 @@
 #include <chrono>
 
 #include "utils.hpp"
+#include "solar_model.hpp"
 #include "spectral_flux.hpp"
 #include "experimental_flux.hpp"
 
 int main() {
   auto t_start = std::chrono::high_resolution_clock::now();
+  std::cout << "\n     ### This is the " << LIBRARY_NAME << " library ###\n" << std::endl;
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
   std::string solar_model_name = "data/SolarModel_B16-AGSS09.dat";

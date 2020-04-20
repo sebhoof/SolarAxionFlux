@@ -35,17 +35,17 @@ double erg_integrand_from_file(double erg, void * params) {
 double erg_integrand(double erg, void * params) {
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
-  double r_min = s->r_lo, r_max = std::min(p3->r_max, s->r_hi);
+  double r_min = s->get_r_lo(), r_max = std::min(p3->r_max, s->get_r_hi());
 
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(p3->eff_exposure(ref_erg_value))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
 
   double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
   double exposure = p3->eff_exposure(erg);
 
-  struct solar_disc_integration_params  p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
+  struct solar_model_integration_parameters p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
 
   gsl_function f2;
-  f2.function = &rad_integrand;
+  f2.function = &rad_integrand_2d;
   f2.params = &p2;
 
   double spectral_flux, spectral_flux_error;
@@ -139,7 +139,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
-  double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->r_lo);
+  double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
@@ -224,7 +224,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
 
-  double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->r_lo);
+  double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);

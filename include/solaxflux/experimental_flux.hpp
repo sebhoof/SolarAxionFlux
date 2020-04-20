@@ -9,6 +9,8 @@
 #include <gsl/gsl_integration.h>
 
 #include "constants.hpp"
+#include "utils.hpp"
+#include "solar_model.hpp"
 #include "spectral_flux.hpp"
 
 // Conversion probability into (massless) axions, (gagg*B*L/2)^2, in a reference magnetic field with B = 9.0 T, L = 9.26 m, and gagg = 10^-10 GeV^-1.

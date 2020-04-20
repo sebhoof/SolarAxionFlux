@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <gsl/gsl_math.h>
+
 const std::string LIBRARY_NAME = "SolarAxionFlux v0.2b";
 
 const double hbar = 6.582119514e-25;                          // in GeV * s
