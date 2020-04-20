@@ -12,12 +12,13 @@
 #include "solar_model.hpp"
 
 // Constructors
-SolarModel::SolarModel() : opcode(OP) {};    // default constructor (not functional)
+SolarModel::SolarModel() : opcode(OP) {}
+
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")) {
       std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
-  }
+  };
   // Set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equation 16 a or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
   solarmodel_name = file;
@@ -119,6 +120,8 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     };
   };
 
+  accel.resize(7);
+  linear_interp.resize(7);
   // Set up the interpolating functions quantities independent of iz.
   init_numbered_interp(0, radius, &temperature[0]); // Temperature
   init_numbered_interp(1, radius, &n_e[0]); // n_e from summing over elements (full ionisation)
@@ -237,11 +240,38 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
 }
 
 // Move assignment operator
-SolarModel& SolarModel::operator=(SolarModel &&model) {
-  if (this != &model) {
-    std::swap(data,model.data);
-    std::swap(accel,model.accel);
-    std::swap(linear_interp, model.linear_interp);
+SolarModel& SolarModel::operator=(SolarModel &&src) {
+  if (this != &src) {
+    std::swap(initialisation_status,src.initialisation_status);
+    //std::swap(opcode,src.opcode);
+    std::swap(raffelt_approx,src.raffelt_approx);
+    std::swap(solarmodel_name,src.solarmodel_name);
+    std::swap(data,src.data);
+    std::swap(data_alpha,src.data_alpha);
+    std::swap(tracked_isotopes,src.tracked_isotopes);
+    std::swap(num_interp_pts,src.num_interp_pts);
+    std::swap(r_lo,src.r_lo);
+    std::swap(r_hi,src.r_hi);
+    std::swap(num_tracked_isotopes,src.num_tracked_isotopes);
+    std::swap(isotope_index_map,src.isotope_index_map);
+    std::swap(tracked_isotopes,src.tracked_isotopes);
+    std::swap(accel,src.accel);
+    std::swap(linear_interp,src.linear_interp);
+    std::swap(opacity_acc_op,src.opacity_acc_op);
+    std::swap(opacity_lin_interp_op,src.opacity_lin_interp_op);
+    std::swap(tops_grid,src.tops_grid);
+    std::swap(tops_temperatures,src.tops_temperatures);
+    std::swap(tops_densities,src.tops_densities);
+    std::swap(opacity_acc_tops,src.opacity_acc_tops);
+    std::swap(opacity_lin_interp_tops,src.opacity_lin_interp_tops);
+    std::swap(opacity_acc_opas,src.opacity_acc_opas);
+    std::swap(opacity_lin_interp_opas,src.opacity_lin_interp_opas);
+    std::swap(n_isotope_acc,src.n_isotope_acc);
+    std::swap(n_isotope_lin_interp,src.n_isotope_lin_interp);
+    std::swap(z2_n_isotope_acc,src.z2_n_isotope_acc);
+    std::swap(z2_n_isotope_lin_interp,src.z2_n_isotope_lin_interp);
+    std::swap(n_element_acc,src.n_element_acc);
+    std::swap(n_element_lin_interp,src.n_element_lin_interp);
   };
   return *this;
 }
@@ -669,7 +699,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector
 // Metadata and information
 double SolarModel::get_r_lo() { return r_lo; }
 double SolarModel::get_r_hi() { return r_hi; }
-double SolarModel::get_gagg_ref_value() { return g_agg; }
+double SolarModel::get_gagg_ref_value_in_inverse_GeV() { return 1.0e6*g_agg; }
 double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 bool SolarModel::is_initialised() { return initialisation_status; };

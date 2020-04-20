@@ -85,7 +85,7 @@ class SolarModel {
     // Metadata and information
     double get_r_lo();
     double get_r_hi();
-    double get_gagg_ref_value();
+    double get_gagg_ref_value_in_inverse_GeV();
     double get_gaee_ref_value();
     std::string get_solaxlib_name_and_version();
     bool is_initialised();
@@ -105,8 +105,8 @@ class SolarModel {
     int num_tracked_isotopes;
     int num_interp_pts;
     std::vector<Isotope> tracked_isotopes;
-    gsl_interp_accel *accel[7];
-    gsl_spline *linear_interp[7];
+    std::vector<gsl_interp_accel*> accel;
+    std::vector<gsl_spline*> linear_interp;
     std::map< std::string, std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map<std::pair<float,float>, gsl_interp_accel*> opacity_acc_tops;
