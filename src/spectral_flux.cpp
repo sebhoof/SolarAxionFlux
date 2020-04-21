@@ -1,5 +1,201 @@
 #include "spectral_flux.hpp"
 
+AxionSpectrum::AxionSpectrum() {};
+
+void AxionSpectrum::init_numbered_interp(const int index, const double* x, const double* y) {
+  acc[index] = gsl_interp_accel_alloc();
+  spline[index] = gsl_spline_alloc(gsl_interp_linear, pts);
+  gsl_spline_init(spline[index], x, y, pts);
+}
+
+void AxionSpectrum::init_table_mode(std::string file, double g1, double g2) {
+  mode = table;
+  ASCIItableReader data (file);
+  pts = data.getnrow();
+  int n_cols = data.getncol();
+  table_submode = n_cols-1;
+  default_g1 = g1;
+  default_g2 = g2;
+  terminate_with_error_if((n_cols<2)||(n_cols>4), "ERROR! Your infput file '"+file+"' appears to have less than 2 or more than 4 columns!");
+  //data.resize(n_cols);
+  // TODO: Interpolation of the specturm is better for log10(flux), but need a safe and numerically sound way to deal with 0 w/o causing problems in integration.
+  //for (int i=0; i<n_cols-1; ++i) { data[i] = std::move(data[i]); };
+  //data[n_cols-1] = std::move(safe_log10(data[n_cols-1]));
+  if (table_submode < 3) {
+    acc.resize(n_cols-1);
+    spline.resize(n_cols-1);
+    init_numbered_interp(0, &data[0][0], &data[1][0]);
+    if (table_submode == 2) { init_numbered_interp(1, &data[0][0], &data[2][0]); };
+  } else {
+    int n_grids = 1 + (g2>0);
+    acc_2d.resize(n_grids);
+    spline_2d.resize(n_grids);
+    // Make sure that entries are properly sorted
+    std::vector<double> x_vec = data[0];
+    sort(x_vec.begin(), x_vec.end());
+    x_vec.erase(unique(x_vec.begin(), x_vec.end()), x_vec.end());
+    int nx = x_vec.size();
+    std::vector<double> y_vec = data[1];
+    sort(y_vec.begin(), y_vec.end());
+    y_vec.erase(unique(y_vec.begin(), y_vec.end()), y_vec.end());
+    int ny = y_vec.size();
+    terminate_with_error_if(nx*ny != pts, "ERROR! Number of data points ("+std::to_string(pts)+") in '"+file+"' inconsistent with number of unique 'x' and 'y' values ("+std::to_string(nx)+" and "+std::to_string(ny)+")! Check the formatting.");
+
+    const double* x = &x_vec[0];
+    const double* y = &y_vec[0];
+    // Allocate memory for "z" values array in gsl format
+    std::vector<double*> z (n_grids);
+    for (int i=0; i<n_grids; ++i) {
+      z[i] = (double*) malloc(nx * ny * sizeof(double));
+      spline_2d[i] = gsl_spline2d_alloc(gsl_interp2d_bilinear, nx, ny);
+      acc_2d[i].first = gsl_interp_accel_alloc();
+      acc_2d[i].second = gsl_interp_accel_alloc();
+    };
+
+    // Determine first and last "x" and "y" values and grid step size.
+    double x_lo = x_vec.front();
+    double x_up = x_vec.back();
+    double y_lo = y_vec.front();
+    double y_up = y_vec.back();
+    double x_delta = (x_up-x_lo) / (nx-1);
+    double y_delta = (y_up-y_lo) / (ny-1);
+
+    // Intialise grids
+    for (int j=0; j<pts; ++j) {
+      // Determine appropriate indices for the grid points.
+      double temp = (data[0][j]-x_lo) / x_delta;
+      int ind_x = (int) (temp+0.5);
+      temp = (data[1][j]-y_lo) / y_delta;
+      int ind_y = (int) (temp+0.5);
+      for (int i=0; i<n_grids; ++i) {
+        gsl_spline2d_set(spline_2d[i], z[i], ind_x, ind_y, data[i+2][j]);
+      };
+    };
+    for (int i=0; i<n_grids; ++i) { gsl_spline2d_init(spline_2d[i], x, y, z[i], nx, ny); };
+  };
+}
+
+AxionSpectrum::AxionSpectrum(std::string file, double g1, double g2) { init_table_mode(file, g1, g2); };
+
+void AxionSpectrum::init_solar_model_mode(SolarModel* sol, SolarModelMemberFn process2) {
+  mode = solar_model; // Do not set default_g1, default_g2 here! This info in the solar model.
+  s = sol;
+  function2 = process2;
+  solar_model_okay = s->is_initialised();
+  terminate_with_error_if(not(solar_model_okay), "ERROR! The instance of SolarModel used to initialse an instance of AxionSpectrum has not been initialised properly.");
+};
+
+AxionSpectrum::AxionSpectrum(SolarModel* sol, SolarModelMemberFn process2) { init_solar_model_mode(sol, process2); };
+
+void AxionSpectrum::init_analytical_mode(double norm, double g1, double a, double b) {
+  mode = analytical; // Do not set default_g1 here! This info in the parameters.
+  analytical_parameters = {norm, g1, a, b};
+};
+
+AxionSpectrum::AxionSpectrum(double norm, double g1, double a, double b) { init_analytical_mode(norm, g1, a, b); };
+
+void AxionSpectrum::switch_mode(SpectrumModes new_mode) {
+  if (new_mode != mode) {
+    bool check = false;
+    switch (new_mode) {
+      case table :
+        check = (table_submode >= 1) && (table_submode <= 3);
+        break;
+      case solar_model :
+        check = solar_model_okay;
+        break;
+      case analytical :
+        check = (analytical_parameters.size() == 4);
+        break;
+      default :
+        std::cout << "WARNING! You tried to change to an unknown mode." << std::endl;
+    };
+    if (check) {
+      mode = new_mode;
+    } else {
+      std::cout << "WARNING! Changing mode of AxionSpectrum is not permitted; the class instance has not been initialised for the new mode." << std::endl;
+    };
+  };
+}
+
+AxionSpectrum::~AxionSpectrum() {}; // TODO: Correct destructor
+
+std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> ergs, std::vector<double> radii, double g1, double g2) {
+  std::vector<std::vector<double>> result;
+  static bool g2_warning_issued = false;
+  static bool r_warning_issued = false;
+  for (auto r = radii.begin(); r != radii.end(); r++) {
+    //std::vector<double> g1_flux
+    //std::vector<double> g2_flux;
+    std::vector<double> total_flux;
+    switch(mode) {
+      case table :
+        if ((table_submode == 1) && (g2 > 0) && not(g2_warning_issued)) { std::cout << "WARNING! You don't have a second spectrum loaded! The value of g2 > 0 has no effect." << std::endl; g2_warning_issued = true; };
+        if ((table_submode < 3) && (*r < 1) && not(r_warning_issued)) { std::cout << "WARNING! You didn't provide data for radii! The value of r < 1 has no effect." << std::endl; r_warning_issued = true; };
+        for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+          double ref_g1_flux = 0;
+          double ref_g2_flux = 0;
+          if (table_submode < 4) {
+            ref_g1_flux = gsl_pow_2(g1/default_g1) * gsl_spline_eval(spline[0], *erg, acc[0]);
+            if (table_submode > 1) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline_eval(spline[1], *erg, acc[1]); };
+          } else {
+            ref_g1_flux = gsl_pow_2(g1/default_g1) * gsl_spline2d_eval(spline_2d[0], *r, *erg, acc_2d[0].first, acc_2d[0].second);
+            if (default_g2 > 0) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline2d_eval(spline_2d[1], *r, *erg, acc_2d[1].first, acc_2d[1].second); };
+          };
+          //g1_flux.push_back(ref_g1_flux);
+          //g2_flux.push_back(ref_g2_flux);
+          total_flux.push_back(ref_g1_flux+ref_g2_flux);
+        };
+        break;
+      case solar_model :
+      {
+        static double ref_g1 = s->get_gagg_ref_value_in_inverse_GeV();
+        static double ref_g2 = s->get_gaee_ref_value();
+        std::vector<double> ref_g1_fluxes = s->calculate_spectral_flux_any(ergs, function1, *r);
+        std::vector<double> ref_g2_fluxes = s->calculate_spectral_flux_any(ergs, function2, *r);
+        for (int i=0; i<ergs.size(); ++i) {
+          double ref_g1_flux = gsl_pow_2(g1/ref_g1) * ref_g1_fluxes[i];
+          double ref_g2_flux = gsl_pow_2(g2/ref_g2) * ref_g2_fluxes[i];
+          //g1_flux.push_back(ref_g1_flux);
+          //g2_flux.push_back(ref_g2_flux);
+          total_flux.push_back(ref_g1_flux+ref_g2_flux);
+        };
+        break;
+      }
+      case analytical :
+        for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+          double ref_g1_flux = analytical_parameters[0] * gsl_pow_2(g1/analytical_parameters[1]) * pow(*erg,analytical_parameters[2]) * exp(-analytical_parameters[3]*(*erg));
+          //g1_flux.push_back(ref_g1_flux);
+          total_flux.push_back(ref_g1_flux);
+        };
+        break;
+      case undefined :
+        terminate_with_error("ERROR! The AxionSpectrum class has not been initialised properly.");
+        break;
+      default :
+        terminate_with_error("FATAL ERROR! The AxionSpectrum mode was somehow set to an unknown value; this is a bug, please report it.");
+    };
+    result.push_back(total_flux);
+  };
+  return result;
+}
+
+double AxionSpectrum::axion_flux(double erg, double g1) { return axion_flux(erg, g1, 0); }
+double AxionSpectrum::axion_flux(double erg, double g1, double g2) { return axion_flux(erg, 1, g1, 0); }
+double AxionSpectrum::axion_flux(double erg, double r, double g1, double g2) {
+  std::vector<double> ergs = {erg};
+  std::vector<double> result = axion_flux(ergs, r, g1, g2);
+  return result[0];
+}
+std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1) { return axion_flux(ergs, g1, 0); };
+std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1, double g2) { return axion_flux(ergs, 1, g1, 0); };
+std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double r, double g1, double g2) {
+  std::vector<double> radii = {r};
+  std::vector<std::vector<double>> result = axion_flux(ergs, radii, g1, g2);
+  return result[0];
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Various integrands for the different contributions/combinations of contributions to the solar axion flux. //
 // All in units of axions / (cm^2 s keV).                                                                    //

@@ -714,6 +714,14 @@ std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector
   };
 }
 
+std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
+  if (r_max < r_lo) {
+    return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
+  } else {
+    return calculate_spectral_flux(ergs, *this, process);
+  };
+}
+
 // Metadata and information
 double SolarModel::get_r_lo() { return r_lo; }
 double SolarModel::get_r_hi() { return r_hi; }

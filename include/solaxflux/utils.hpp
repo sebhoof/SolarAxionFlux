@@ -1,7 +1,7 @@
 // ------------
 //  DISCLAIMER
 // ------------
-// The ASCIItableReader, OneDInterpolator and SolarModel classes are based on classes with the same name in GAMBIT, which was published under a BSD license (reproduced below).
+// The ASCIItableReader, OneDInterpolator, TwoDInterpolator and SolarModel classes are based on classes (the latter three coded up chiefly by Sebastian Hoof) with the same name in GAMBIT, which was published under a BSD license (reproduced below).
 // Copyright (c) 2017, The GAMBIT Collaboration All rights reserved.
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 //  (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -22,6 +22,8 @@
 #include <sys/stat.h> // Needed to check if file exists before we can expect C++14 std
 
 #include <gsl/gsl_spline.h>
+#include <gsl/gsl_interp2d.h>
+#include <gsl/gsl_spline2d.h>
 #include <gsl/gsl_errno.h>
 
 #include "constants.hpp"
@@ -50,8 +52,9 @@ class OneDInterpolator
     // Delete copy constructor and assignment operator to avoid shallow copies
     OneDInterpolator(const OneDInterpolator&) = delete;
     OneDInterpolator operator=(const OneDInterpolator&) = delete;
-    // Routine to access interpolated values.
+    // Routines to access interpolated values.
     double interpolate(double x);
+    std::vector<double> interpolate(std::vector<double> x);
     // Routine to access upper and lower boundaries of available data.
     double lower();
     double upper();

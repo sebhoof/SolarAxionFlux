@@ -144,9 +144,16 @@ OneDInterpolator::~OneDInterpolator() {
 // Routine to access interpolated values.
 double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, x, acc); }
 
+std::vector<double> OneDInterpolator::interpolate(std::vector<double> x) {
+  std::vector<double> result;
+  for (auto it = x.begin(); it != x.end(); it++) { result.push_back(interpolate(*it)); };
+  return result;
+}
+
 // Routines to return upper and lower boundaries of interpolating function.
 double OneDInterpolator::lower() { return lo; }
 double OneDInterpolator::upper() { return up; }
+
 
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
