@@ -12,7 +12,7 @@ double conversion_prob_correction(double mass, double erg, double length) {
 
 // Effective exposures (in seconds x cm) for various experiments.
 double eff_exposure_cast_2007(double erg) {
-  static OneDInterpolator eff_exp ("data/CAST2007_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp ("data/exposures/CAST2007_EffectiveExposure.dat");
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }

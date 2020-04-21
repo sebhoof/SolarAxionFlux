@@ -12,7 +12,7 @@ int main() {
   std::cout << "\n     ### This is the " << LIBRARY_NAME << " library ###\n" << std::endl;
   std::cout << "# Testing the Solar Model routines..." << std::endl;
 
-  std::string solar_model_name = "data/SolarModel_B16-AGSS09.dat";
+  std::string solar_model_name = "data/solar_models/SolarModel_B16-AGSS09.dat";
   SolarModel s (solar_model_name,OP,true);
   auto t1 = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took "

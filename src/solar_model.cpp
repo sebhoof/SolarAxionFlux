@@ -15,7 +15,7 @@
 SolarModel::SolarModel() : opcode(OP) {}
 
 SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
-  if ((set_opcode != OP) && (file != "data/SolarModel_AGSS09.dat")) {
+  if ((set_opcode != OP) && (file != "data/solar_models/SolarModel_AGSS09.dat")) {
       std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
   };
@@ -222,9 +222,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   }
   //alpha
   if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
-     data_alpha =  ASCIItableReader("data/alpha"+file.substr(file.find("_")));
+     data_alpha =  ASCIItableReader("data/alpha_tables/alpha"+file.substr(file.find("_")));
   } else {
-     data_alpha =  ASCIItableReader("data/alpha_B16-AGSS09.dat");
+     data_alpha =  ASCIItableReader("data/alpha_tables/alpha_B16-AGSS09.dat");
   };
   int n_cols_alpha = data_alpha.getncol();
   data_alpha.setcolnames("radius", "alpha");
@@ -675,6 +675,24 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
   double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
   return  prefactor6*phase_factor*rate;
+}
+
+// TODO: Utilise this + the new typedef
+SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name) {
+  SolarModelMemberFn integrand;
+  auto iter = map_interaction_name_to_function.find(interaction_name);
+  if (iter !=  map_interaction_name_to_function.end()) {
+    integrand = map_interaction_name_to_function.at(interaction_name);
+  } else {
+    std::string avail_keys = "";
+    for (auto& x: map_interaction_name_to_function) { avail_keys += x.first + " "; };
+    std::cout << "NON-FATAL ERROR! The interaction '"+interaction_name+"' is not available. Enter one of the valid options below and fix your code." << std::endl;
+    std::cout << avail_keys << std::endl;
+    std::string new_interaction_name;
+    std::cout << "Enter a valid interaction name here: "; std::cin >> new_interaction_name;
+    integrand = get_SolarModel_function_pointer(new_interaction_name);
+  };
+  return integrand;
 }
 
 // Calculate the solar axion spectrum for axion-photon and axion-electron interactions

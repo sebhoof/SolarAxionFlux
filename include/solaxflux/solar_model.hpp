@@ -126,6 +126,15 @@ class SolarModel {
     std::map<std::string, gsl_spline*> n_element_lin_interp;
 };
 
+// Typedef of SolarModel member function as 'SolarModelMemberFn'
+typedef double (SolarModel::*SolarModelMemberFn)(double,double);
+
+// TODO: Finish implementing!
+// Define available interaction types
+const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function { {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
+                                                                                  {"opacity",&SolarModel::Gamma_P_opacity}, {"all_electron",&SolarModel::Gamma_P_all_electron} };
+SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
+
 // Variables and wrapper functions for solar model integration routines
 // Variables to define the behaviour of the GSL integrators.
 // Integration over the full Sun (1D)

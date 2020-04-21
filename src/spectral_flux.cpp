@@ -301,7 +301,7 @@ double AxionMCGenerator::get_norm() {
   return integrated_norm;
 }
 
-AxionMCGenerator::AxionMCGenerator(SolarModel s, double (SolarModel::*process)(double, double), double omega_min, double omega_max, double omega_delta, double r_max) {
+AxionMCGenerator::AxionMCGenerator(SolarModel s, SolarModelMemberFn process, double omega_min, double omega_max, double omega_delta, double r_max) {
   int n_omega_vals = int((omega_max-omega_min)/omega_delta);
   inv_cdf_data_erg = std::vector<double> (n_omega_vals);
   for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_erg[i] = omega_min + i*omega_delta; };
