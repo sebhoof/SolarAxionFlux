@@ -118,7 +118,27 @@ void AxionSpectrum::switch_mode(SpectrumModes new_mode) {
   };
 }
 
-AxionSpectrum::~AxionSpectrum() {}; // TODO: Correct destructor
+AxionSpectrum::~AxionSpectrum() {
+  for (auto s : spline) { gsl_spline_free(s); };
+  for (auto s : spline_2d) { gsl_spline2d_free(s); };
+  for (auto a : acc) { gsl_interp_accel_free(a); };
+  for (auto a : acc_2d) { gsl_interp_accel_free(a.first); gsl_interp_accel_free(a.second); };
+};
+
+std::tuple<int, double, double> AxionSpectrum::get_table_parameters() { return std::make_tuple(table_submode, default_g1, default_g2); }
+std::vector<double> AxionSpectrum::get_analytical_parameters() { return analytical_parameters; };
+SpectrumModes AxionSpectrum::get_class_mode() {
+  std::cout << "INFO. The current mode is '";
+  switch (mode) {
+    case table : std::cout << "table"; break;
+    case analytical : std::cout << "analytical"; break;
+    case solar_model : std::cout << "solar_model"; break;
+    case undefined : std::cout << "undefined"; break;
+    default : std::cout << "n/a'. This is a bug, please report it"; break;
+  };
+  std::cout << "'." << std::endl;
+  return mode;
+};
 
 std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> ergs, std::vector<double> radii, double g1, double g2) {
   std::vector<std::vector<double>> result;
@@ -412,21 +432,23 @@ std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, So
 // Monte Carlo-related functions. //
 ////////////////////////////////////
 
-AxionMCGenerator::AxionMCGenerator() {};
+AxionMCGenerator::AxionMCGenerator() {
+  inv_cdf_acc = gsl_interp_accel_alloc();
+  inv_cdf = gsl_spline_alloc(gsl_interp_linear, 2);
+};
 
-AxionMCGenerator::AxionMCGenerator(std::string spectrum_file) {
-  ASCIItableReader spectrum_data (spectrum_file);
-  int pts = spectrum_data.getnrow();
+AxionMCGenerator::AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux) {
+  int pts = ergs.size();
   inv_cdf_data_erg = std::vector<double> (pts);
   inv_cdf_data_x = std::vector<double> (pts);
 
   double norm = 0.0;
-  inv_cdf_data_erg[0] = spectrum_data[0][0];
+  inv_cdf_data_erg[0] = ergs[0];
   inv_cdf_data_x[0] = norm;
   for(int i=1; i<pts; ++i) {
     // Trapozoidal rule integration.
-    norm += 0.5 * (spectrum_data[0][i] - spectrum_data[0][i-1]) * (spectrum_data[1][i] + spectrum_data[1][i-1]);
-    inv_cdf_data_erg[i] = spectrum_data[0][i];
+    norm += 0.5 * (ergs[i] - ergs[i-1]) * (flux[i] + flux[i-1]);
+    inv_cdf_data_erg[i] = ergs[i];
     inv_cdf_data_x[i] = norm;
   };
 
@@ -436,20 +458,111 @@ AxionMCGenerator::AxionMCGenerator(std::string spectrum_file) {
   init_inv_cdf_interpolator();
 }
 
+AxionMCGenerator::AxionMCGenerator(std::string file, bool is_already_inv_cdf_file) {
+  if (is_already_inv_cdf_file) {
+    ASCIItableReader inv_cdf_data (file);
+    inv_cdf_data_x = inv_cdf_data[0];
+    inv_cdf_data_erg = inv_cdf_data[1];
+
+    terminate_with_error_if(inv_cdf_data_x.end()[-2] > 1.0, "ERROR! Sanity check for MC generator failed! The second to last entry of your inverse CDF is greater than 1.");
+    integrated_norm = 1.0;
+
+    init_inv_cdf_interpolator();
+  } else {
+    ASCIItableReader spectrum_data (file);
+    AxionMCGenerator(spectrum_data[0], spectrum_data[1]);
+  };
+}
+
+void AxionMCGenerator::change_paramters(double erg_min, double erg_max, double erg_delta) {
+  omega_min = std::min(erg_min,erg_max);
+  omega_max = std::max(erg_min,erg_max);
+  omega_delta = erg_delta;
+};
+
+std::vector<double> AxionMCGenerator::generate_ergs() {
+  std::vector<double> result;
+  int n_omega_vals = int((omega_max-omega_min)/omega_delta);
+  for (int i=0; i<n_omega_vals; ++i) { result.push_back(omega_min + i*omega_delta); };
+  return result;
+}
+
+void AxionMCGenerator::init_with_local_spectrum(double g1, double g2, double r) {
+
+  inv_cdf_data_erg = generate_ergs();
+  int n_omega_vals = inv_cdf_data_erg.size();
+  inv_cdf_data_x = std::vector<double> (n_omega_vals);
+  default_r = r;
+
+  //std::vector<double> flux1 = sol->calculate_spectral_flux_Primakoff(inv_cdf_data_erg, r);
+  //std::vector<double> flux2 = sol->calculate_spectral_flux_all_electron(inv_cdf_data_erg, r);
+
+  std::vector<double> flux1 = sp.axion_flux(inv_cdf_data_erg, g1, g2, r);
+  std::vector<double> flux2 = sp.axion_flux(inv_cdf_data_erg, g1, g2, r);
+
+  double norm = 0.0;
+  inv_cdf_data_x[0] = norm;
+  for(int i=1; i<n_omega_vals; ++i) {
+    // Trapozoidal rule integration.
+    norm += 0.5 * omega_delta * (flux1[i] + flux1[i-1]);
+    norm += 0.5 * omega_delta * (flux2[i] + flux2[i-1]);
+    inv_cdf_data_x[i] = norm;
+  };
+
+  integrated_norm = norm;
+  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+
+  init_inv_cdf_interpolator();
+  full_mc_generator_ready = true;
+}
+
+AxionMCGenerator::AxionMCGenerator(SolarModel* sol, double g1, double g2, double r) {
+  sp = AxionSpectrum(sol);
+  init_with_local_spectrum(g1, g2, r);
+}
+
+AxionMCGenerator::AxionMCGenerator(double a, double b) {
+  analytical_parameters = {a, b};
+  analytical_mc_generator_ready = true;
+}
+
+AxionMCGenerator::AxionMCGenerator(AxionSpectrum* spectrum, double g1, double g2, double r) {
+  SpectrumModes mode = spectrum->get_class_mode();
+  switch(mode) {
+    case table :
+    {
+      auto table_params = spectrum->get_table_parameters();
+      int table_submode = std::get<0>(table_params);
+      double g1 = std::get<1>(table_params);
+      double g2 = std::get<2>(table_params);
+      inv_cdf_data_erg = generate_ergs();
+      std::vector<double> flux = spectrum->axion_flux(inv_cdf_data_erg, r, g1, g2);
+      AxionMCGenerator(inv_cdf_data_erg, flux);
+      if (table_submode > 2) {
+        sp = *spectrum;
+        full_mc_generator_ready = true;
+      };
+      break;
+    }
+    case analytical :
+    {
+      std::vector<double> p = spectrum->get_analytical_parameters();
+      AxionMCGenerator(p[2], p[3]);
+      break;
+    }
+    case solar_model :
+    {
+      sp = *spectrum;
+      init_with_local_spectrum(g1, g2, r);
+      break;
+    }
+    default : std::cout << "WARNING! The mode of AxionMCGenerator, used in the construction of AxionSpectrum, is inappropriate.";
+  };
+}
+
 AxionMCGenerator::~AxionMCGenerator() {
   gsl_spline_free(inv_cdf);
   gsl_interp_accel_free(inv_cdf_acc);
-}
-
-void AxionMCGenerator::init(std::string inv_cdf_file) {
-  ASCIItableReader inv_cdf_data (inv_cdf_file);
-  inv_cdf_data_x = inv_cdf_data[0];
-  inv_cdf_data_erg = inv_cdf_data[1];
-
-  terminate_with_error_if(inv_cdf_data_x.end()[-2] > 1.0, "ERROR! Sanity check for MC generator failed! The second to last entry of your inverse CDF is greater than 1.");
-  integrated_norm = 1.0;
-
-  init_inv_cdf_interpolator();
 }
 
 void AxionMCGenerator::init_inv_cdf_interpolator() {
@@ -463,7 +576,7 @@ void AxionMCGenerator::init_inv_cdf_interpolator() {
   inv_cdf = gsl_spline_alloc(gsl_interp_linear, pts);
   gsl_spline_init(inv_cdf, prob, erg, pts);
 
-  mc_generator_ready = true;
+  simple_mc_generator_ready = true;
 }
 
 void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
@@ -475,8 +588,17 @@ void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
 }
 
 double AxionMCGenerator::evaluate_inv_cdf(double x) {
-  terminate_with_error_if(not(mc_generator_ready), "ERROR! Your MC generator has not been initialised properly!");
-  return gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
+  double result;
+  if (analytical_mc_generator_ready) {
+    static double ap1 = 1.0 + analytical_parameters.first;
+    static double invb = 1.0 / analytical_parameters.second;
+    result = gsl_cdf_gamma_Pinv(x, ap1, invb);
+  } else if (simple_mc_generator_ready) {
+    result = gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
+  } else {
+    terminate_with_error("ERROR! The (simple version of the) MC generator has not been initialised properly!");
+  };
+  return result;
 }
 
 std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
@@ -492,43 +614,17 @@ std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
   return result;
 }
 
+std::vector<double> AxionMCGenerator::draw_axion_energies(int n, double g1, double g2) {
+  terminate_with_error_if(not(full_mc_generator_ready), "ERROR! The (full version of the) MC generator has not been initialised properly!");
+
+  std::vector<double> ergs = generate_ergs();
+  std::vector<double> flux = sp.axion_flux(ergs, default_r, g1, g2);
+  AxionMCGenerator mc (ergs,flux);
+
+  return mc.draw_axion_energies(n);
+}
+
 double AxionMCGenerator::get_norm() {
-  terminate_with_error_if(not(mc_generator_ready), "ERROR! Your MC generator has not been initialised properly!");
+  terminate_with_error_if(not(simple_mc_generator_ready), "ERROR! The (simple version of the) MC generator has not been initialised properly!");
   return integrated_norm;
 }
-
-AxionMCGenerator::AxionMCGenerator(SolarModel s, SolarModelMemberFn process, double omega_min, double omega_max, double omega_delta, double r_max) {
-  int n_omega_vals = int((omega_max-omega_min)/omega_delta);
-  inv_cdf_data_erg = std::vector<double> (n_omega_vals);
-  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_erg[i] = omega_min + i*omega_delta; };
-
-  if (r_max < 1.0) {
-    inv_cdf_data_x = calculate_spectral_flux_solar_disc(inv_cdf_data_erg, r_max, s, process, "");
-  } else {
-    // TODO: Use non-disc integration here AND/OR(!) check in calculate_spectral_flux_solar_disc if r_max > s.get_r_hi() and switch there!
-    inv_cdf_data_x = calculate_spectral_flux_solar_disc(inv_cdf_data_erg, 1.0, s, process, "");
-  };
-
-  double norm = 0.0;
-  inv_cdf_data_x[0] = norm;
-  for(int i=1; i<n_omega_vals; ++i) {
-    // Trapozoidal rule integration.
-    norm += 0.5 * omega_delta * (inv_cdf_data_x[i] + inv_cdf_data_x[i-1]);
-    inv_cdf_data_x[i] = norm;
-  };
-
-  integrated_norm = norm;
-  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
-
-  init_inv_cdf_interpolator();
-}
-
-/* REQUIRES e.g. the BOOST library
-// TODO: Replace this with one's own routines?
-// Inverse CDF for the Primakoff spectrum approximation
-// d Phi_a (omega) / d omega ~ omega^a * exp(-b * omega/keV)
-double inv_cdf_Primakoff_analytic_approx(double x, double a, double b) {
-  double ap1 = 1.0 + a;
-  return boost::gamma_q_inv(ap1, (1.0 - x)/pow(b,ap1) ) / b;
-}
-*/

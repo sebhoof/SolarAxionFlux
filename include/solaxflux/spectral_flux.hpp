@@ -6,33 +6,12 @@
 #include <random>
 
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_cdf.h>
 
 #include "utils.hpp"
 #include "solar_model.hpp"
 
 enum SpectrumModes {table, analytical, solar_model, undefined};
-
-class AxionMCGenerator {
-  public:
-    AxionMCGenerator();
-    // Compute custom spectrum in energy range of interest
-    AxionMCGenerator(SolarModel s, SolarModelMemberFn process, double omega_min, double omega_max, double omega_delta = 0.001, double r_max = 1.0);
-    AxionMCGenerator(std::string spectrum_file);
-    ~AxionMCGenerator();
-    void init(std::string inv_cdf_file);
-    void save_inv_cdf_to_file(std::string inv_cdf_file);
-    double evaluate_inv_cdf(double x);
-    std::vector<double> draw_axion_energies(int n);
-    double get_norm();
-  private:
-    void init_inv_cdf_interpolator();
-    bool mc_generator_ready = false;
-    double integrated_norm;
-    std::vector<double> inv_cdf_data_x;
-    std::vector<double> inv_cdf_data_erg;
-    gsl_interp_accel* inv_cdf_acc;
-    gsl_spline* inv_cdf;
-};
 
 class AxionSpectrum {
   public:
@@ -46,6 +25,9 @@ class AxionSpectrum {
     AxionSpectrum(double norm, double g1, double a, double b); // In this mode, only one coupling allowed
     ~AxionSpectrum();
     void switch_mode(SpectrumModes new_mode);
+    SpectrumModes get_class_mode();
+    std::tuple<int, double, double> get_table_parameters();
+    std::vector<double> get_analytical_parameters();
     double axion_flux(double erg, double g1); // Issue warnings for wrong use of all these functions.
     double axion_flux(double erg, double g1, double g2);
     double axion_flux(double erg, double r, double g1, double g2);
@@ -75,6 +57,44 @@ class AxionSpectrum {
     std::vector<double> analytical_parameters;
     // General parameters
     //double default_r = 1;
+};
+
+class AxionMCGenerator {
+  public:
+    AxionMCGenerator();
+    AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux);
+    AxionMCGenerator(std::string file, bool is_already_inv_cdf_file=false);
+    void change_paramters(double erg_min, double erg_max, double erg_delta);
+    AxionMCGenerator(SolarModel* sol, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
+    AxionMCGenerator(double a, double b);
+    AxionMCGenerator(AxionSpectrum* spectrum, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
+    ~AxionMCGenerator();
+    void save_inv_cdf_to_file(std::string inv_cdf_file);
+    double evaluate_inv_cdf(double x);
+    std::vector<double> draw_axion_energies(int n);
+    std::vector<double> draw_axion_energies(int n, double g1, double g2);
+    double get_norm();
+    std::vector<double> get_omega_params();
+  private:
+    void init_inv_cdf_interpolator();
+    bool simple_mc_generator_ready = false;
+    bool analytical_mc_generator_ready = false;
+    std::pair<double,double> analytical_parameters;
+    void init_with_local_spectrum(double g1, double g2, double r);
+    bool full_mc_generator_ready = false;
+    double omega_min = 0.1;
+    double omega_max = 10.0;
+    double omega_delta = 0.001;
+    std::vector<double> generate_ergs();
+    //double default_g1 = 1.0e6*g_agg;
+    //double default_g2 = g_aee;
+    double default_r = 1;
+    double integrated_norm;
+    AxionSpectrum sp;
+    std::vector<double> inv_cdf_data_x;
+    std::vector<double> inv_cdf_data_erg;
+    gsl_interp_accel* inv_cdf_acc;
+    gsl_spline* inv_cdf;
 };
 
 // Integrate the spectral flux
