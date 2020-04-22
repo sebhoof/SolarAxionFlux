@@ -35,6 +35,18 @@ bool file_exists(const std::string& filename) {
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
+void locate_data_folder(std::string path_to_model_file, std::string &path_to_data, std::string &model_file_name) {
+  auto pos = path_to_model_file.find_last_of("/");
+  if (pos!= std::string::npos) {
+    path_to_data = path_to_model_file.substr(0, pos);
+    model_file_name = path_to_model_file.substr(pos+1, path_to_model_file.length());
+  } else {
+    path_to_data = ".";
+    model_file_name = path_to_model_file;
+  };
+  p += "/../"; // Since we expect model file to be in data/solar_models.
+};
+
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
   //std::cout << "Saving results to " << path << "..." << std::endl;
 

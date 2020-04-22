@@ -33,6 +33,7 @@ void terminate_with_error(std::string err_string);
 void terminate_with_error_if(bool condition, std::string err_string);
 void my_handler(const char * reason, const char * file, int line, int gsl_errno);
 bool file_exists(const std::string& filename);
+void locate_data_folder(std::string path_to_model_file, std::string &path_to_data, std::string &model_file_name);
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment = "", bool overwrite = true);
 
 // OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.

@@ -14,15 +14,17 @@
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {}
 
-SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
-  if ((set_opcode != OP) && (file != "data/solar_models/SolarModel_AGSS09.dat")) {
+SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
+  std::string path_to_data, model_file_name;
+  locate_data_folder(path_to_model_file, path_to_data, model_file_name);
+  if ((set_opcode != OP) && (model_file_name != "SolarModel_AGSS09.dat")) {
       std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
       std::cout << "         Results will be inconsistent." << std::endl;
   };
   // Set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equation 16 a or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
-  solarmodel_name = file;
-  data = ASCIItableReader(file);
+  solarmodel_name = model_file_name;
+  data = ASCIItableReader(path_to_model_file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
   int n_cols = data.getncol();
@@ -36,7 +38,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
     tracked_isotopes = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16}};
   } else {
-    terminate_with_error("ERROR! Solar model file '"+file+"' not compatible with this code!");
+    terminate_with_error("ERROR! Solar model file '"+path_to_model_file,+"' not compatible with this code!");
   };
 
   // Initialise isotope-index map.
@@ -153,7 +155,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
       std::map<std::pair<int,int>, gsl_interp_accel*> temp_acc;
       std::map<std::pair<int,int>, gsl_spline*> temp_interp;
       for (int j = 0; j < op_grid_size; j++) {
-        std::string op_filename = "data/opacity_tables/OP/opacity_table_"+element+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
+        std::string op_filename = path_to_data+"opacity_tables/OP/opacity_table_"+element+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
         ASCIItableReader op_data = ASCIItableReader(op_filename);
 
         // Determine the number of interpolated mass values.
@@ -190,7 +192,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
           std::stringstream rhostream;
           Tstream << std::fixed << std::setprecision(3) << tops_grid[j][0];
           rhostream << std::fixed << std::setprecision(3) << tops_grid[j][1];
-          std::string tops_filename = "data/opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+          std::string tops_filename = path_to_data+"opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
           ASCIItableReader tops_data = ASCIItableReader(tops_filename);
           // Determine the number of interpolated energy values.
           int tops_pts = tops_data[0].size();
@@ -208,7 +210,7 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
       for (int j = 0 ; j < opas_radii.size(); j++) {
           std::stringstream Rstream;
           Rstream << std::fixed << std::setprecision(2) << opas_radii[j];
-          std::string opas_filename = "data/opacity_tables/OPAS/R" + Rstream.str() + ".dat";
+          std::string opas_filename = path_to_data+"opacity_tables/OPAS/R" + Rstream.str() + ".dat";
           ASCIItableReader opas_data = ASCIItableReader(opas_filename);
           // Determine the number of interpolated energy values.
           int opas_pts = opas_data[0].size();
@@ -222,9 +224,9 @@ SolarModel::SolarModel(std::string file, opacitycode set_opcode, bool set_raffel
   }
   //alpha
   if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
-     data_alpha =  ASCIItableReader("data/alpha_tables/alpha"+file.substr(file.find("_")));
+     data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha"+file.substr(file.find("_")));
   } else {
-     data_alpha =  ASCIItableReader("data/alpha_tables/alpha_B16-AGSS09.dat");
+     data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha_B16-AGSS09.dat");
   };
   int n_cols_alpha = data_alpha.getncol();
   data_alpha.setcolnames("radius", "alpha");
