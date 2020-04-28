@@ -23,7 +23,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   };
   // Set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equation 16 a or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
-  solarmodel_name = model_file_name;
+  solar_model_name = model_file_name;
   data = ASCIItableReader(path_to_model_file);
   int pts = data.getnrow();
   // Terminate if number of columns is wrong; i.e. the wrong solar model file format.
@@ -223,7 +223,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       }
   }
   //alpha
-  if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
+  if (alpha_available.find(solar_model_name) != alpha_available.end()) {
      data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha"+file.substr(file.find("_")));
   } else {
      data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha_B16-AGSS09.dat");
@@ -247,7 +247,7 @@ SolarModel& SolarModel::operator=(SolarModel &&src) {
     std::swap(initialisation_status,src.initialisation_status);
     //std::swap(opcode,src.opcode);
     std::swap(raffelt_approx,src.raffelt_approx);
-    std::swap(solarmodel_name,src.solarmodel_name);
+    std::swap(solar_model_name,src.solar_model_name);
     std::swap(data,src.data);
     std::swap(data_alpha,src.data_alpha);
     std::swap(tracked_isotopes,src.tracked_isotopes);
@@ -320,7 +320,7 @@ double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], 
 double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
 // alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
 double SolarModel::alpha(double r) {
-    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
+    if (alpha_available.find(solar_model_name) != alpha_available.end()) {
       return gsl_spline_eval(linear_interp[6], r, accel[6]);
     } else {
       return 4.0;
@@ -335,7 +335,7 @@ double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval
 double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
 // returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
-    if (alpha_available.find(solarmodel_name) != alpha_available.end()) {
+    if (alpha_available.find(solar_model_name) != alpha_available.end()) {
         return (H_mass_fraction(r) + He_mass_fraction(r)+ alpha(r) * metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
     } else {
         return  gsl_spline_eval(linear_interp[5], r, accel[5]);  // full ionisation
@@ -730,6 +730,7 @@ double SolarModel::get_r_hi() { return r_hi; }
 double SolarModel::get_gagg_ref_value_in_inverse_GeV() { return 1.0e6*g_agg; }
 double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
+std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
 bool SolarModel::is_initialised() { return initialisation_status; };
 

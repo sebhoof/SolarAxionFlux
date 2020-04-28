@@ -28,6 +28,7 @@ class AxionSpectrum {
     SpectrumModes get_class_mode();
     std::tuple<int, double, double> get_table_parameters();
     std::vector<double> get_analytical_parameters();
+    //double axion_flux(double erg);
     double axion_flux(double erg, double g1); // Issue warnings for wrong use of all these functions.
     double axion_flux(double erg, double g1, double g2);
     double axion_flux(double erg, double r, double g1, double g2);

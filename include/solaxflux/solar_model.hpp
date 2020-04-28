@@ -98,7 +98,7 @@ class SolarModel {
     // Use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is false
     bool raffelt_approx;
     // Solar data
-    std::string solarmodel_name;
+    std::string solar_model_name;
     // Min. and max. radius of the solar model file (distance r from the centre of the Sun in units of the solar radius)
     double r_lo, r_hi;
     ASCIItableReader data;
