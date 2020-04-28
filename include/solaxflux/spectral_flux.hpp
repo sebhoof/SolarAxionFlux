@@ -77,9 +77,10 @@ class AxionMCGenerator {
     double get_norm();
     std::vector<double> get_omega_params();
   private:
-    void init_inv_cdf_interpolator();
     bool simple_mc_generator_ready = false;
     bool analytical_mc_generator_ready = false;
+    void init_inv_cdf_interpolator();
+    void init_from_spectral_data(std::vector<double> ergs, std::vector<double> flux);
     std::pair<double,double> analytical_parameters;
     void init_with_local_spectrum(double g1, double g2, double r);
     bool full_mc_generator_ready = false;

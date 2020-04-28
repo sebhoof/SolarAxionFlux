@@ -225,7 +225,7 @@ AxionMCGenerator::AxionMCGenerator() {
   inv_cdf = gsl_spline_alloc(gsl_interp_linear, 2);
 };
 
-AxionMCGenerator::AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux) {
+void AxionMCGenerator::init_from_spectral_data(std::vector<double> ergs, std::vector<double> flux) {
   int pts = ergs.size();
   inv_cdf_data_erg = std::vector<double> (pts);
   inv_cdf_data_x = std::vector<double> (pts);
@@ -246,6 +246,8 @@ AxionMCGenerator::AxionMCGenerator(std::vector<double> ergs, std::vector<double>
   init_inv_cdf_interpolator();
 }
 
+AxionMCGenerator::AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux) { init_from_spectral_data(ergs, flux); }
+
 AxionMCGenerator::AxionMCGenerator(std::string file, bool is_already_inv_cdf_file) {
   if (is_already_inv_cdf_file) {
     ASCIItableReader inv_cdf_data (file);
@@ -258,7 +260,7 @@ AxionMCGenerator::AxionMCGenerator(std::string file, bool is_already_inv_cdf_fil
     init_inv_cdf_interpolator();
   } else {
     ASCIItableReader spectrum_data (file);
-    AxionMCGenerator(spectrum_data[0], spectrum_data[1]);
+    init_from_spectral_data(spectrum_data[0], spectrum_data[1]);
   };
 }
 
@@ -325,7 +327,7 @@ AxionMCGenerator::AxionMCGenerator(AxionSpectrum* spectrum, double g1, double g2
       double g2 = std::get<2>(table_params);
       inv_cdf_data_erg = generate_ergs();
       std::vector<double> flux = spectrum->axion_flux(inv_cdf_data_erg, r, g1, g2);
-      AxionMCGenerator(inv_cdf_data_erg, flux);
+      init_from_spectral_data(inv_cdf_data_erg, flux);
       if (table_submode > 2) {
         sp = *spectrum;
         full_mc_generator_ready = true;
@@ -335,7 +337,8 @@ AxionMCGenerator::AxionMCGenerator(AxionSpectrum* spectrum, double g1, double g2
     case analytical :
     {
       std::vector<double> p = spectrum->get_analytical_parameters();
-      AxionMCGenerator(p[2], p[3]);
+      analytical_parameters = {p[2], p[3]};
+      analytical_mc_generator_ready = true;
       break;
     }
     case solar_model :
@@ -355,7 +358,7 @@ AxionMCGenerator::~AxionMCGenerator() {
 
 void AxionMCGenerator::init_inv_cdf_interpolator() {
   int pts = inv_cdf_data_x.size();
-  terminate_with_error_if(not(pts >= 2), "ERROR! You tried to initialise the MC generator with less than two data points.");
+  terminate_with_error_if(pts < 2, "ERROR! You tried to initialise the MC generator with less than two data points.");
 
   const double* prob = &inv_cdf_data_x[0];
   const double* erg = &inv_cdf_data_erg[0];
