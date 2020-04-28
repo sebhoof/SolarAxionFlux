@@ -44,7 +44,7 @@ void locate_data_folder(std::string path_to_model_file, std::string &path_to_dat
     path_to_data = ".";
     model_file_name = path_to_model_file;
   };
-  p += "/../"; // Since we expect model file to be in data/solar_models.
+  path_to_data += "/../"; // Since we expect model file to be in data/solar_models.
 };
 
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {

@@ -88,6 +88,7 @@ class SolarModel {
     double get_gagg_ref_value_in_inverse_GeV();
     double get_gaee_ref_value();
     std::string get_solaxlib_name_and_version();
+    std::string get_solar_model_name();
     std::string get_opacitycode_name();
     bool is_initialised();
   private:

@@ -429,10 +429,10 @@ double AxionMCGenerator::get_norm() {
 double universal_function_wrapper(double r, void * params) {
   struct solar_disc_integration_params * p = (struct solar_disc_integration_params *)params;
   double erg = (p->erg);
-  SolarModel* sol = (p->sol);
-  SolarModelMemberFn = (p->integrand);
+  SolarModel* s = (p->s);
+  SolarModelMemberFn integrand = (p->integrand);
 
-  return 0.5*gsl_pow_2(r*erg/pi)*(sol->integrand(erg, r));
+  return 0.5 * gsl_pow_2(r*erg/pi) * (s->*integrand)(erg, r);
 }
 
 // Primakoff contribution [ref].

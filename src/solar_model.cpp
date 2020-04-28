@@ -38,7 +38,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
     tracked_isotopes = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16}};
   } else {
-    terminate_with_error("ERROR! Solar model file '"+path_to_model_file,+"' not compatible with this code!");
+    terminate_with_error("ERROR! Solar model file '"+path_to_model_file+"' not compatible with this code!");
   };
 
   // Initialise isotope-index map.
@@ -224,9 +224,9 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   }
   //alpha
   if (alpha_available.find(solar_model_name) != alpha_available.end()) {
-     data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha"+file.substr(file.find("_")));
+     data_alpha = ASCIItableReader(path_to_data+"alpha_tables/alpha"+model_file_name.substr(model_file_name.find("_")));
   } else {
-     data_alpha =  ASCIItableReader(path_to_data+"alpha_tables/alpha_B16-AGSS09.dat");
+     data_alpha = ASCIItableReader(path_to_data+"alpha_tables/alpha_B16-AGSS09.dat");
   };
   int n_cols_alpha = data_alpha.getncol();
   data_alpha.setcolnames("radius", "alpha");
