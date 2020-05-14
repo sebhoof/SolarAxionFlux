@@ -37,7 +37,7 @@ We currently do not have a DOI or reference to go with this code. Please contact
 * GS98, AGSS09(met), AGSS09ph [arXiv:0909.2668](https://arxiv.org/astro-ph/abs/0909.2668), [arXiv:0910.3690](https://arxiv.org/astro-ph/abs/0910.3690)
 * B16-GS98, B16-AGSS09 [arXiv:1611.09867](https://arxiv.org/astro-ph/abs/1611.09867)
 
-### Opacity codes
+### Opacities
 * LEDCOP [APS Conf. Series 75 (1995)](https://ui.adsabs.harvard.edu/abs/1995ASPC...78...51M)
 * OP [arXiv:astro-ph/0410744](https://arxiv.org/astro-ph/abs/astro-ph/0410744), [arXiv:astro-ph/0411010](https://arxiv.org/astro-ph/abs/astro-ph/0411010)
 * OPAS [ApJ _754_ 1 (1012)](https://doi.org/10.1088/0004-637X/745/1/10), [ApJ Suppl. Series _220_ 1 (1015)](https://doi.org/10.1088/0067-0049/220/1/2)

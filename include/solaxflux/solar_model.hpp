@@ -90,6 +90,7 @@ class SolarModel {
     std::string get_solaxlib_name_and_version();
     std::string get_solar_model_name();
     std::string get_opacitycode_name();
+    void set_opacity_correction(double a, double b);
     bool is_initialised();
   private:
     void init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const double* x, const double* y);
@@ -110,6 +111,8 @@ class SolarModel {
     std::vector<Isotope> tracked_isotopes;
     std::vector<gsl_interp_accel*> accel;
     std::vector<gsl_spline*> linear_interp;
+    double opacity_correction_a = 0.0;
+    double opacity_correction_b = 0.0;
     std::map< std::string, std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map<std::pair<float,float>, gsl_interp_accel*> opacity_acc_tops;

@@ -618,15 +618,18 @@ double SolarModel::opacity_element(double omega, double r, Isotope isotope) { re
 //  opacity for total solar mixture
 double SolarModel::opacity(double omega, double r) {
     double result = 0.0;
+    static double temp_0 = temperature_in_keV(r_lo);
+    const double r_cz_theo = 0.713;
+    const double temp_cz = temperature_in_keV(r_cz_theo);
     if (opcode == OP) {
-        for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega,r,op_element_names[k]); };
-    }
-    if ((opcode == LEDCOP) || (opcode == ATOMIC)){
+        for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); };
+    } else if ((opcode == LEDCOP) || (opcode == ATOMIC)){
         result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
-    }
-    if (opcode == OPAS) {
+    } else if (opcode == OPAS) {
         result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
-    }
+    };
+    // Apply opacity correction term.
+    if (r < r_cz_theo) { result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) ); };
     return result;
 }
 // opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
@@ -732,6 +735,7 @@ double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
+void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
 bool SolarModel::is_initialised() { return initialisation_status; };
 
 double rho_integrand_1d(double rho, void * params) {
