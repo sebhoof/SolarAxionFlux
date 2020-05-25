@@ -62,6 +62,6 @@ PYBIND11_MODULE(pyaxionflux, m) {
     m.doc() = "Solar Axion Flux library functions";
 
     m.def("test_module", &test_module, "A simple routine to test the Python interface.");
-    m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrated Primakoff flux from file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
-    m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrated Primakoff flux from file with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
+    m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
+    m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
 }

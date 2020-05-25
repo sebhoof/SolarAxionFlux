@@ -628,8 +628,11 @@ double SolarModel::opacity(double omega, double r) {
     } else if (opcode == OPAS) {
         result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
     };
-    // Apply opacity correction term.
-    if (r < r_cz_theo) { result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) ); };
+    // Apply opacity correction term and truncate to zero if necessary.
+    if (r < r_cz_theo) {
+      result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
+      result = std::max(result, 0.0);
+    };
     return result;
 }
 // opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
@@ -706,6 +709,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<do
   if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
   } else {
+    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, integrand);
   };
 }
@@ -715,6 +719,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector
   if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
   } else {
+    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, integrand);
   };
 }
@@ -723,6 +728,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> 
   if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
   } else {
+    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, process);
   };
 }
@@ -801,7 +807,8 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
 
   double r_min = s.get_r_lo();
-  double r_max = s.get_r_hi();
+  // Since large radii are irrelevant for the flux calculation, very slightly reduce the max. value to prevent round-off errors.
+  double r_max = 0.999999*s.get_r_hi();
 
   solar_model_integration_parameters p { 0.0, 0.0, r_max, &s, integrand, nullptr };
   gsl_function f;
