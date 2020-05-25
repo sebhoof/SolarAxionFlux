@@ -6,12 +6,9 @@ void test_module() {
 }
 
 void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root, std::string process) {
-  // Setup steps
-  std::cout << "Setting up Solar model..." << std::endl;
   SolarModel s (solar_model_file,OP);
-  std::cout << "Done!" << std::endl;
 
-  std:: vector<double> ergs;
+  std::vector<double> ergs;
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
   for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); };
 
@@ -46,16 +43,15 @@ void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max
   std::cout << "Setting up Solar model from file " << solar_model_file << " and parameters (" << a << ", " << b << ") ..." << std::endl;
   SolarModel s (solar_model_file,OP);
   s.set_opacity_correction(a, b);
-  std::cout << "Done!" << std::endl;
 
-  std:: vector<double> ergs;
+  std::vector<double> ergs;
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
   for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); };
 
   std::string output_file = output_file_root+"_Primakoff.dat";
-  calculate_spectral_flux_Primakoff(ergs, s, 1.0, output_file);
+  calculate_spectral_flux_Primakoff(ergs, s, output_file);
   output_file = output_file_root+"_electron.dat";
-  calculate_spectral_flux_axionelectron(ergs, s, 1.0, output_file);
+  calculate_spectral_flux_axionelectron(ergs, s, output_file);
 }
 
 PYBIND11_MODULE(pyaxionflux, m) {

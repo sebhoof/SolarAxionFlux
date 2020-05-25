@@ -706,6 +706,7 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
 // Calculate the solar axion spectrum for axion-photon and axion-electron interactions
 std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max) {
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
+  std::cout << r_max << " vs " << r_hi << std::endl;
   if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
   } else {
@@ -807,8 +808,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
 
   double r_min = s.get_r_lo();
-  // Since large radii are irrelevant for the flux calculation, very slightly reduce the max. value to prevent round-off errors.
-  double r_max = 0.999999*s.get_r_hi();
+  double r_max = s.get_r_hi();
 
   solar_model_integration_parameters p { 0.0, 0.0, r_max, &s, integrand, nullptr };
   gsl_function f;
@@ -821,6 +821,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
     gsl_integration_qag (&f, r_min, r_max, int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, w, &integral, &error);
     results.push_back(factor*integral);
     errors.push_back(factor*error);
+    std::cout << r_max << " " << *erg << " " << factor*integral << " +/- " << factor*error << std::endl;
     //if (saveas != ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
   };
 
