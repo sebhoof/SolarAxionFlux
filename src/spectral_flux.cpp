@@ -32,12 +32,12 @@ void AxionSpectrum::init_table_mode(std::string file, double g1, double g2) {
     spline_2d.resize(n_grids);
     // Make sure that entries are properly sorted
     std::vector<double> x_vec = data[0];
-    sort(x_vec.begin(), x_vec.end());
-    x_vec.erase(unique(x_vec.begin(), x_vec.end()), x_vec.end());
+    std::sort(x_vec.begin(), x_vec.end());
+    x_vec.erase(std::unique(x_vec.begin(), x_vec.end()), x_vec.end());
     int nx = x_vec.size();
     std::vector<double> y_vec = data[1];
-    sort(y_vec.begin(), y_vec.end());
-    y_vec.erase(unique(y_vec.begin(), y_vec.end()), y_vec.end());
+    std::sort(y_vec.begin(), y_vec.end());
+    y_vec.erase(std::unique(y_vec.begin(), y_vec.end()), y_vec.end());
     int ny = y_vec.size();
     terminate_with_error_if(nx*ny != pts, "ERROR! Number of data points ("+std::to_string(pts)+") in '"+file+"' inconsistent with number of unique 'x' and 'y' values ("+std::to_string(nx)+" and "+std::to_string(ny)+")! Check the formatting.");
 

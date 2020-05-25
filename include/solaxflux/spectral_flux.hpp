@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <algorithm>
+#include <chrono>
 
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_cdf.h>
