@@ -5,7 +5,7 @@
 
 #include <gsl/gsl_math.h>
 
-const std::string LIBRARY_NAME = "SolarAxionFlux v0.2b";
+const std::string LIBRARY_NAME = "SolarAxionFlux v0.4b";
 
 const double hbar = 6.582119514e-25;                          // in GeV * s
 const double radius_sol = 6.9598e8;                           // in metres

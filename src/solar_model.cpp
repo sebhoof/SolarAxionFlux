@@ -703,7 +703,7 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
 // Calculate the solar axion spectrum for axion-photon and axion-electron interactions
 std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max) {
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-  if (r_max < r_lo) {
+  if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
   } else {
     return calculate_spectral_flux(ergs, *this, integrand);
@@ -712,7 +712,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<do
 
 std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max) {
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
-  if (r_max < r_lo) {
+  if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
   } else {
     return calculate_spectral_flux(ergs, *this, integrand);
@@ -720,7 +720,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector
 }
 
 std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
-  if (r_max < r_lo) {
+  if (r_max < r_hi) {
     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
   } else {
     return calculate_spectral_flux(ergs, *this, process);
