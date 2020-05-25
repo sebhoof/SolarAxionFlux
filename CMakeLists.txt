@@ -57,3 +57,6 @@ else()
 endif()
 
 add_subdirectory(src)
+
+# Generate thisLibrary scripts
+include(cmake/thisSolarAxionFluxLib.cmake)

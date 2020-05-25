@@ -10,14 +10,15 @@ target_include_directories(axionflux PUBLIC
     $<INSTALL_INTERFACE:include/solaxflux>)
 target_link_libraries(axionflux ${LIBRARIES})
 
-install(TARGETS axionflux EXPORT MyLibraryConfig
-    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# Disable install steps for now...
+# install(TARGETS axionflux EXPORT MyLibraryConfig
+#    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-# This makes the project importable from the install directory
-# Put config file in per-project dir (name MUST match), can also
-# just go into 'cmake'.
-install(EXPORT MyLibraryConfig DESTINATION share/MyLibrary/cmake)
+# # This makes the project importable from the install directory
+# # Put config file in per-project dir (name MUST match), can also
+# # just go into 'cmake'.
+# install(EXPORT MyLibraryConfig DESTINATION share/MyLibrary/cmake)
 
 # This makes the project importable from the build directory
 export(TARGETS axionflux FILE MyLibraryConfig.cmake)
