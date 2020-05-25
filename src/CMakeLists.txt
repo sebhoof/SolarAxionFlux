@@ -5,12 +5,13 @@ set(HEADER_FILES ${HEADER_FILES_DIR}/spectral_flux.hpp ${HEADER_FILES_DIR}/exper
 
 add_library(axionflux SHARED experimental_flux.cpp spectral_flux.cpp solar_model.cpp utils.cpp ${HEADER_FILES})
 set_target_properties(axionflux PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-target_include_directories(axionflux PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/solaxflux>
-    $<INSTALL_INTERFACE:include/solaxflux>)
+# set_target_properties(axionflux PROPERTIES PUBLIC_HEADER ${HEADER_FILES})
+target_include_directories(axionflux PRIVATE ${CMAKE_SOURCE_DIR}/include/solaxflux ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(axionflux ${LIBRARIES})
+message("-- Dir ${CMAKE_SOURCE_DIR}")
+install(TARGETS axionflux LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
-# Disable install steps for now...
+# Disable global install steps for now...
 # install(TARGETS axionflux EXPORT MyLibraryConfig
 #    ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #    LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -20,14 +21,12 @@ target_link_libraries(axionflux ${LIBRARIES})
 # # just go into 'cmake'.
 # install(EXPORT MyLibraryConfig DESTINATION share/MyLibrary/cmake)
 
-# This makes the project importable from the build directory
-export(TARGETS axionflux FILE MyLibraryConfig.cmake)
+# # This makes the project importable from the build directory
+# export(TARGETS axionflux FILE MyLibraryConfig.cmake)
 
 # Create executable for the unit tests
 add_executable(test_library tests.cpp ${HEADER_FILES})
-target_include_directories(test_library PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/solaxflux>
-    $<INSTALL_INTERFACE:include/solaxflux>)
+target_include_directories(test_library PRIVATE ${CMAKE_SOURCE_DIR}/include/solaxflux ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(test_library axionflux)
 set_target_properties(test_library
     PROPERTIES
@@ -37,12 +36,7 @@ set_target_properties(test_library
 # Create the PYBIND11 library
 if(PYBIND11_INSTALLED)
   pybind11_add_module(pyaxionflux python_wrapper.cpp)
-  target_include_directories(pyaxionflux PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/solaxflux>
-      $<INSTALL_INTERFACE:include/solaxflux>)
+  target_include_directories(pyaxionflux PRIVATE ${CMAKE_SOURCE_DIR}/include/solaxflux ${CMAKE_SOURCE_DIR}/include/pybind11 ${CMAKE_SOURCE_DIR}/src)
   target_link_libraries(pyaxionflux PRIVATE axionflux)
-  set_target_properties(pyaxionflux
-      PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
-  )
+  set_target_properties(pyaxionflux PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 endif()

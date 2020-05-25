@@ -8,9 +8,9 @@ file( WRITE ${PROJECT_SOURCE_DIR}/bin/thisSolarAxionFluxLib.sh
 
 \# Check active shell by checking for existence of _VERSION variable
 if [[ -n \\\"\\\${BASH_VERSION}\\\" ]]; then
-    THIS_DIR=\\\$(cd \\\$(dirname \\\${BASH_ARGV[0]}); pwd)
+    THIS_DIR=\\\$(cd \\\$(dirname \\\${BASH_ARGV[0]})/..; pwd)
 elif [[ -n \\\"\\\${ZSH_VERSION}\\\" ]]; then
-    THIS_DIR=\\\$(cd \\\$(dirname \\\$0); pwd)
+    THIS_DIR=\\\$(cd \\\$(dirname \\\$0)/..; pwd)
 else
     echo \\\"Invalid shell! Either source with bash or zsh!\\\"
     return 1
