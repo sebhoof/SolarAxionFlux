@@ -1,11 +1,9 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-project(SolarAxionFlux VERSION 0.3 DESCRIPTION "Calculate the solar axion flux from axion-photon and axion-electron interactions" LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
+project(SolarAxionFlux VERSION 0.4 DESCRIPTION "Calculate the solar axion flux from axion-photon and axion-electron interactions" LANGUAGES CXX)
 set (CMAKE_CXX_STANDARD 11)
 
 # Must use GNUInstallDirs to install libraries into correct locations on all platforms.
 include(GNUInstallDirs)
-# Include FetchContent to clone PYBIND11 from git repo
-include(FetchContent)
 
 # Set some compiler flags for non-release-type builds (okay for a small library)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
@@ -21,11 +19,18 @@ set(LIBRARIES ${LIBRARIES} ${GSL_LIBRARIES})
 # Add an option to disable Python support
 option(PYTHON_SUPPORT "Adds a Python module library using the PYBIND11 headers." ON)
 
+if(PYTHON_SUPPORT AND CMAKE_VERSION VERSION_LESS 3.11.4)
+  message("-- Your CMAKE version (< 3.11.4) does not support the 'FetchContent' extension. PYTHON_SUPPORT will be set to OFF.")
+  set(PYTHON_SUPPORT OFF)
+endif()
+
 # Check for Python 3 and PYBIND11 (if desired)
 set(INTERNAL_PYBIND11_DIR "${PROJECT_SOURCE_DIR}/include/pybind11")
 if(PYTHON_SUPPORT)
   find_package(PythonInterp 3 QUIET)
   if(PYTHONINTERP_FOUND)
+    # Include FetchContent to clone PYBIND11 from git repo
+    include(FetchContent)
     FetchContent_Declare(pybind11
                          GIT_REPOSITORY https://github.com/pybind/pybind11.git
                          GIT_TAG v2.4.3
