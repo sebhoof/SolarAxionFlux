@@ -9,7 +9,7 @@ path2="/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlu
 ite=168 #184
 jne=76 #82
 Z=[1,2,6,7,8,10,11,12,13,14,16,18,20,24,25,26,28]
-element_name = ["H","He","C","N","O","H","Ne","Na","Mg","Al","Si","S","Ar","Ca","Cr","Mn","Fe","Ni"]
+element_name = ["H","He","C","N","O","Ne","Na","Mg","Al","Si","S","Ar","Ca","Cr","Mn","Fe","Ni"]
 for iz in range(0,17):
     label='temp'+'m'+str(int(Z[iz])).zfill(2)+'.'+str(ite).zfill(3)+'.'+str(jne)
     try:
