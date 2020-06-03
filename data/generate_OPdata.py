@@ -6,9 +6,10 @@ import pexpect
 
 path1="/Users/lennertthormaehlen/Documents/Uni/Heidelberg/Master/Astro-approach/OP/OPCD_3.3/mono/"
 path2="/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/data/opacity_tables/OP/"
-ite=152 #184
-jne=68 #82
+ite=168 #184
+jne=76 #82
 Z=[1,2,6,7,8,10,11,12,13,14,16,18,20,24,25,26,28]
+element_name = ["H","He","C","N","O","H","Ne","Na","Mg","Al","Si","S","Ar","Ca","Cr","Mn","Fe","Ni"]
 for iz in range(0,17):
     label='temp'+'m'+str(int(Z[iz])).zfill(2)+'.'+str(ite).zfill(3)+'.'+str(jne)
     try:
@@ -16,7 +17,7 @@ for iz in range(0,17):
         headerlength=int(header[1]-header[0])+4
         s=np.genfromtxt(path1+label,skip_header=headerlength)
         s[:,0]=np.log(s[:,0])
-        filename="opacity_table_"+str(int(iz+1))+"_"+str(int(ite))+"_"+str(int(jne))+".dat"
+        filename="opacity_table_"+element_name[iz]+"_"+str(int(ite))+"_"+str(int(jne))+".dat"
         np.savetxt(path2+filename,s,fmt=["%9.5e","%9.2e"],header="OPACITY Project tables",delimiter="")
     except OSError:
         proc=pexpect.spawn('./monop.out')
@@ -31,5 +32,5 @@ for iz in range(0,17):
         headerlength=int(header[1]-header[0])+4
         s=np.genfromtxt(path1+label,skip_header=headerlength)
         s[:,0]=np.log(s[:,0])
-        filename="opacity_table_"+str(int(iz+1))+"_"+str(int(ite))+"_"+str(int(jne))+".dat"
+        filename="opacity_table_"+element_name[iz]+"_"+str(int(ite))+"_"+str(int(jne))+".dat"
         np.savetxt(path2+filename,s,fmt=["%9.5e","%9.2e"],header="OPACITY Project tables",delimiter="")
