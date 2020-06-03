@@ -11,8 +11,8 @@ double conversion_prob_correction(double mass, double erg, double length) {
 }
 
 // Effective exposures (in seconds x cm) for various experiments.
-double eff_exposure_cast_2007(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2007_EffectiveExposure.dat");
+double eff_exposure(double erg, std::string dataset) {
+  static OneDInterpolator eff_exp ("data/exposures/"+dataset+"_EffectiveExposure.dat");
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
@@ -25,7 +25,7 @@ double erg_integrand_from_file(double erg, void * params) {
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
 
   double sincsq = conversion_prob_correction(p->mass, erg, p->length);
-  double exposure = p->eff_exposure(erg);
+  double exposure = eff_exposure(erg, p->dataset);
   // N.B. Here we assume axion is massless in stellar interior:
   double exp_flux = p->spectral_flux->interpolate(erg);
 
@@ -37,10 +37,10 @@ double erg_integrand(double erg, void * params) {
   SolarModel *s = p3->s;
   double r_min = s->get_r_lo(), r_max = std::min(p3->r_max, s->get_r_hi());
 
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(p3->eff_exposure(ref_erg_value))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(eff_exposure(ref_erg_value, p3->dataset))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
 
   double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
-  double exposure = p3->eff_exposure(erg);
+  double exposure = eff_exposure(erg, p3->dataset);
 
   struct solar_model_integration_parameters p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
 
@@ -111,7 +111,7 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
 
   double gagg_result, gagg_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, setup->eff_exposure, &spectral_flux };
+  exp_flux_params_file p { mass, setup->length, setup->dataset, &spectral_flux };
   gsl_function f;
   f.function = &erg_integrand_from_file;
   f.params = &p;
@@ -140,7 +140,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->get_r_lo());
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value, setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
@@ -149,7 +149,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
 
-  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->eff_exposure, s, integrand, w1, w2 };
+  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->dataset, s, integrand, w1, w2 };
   gsl_function f3;
   f3.function = &erg_integrand;
   f3.params = &p3;
@@ -187,7 +187,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
 
   double gaee_result, gaee_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, setup->eff_exposure, &spectral_flux };
+  exp_flux_params_file p { mass, setup->length, setup->dataset, &spectral_flux };
   gsl_function f;
   f.function = &erg_integrand_from_file;
   f.params = &p;
@@ -225,7 +225,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double bin_hi = bin_lo + bin_delta*double(n_bins);
 
   double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->get_r_lo());
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(setup->eff_exposure(ref_erg_value))*conversion_prob_correction(mass, ref_erg_value, setup->length);
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
@@ -234,7 +234,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
 
-  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->eff_exposure, s, integrand, w1, w2 };
+  erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->dataset, s, integrand, w1, w2 };
   gsl_function f3;
   f3.function = &erg_integrand;
   f3.params = &p3;
@@ -300,8 +300,8 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   double gagg_result, gagg_error, gaee_result, gaee_error;
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p1 { 0, setup->length, setup->eff_exposure, &spectral_flux_gagg };
-  exp_flux_params_file p2 { 0, setup->length, setup->eff_exposure, &spectral_flux_gaee };
+  exp_flux_params_file p1 { 0, setup->length, setup->dataset, &spectral_flux_gagg };
+  exp_flux_params_file p2 { 0, setup->length, setup->dataset, &spectral_flux_gaee };
   gsl_function f1, f2;
   f1.function = &erg_integrand_from_file;
   f1.params = &p1;
@@ -339,7 +339,7 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   result.push_back(results_gagg);
   if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); };
 
-  save_to_file(saveas, result, "Reference counts for g_agamma = 10^-11 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff | Counts from axion-electron");
+  save_to_file(saveas, result, "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff | Counts from axion-electron");
   gsl_integration_workspace_free (w1);
   gsl_integration_workspace_free (w2);
 
