@@ -7,6 +7,7 @@
 
 const std::string LIBRARY_NAME = "SolarAxionFlux v0.4b";
 
+const double pi = M_PI;
 const double hbar = 6.582119514e-25;                          // in GeV * s
 const double radius_sol = 6.9598e8;                           // in metres
 const double distance_sol = 1.495978707e11;                   // in metres
@@ -22,6 +23,6 @@ const double m_electron = 0.5109989461E+3;                    // electron mass (
 const double a_Bohr = 5.29177210903e-9;                       // Bohr radius in cm
 const double g_aee = 1.0E-13;                                 // axion-electron coupling
 const double g_agg = 1.0E-16;                                 // axion-photon coupling in keV^-1
-const double pi = M_PI;
+const double eV2T = sqrt(4.0*pi)*1.4440271*1.0e-3;
 
 #endif // defined __constants_hpp__

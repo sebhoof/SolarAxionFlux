@@ -6,15 +6,142 @@
 
 // Conversion probability correction for massive axions.
 double conversion_prob_correction(double mass, double erg, double length) {
-  double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
-  return gsl_pow_2(gsl_sf_sinc(argument/pi));
+  double result = 1.0;
+  if (mass > 0) {
+    double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
+    result = gsl_pow_2(gsl_sf_sinc(argument/pi));
+  };
+  return result;
 }
 
-// Effective exposures (in seconds x cm) for various experiments.
+// Effective exposures (in seconds x cm^2) for various experiments.
+double eff_exposure_cast2007(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2007_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_a(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_A_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_b(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_B_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_c(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_C_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_d(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_D_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_e(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_E_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_f(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_F_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_g(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_G_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_h(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_H_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_i(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_I_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_j(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_J_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_k(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_K_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+double eff_exposure_cast2017_l(double erg) {
+  static OneDInterpolator eff_exp ("data/exposures/CAST2017_L_EffectiveExposure.dat");
+  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+};
+
+// IAXO data as used by 1811.09290
+double eff_exposure_iaxo(double erg) {
+  const double eff = 0.7*0.8;
+  const double time = 3.0*365.0*24.0*60.0*60.0;
+  const double area = 2.26e4;
+  const double eff_exp = eff*time*area;
+  return eff_exp;
+};
+
+/*
 double eff_exposure(double erg, std::string dataset) {
-  static OneDInterpolator eff_exp ("data/exposures/"+dataset+"_EffectiveExposure.dat");
+  static std::string previous_dataset = "";
+  static OneDInterpolator eff_exp;
+  if (previous_dataset != dataset) {
+    eff_exp = OneDInterpolator("data/exposures/"+dataset+"_EffectiveExposure.dat");
+    previous_dataset = dataset;
+  };
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
+}
+*/
+
+double eff_exposure(double erg, std::string dataset) {
+  experiment exp = experiment_name.at(dataset);
+  return eff_exposure(erg, exp);
+}
+
+double eff_exposure(double erg, experiment dataset) {
+  double res = 0.0;
+  switch (dataset) {
+    case(CAST2007):
+      res = eff_exposure_cast2007(erg); break;
+    case(CAST2017_A):
+      res = eff_exposure_cast2017_a(erg); break;
+    case(CAST2017_B):
+      res = eff_exposure_cast2017_b(erg); break;
+    case(CAST2017_C):
+      res = eff_exposure_cast2017_c(erg); break;
+    case(CAST2017_D):
+      res = eff_exposure_cast2017_d(erg); break;
+    case(CAST2017_E):
+      res = eff_exposure_cast2017_e(erg); break;
+    case(CAST2017_F):
+      res = eff_exposure_cast2017_f(erg); break;
+    case(CAST2017_G):
+      res = eff_exposure_cast2017_g(erg); break;
+    case(CAST2017_H):
+      res = eff_exposure_cast2017_h(erg); break;
+    case(CAST2017_I):
+      res = eff_exposure_cast2017_i(erg); break;
+    case(CAST2017_J):
+      res = eff_exposure_cast2017_j(erg); break;
+    case(CAST2017_K):
+      res = eff_exposure_cast2017_k(erg); break;
+    case(CAST2017_L):
+      res = eff_exposure_cast2017_l(erg); break;
+    case(IAXO):
+      res = eff_exposure_iaxo(erg); break;
+    default:
+      terminate_with_error("ERROR! Data set not known!");
+  };
+  return res;
 }
 
 /////////////////////////
@@ -328,18 +455,22 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
       gsl_integration_qag(&f1, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w1, &gagg_result, &gagg_error);
       results_gagg.push_back(overall_factor*gagg_result);
       if (spectral_flux_file_gaee != "") {
-        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w2, &gaee_result, &gaee_result);
+        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w2, &gaee_result, &gaee_error);
         results_gaee.push_back(overall_factor*gaee_result);
       };
     };
   };
 
+  std::string header = "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff";
   result.push_back(expanded_masses);
   result.push_back(bin_centres);
   result.push_back(results_gagg);
-  if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); };
+  if (spectral_flux_file_gaee != "") {
+    result.push_back(results_gaee);
+    header += " | Counts from axion-electron";
+  };
 
-  save_to_file(saveas, result, "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff | Counts from axion-electron");
+  save_to_file(saveas, result, header);
   gsl_integration_workspace_free (w1);
   gsl_integration_workspace_free (w2);
 
@@ -359,7 +490,9 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
   static std::string reference_counts_file_bak = "";
   static int n_cols;
   static int n_bins;
-  static double lgm0;
+  static int n_masses;
+  static double min_m = 1.0e-4;
+  static double lgm0 = -4.0; // Axions with m = 10^-4 eV are as good as massless.
   static std::vector<double> log_masses;
   static std::vector<std::vector<double>> ref_counts_gagg;
   static std::vector<OneDInterpolator> interp_ref_counts_gagg;
@@ -379,11 +512,11 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     std::vector<double> m = data[0];
     sort(m.begin(), m.end());
     m.erase(unique(m.begin(), m.end()), m.end());
-    int n_masses = m.size();
-    // TODO: Need checks/safeguards for n_masses = 1 and n_masses = 1 with m[0] = 0.
+    n_masses = m.size();
     log_masses = std::vector<double> (n_masses);
-    lgm0 = -10; // Axions with m = 10^-10 eV are as good as massless.
-    if ((m[0] > 0) && (m[0] < 1.0e-10)) { lgm0 = log10(m[0]); };
+    min_m = m[0];
+    if ((min_m > 0) && (min_m < 1.0e-4)) { lgm0 = log10(min_m); };
+    if (n_masses > 1) { if ((min_m = 0) && (m[1] < 1.0e-4)) { lgm0 = log10(m[1]) - 100.0; }; };
     for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); };
     // Extract unique energy bin values from the file.
     std::vector<double> bins = data[1];
@@ -409,13 +542,15 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
       if (n_cols > 3) { ref_counts_gaee[j][k] = data[3][i]; };
     };
 
-    for (int j=0; j<n_bins; ++j) {
-      //OneDInterpolator temp_gagg (log_masses, ref_counts_gagg[j]);
-      //interp_ref_counts_gagg[j] = std::move(temp_gagg);
-      interp_ref_counts_gagg[j] = OneDInterpolator(log_masses, ref_counts_gagg[j]);
-      if (n_cols > 3) {
-        OneDInterpolator temp_gaee (log_masses, ref_counts_gaee[j]);
-        interp_ref_counts_gaee[j] = std::move(temp_gaee);
+    if (n_masses > 1) {
+      for (int j=0; j<n_bins; ++j) {
+        //OneDInterpolator temp_gagg (log_masses, ref_counts_gagg[j]);
+        //interp_ref_counts_gagg[j] = std::move(temp_gagg);
+        interp_ref_counts_gagg[j] = OneDInterpolator(log_masses, ref_counts_gagg[j]);
+        if (n_cols > 3) {
+          OneDInterpolator temp_gaee (log_masses, ref_counts_gaee[j]);
+          interp_ref_counts_gaee[j] = std::move(temp_gaee);
+        };
       };
     };
   };
@@ -424,10 +559,19 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
   double gagg_rel_sq = gagg*gagg/1.0e-20;
   double gaee_rel_sq = gaee*gaee/1.0e-26;
   double lgm = safe_log10(mass,lgm0);
-  for (int i = 0; i < n_bins; ++i) {
-    double temp = gagg_rel_sq*interp_ref_counts_gagg[i].interpolate(lgm);
-    if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); };
-    result.push_back(gagg_rel_sq*temp);
+  if (n_masses > 1) {
+    for (int i = 0; i < n_bins; ++i) {
+      double temp = gagg_rel_sq*interp_ref_counts_gagg[i].interpolate(lgm);
+      if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); };
+      result.push_back(gagg_rel_sq*temp);
+    };
+  } else {
+    terminate_with_error_if(mass != min_m, "ERROR! Your reference counts file is only valid for an axion mass of m = "+std::to_string(min_m)+" eV!");
+    for (int i = 0; i < n_bins; ++i) {
+      double temp = gagg_rel_sq*ref_counts_gagg[i][0];
+      if (n_cols > 3) { temp += gaee_rel_sq*ref_counts_gaee[i][0]; };
+      result.push_back(gagg_rel_sq*temp);
+    };
   };
 
   return result;

@@ -39,19 +39,6 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
   };
 }
 
-void py11_save_reference_counts(double mass, std::string dataset, std::string ref_spectrum_file_gagg, std::string ref_spectrum_file_gaee, std::string output_file_name) {
-  exp_setup setup;
-  if (dataset == "CAST2007") {
-    setup = cast_2007_setup;
-  } else {
-    setup = cast_2017_setup;
-    setup.dataset = dataset;
-  };
-
-  std::vector<double> masses = {mass};
-  axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name);
-}
-
 void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max, int n_ergs, double a, double b, std::string solar_model_file, std::string output_file_root) {
   std::cout << "Setting up Solar model from file " << solar_model_file << " and parameters (" << a << ", " << b << ") ..." << std::endl;
   SolarModel s (solar_model_file,OP);
@@ -67,11 +54,27 @@ void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max
   calculate_spectral_flux_axionelectron(ergs, s, output_file);
 }
 
+void py11_save_reference_counts(std::vector<double> masses, std::string dataset, std::string ref_spectrum_file_gagg, std::string ref_spectrum_file_gaee, std::string output_file_name) {
+  exp_setup setup;
+  if (dataset == "CAST2007") {
+    setup = cast_2007_setup;
+  } else {
+    setup = cast_2017_setup;
+    setup.dataset = dataset;
+  };
+  axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name);
+}
+
+std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee) {
+  return counts_prediciton_from_file(mass, gagg, reference_counts_file, gaee);
+}
+
 PYBIND11_MODULE(pyaxionflux, m) {
     m.doc() = "Solar Axion Flux library functions";
 
     m.def("test_module", &test_module, "A simple routine to test the Python interface.");
     m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
-    m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (mass, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
     m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
+    m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
+    m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
 }

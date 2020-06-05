@@ -48,11 +48,9 @@ void locate_data_folder(std::string path_to_model_file, std::string &path_to_dat
 };
 
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
-  //std::cout << "Saving results to " << path << "..." << std::endl;
-
   if (file_exists(path)) {
     if (overwrite) {
-      std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
+      //std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
     } else {
       std::cout << "File " << path << " exists! Now saving to " << path << "_new" << std::endl;
       path += "_new";
