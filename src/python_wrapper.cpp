@@ -58,11 +58,13 @@ void py11_save_reference_counts(std::vector<double> masses, std::string dataset,
   exp_setup setup;
   if (dataset == "CAST2007") {
     setup = cast_2007_setup;
+  } else if (dataset == "IAXO") {
+    setup = iaxo_setup;
   } else {
     setup = cast_2017_setup;
     setup.dataset = dataset;
   };
-  axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name);
+  axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name, true);
 }
 
 std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee) {
