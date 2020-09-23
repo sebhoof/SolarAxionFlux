@@ -62,16 +62,16 @@ class AxionSpectrum {
     //double default_r = 1;
 };
 
-class AxionMCGenerator {
+class AxionMCGenerator1D {
   public:
-    AxionMCGenerator();
-    AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux);
-    AxionMCGenerator(std::string file, bool is_already_inv_cdf_file=false);
-    void change_paramters(double erg_min, double erg_max, double erg_delta);
-    AxionMCGenerator(SolarModel* sol, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
-    AxionMCGenerator(double a, double b);
-    AxionMCGenerator(AxionSpectrum* spectrum, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
-    ~AxionMCGenerator();
+    AxionMCGenerator1D();
+    AxionMCGenerator1D(std::vector<double> ergs, std::vector<double> flux);
+    AxionMCGenerator1D(std::string file, bool is_already_inv_cdf_file=false);
+    void change_parameters(double erg_min, double erg_max, double erg_delta);
+    AxionMCGenerator1D(SolarModel* sol, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
+    AxionMCGenerator1D(double a, double b);
+    AxionMCGenerator1D(AxionSpectrum* spectrum, double g1=1.0e6*g_agg, double g2=g_aee, double r=1);
+    ~AxionMCGenerator1D();
     void save_inv_cdf_to_file(std::string inv_cdf_file);
     double evaluate_inv_cdf(double x);
     std::vector<double> draw_axion_energies(int n);
@@ -99,6 +99,29 @@ class AxionMCGenerator {
     std::vector<double> inv_cdf_data_erg;
     gsl_interp_accel* inv_cdf_acc;
     gsl_spline* inv_cdf;
+};
+
+class AxionMCGenerator2D {
+  public:
+    AxionMCGenerator2D();
+    AxionMCGenerator2D(std::vector<std::vector<double> > data, bool is_already_inv_cdf_data=false);
+    AxionMCGenerator2D(std::string file, bool is_already_inv_cdf_file=false);
+    AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs, std::vector<double> rads, double gaee=0, std::string save_fluxes_prefix="");
+    ~AxionMCGenerator2D();
+    void save_inv_cdf_to_file(std::string inv_cdf_file);
+    double evaluate_inv_cdf_rad(double x);
+    double evaluate_inv_cdf_erg_given_rad(double x, double rad);
+    std::vector<double> draw_axion_radii(int n);
+    std::vector<double> draw_axion_energies_given_radii(std::vector<double> radii);
+    std::vector<double> draw_axion_energies(int n);
+  private:
+    bool mc_generator_ready = false;
+    std::vector<double> radii;
+    OneDInterpolator inv_cdf_rad;
+    std::vector<OneDInterpolator> inv_cdf_ergs;
+    //TwoDInterpolator inv_cdf_grid;
+    void init_inv_cdf_interpolator();
+    void init_from_spectral_data(std::vector<std::vector<double>> data);
 };
 
 // Integrate the spectral flux

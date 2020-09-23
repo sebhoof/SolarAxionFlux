@@ -48,42 +48,43 @@ void locate_data_folder(std::string path_to_model_file, std::string &path_to_dat
 };
 
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
-  if (file_exists(path)) {
-    if (overwrite) {
-      //std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
-    } else {
-      std::cout << "File " << path << " exists! Now saving to " << path << "_new" << std::endl;
-      path += "_new";
-    };
-  };
-
-  std::ofstream output;
-  output.open(path);
-  if (comment != "") {
-    size_t pos = 0;
-    const std::string newline = "\n";
-    const std::string comment_newline = "\n# ";
-    while ((pos = comment.find(newline, pos)) != std::string::npos) {
-     comment.replace(pos, newline.length(), comment_newline);
-     pos += comment_newline.length();
-   };
-   output << "# " << comment << std::endl; };
-  int n_cols = buffer.size();
-  if (n_cols > 0) {
-    int n_rows = buffer[0].size();
-    if (n_rows > 0) {
-      for (int i=0; i<n_rows; ++i) {
-        output << buffer[0][i];
-        for (int j=1; j<n_cols; ++j) {
-          output << " " << buffer[j][i];
-        };
-        output << std::endl;
+  if (path != "") {
+    if (file_exists(path)) {
+      if (overwrite) {
+        //std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
+      } else {
+        std::cout << "File " << path << " exists! Now saving to " << path << "_new" << std::endl; path += "_new";
       };
-    } else {
-      std::cout << "WARNING! The data you are trying to write to " << path << " is empty! Created an empty file." << std::endl;
     };
+
+    std::ofstream output;
+    output.open(path);
+    if (comment != "") {
+      size_t pos = 0;
+      const std::string newline = "\n";
+      const std::string comment_newline = "\n# ";
+      while ((pos = comment.find(newline, pos)) != std::string::npos) {
+        comment.replace(pos, newline.length(), comment_newline);
+        pos += comment_newline.length();
+      };
+      output << "# " << comment << std::endl;
+    };
+    output << std::scientific << std::setprecision(8);
+    int n_cols = buffer.size();
+    if (n_cols > 0) {
+      int n_rows = buffer[0].size();
+      if (n_rows > 0) {
+        for (int i=0; i<n_rows; ++i) {
+          output << buffer[0][i];
+          for (int j=1; j<n_cols; ++j) { output << " " << buffer[j][i]; };
+          output << std::endl;
+        };
+      } else {
+        std::cout << "WARNING! The data you are trying to write to " << path << " is empty! Created an empty file." << std::endl;
+      };
+    };
+    output.close();
   };
-  output.close();
 }
 
 OneDInterpolator::OneDInterpolator() {
@@ -112,18 +113,23 @@ void OneDInterpolator::init(const std::vector<double> &x, const std::vector<doub
   up = x.back();
 }
 
+void OneDInterpolator::init(std::string type) { init(data[0], data[1], type); }
+
 // Initialiser for the OneDInterpolator class.
 OneDInterpolator::OneDInterpolator(std::string file, std::string type) {
   // Check if file exists.
-  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' not found!");
+  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
   // Read numerical values from data file.
   ASCIItableReader tab (file);
   //tab.setcolnames("x", "y"); -> Would raise warning if we try to interpolate data with errors
 
-  init(tab[0], tab[1], type);
+  data = tab.get_data();
+  init(type);
+  //init(tab[0], tab[1], type);
 }
 
 OneDInterpolator::OneDInterpolator(const std::vector<double> &x, const std::vector<double> &y, std::string type) { init(x, y, type); }
+OneDInterpolator::OneDInterpolator(std::vector<std::vector<double> > table, std::string type) { data = table; init(type); }
 
 // Move constructor
 //OneDInterpolator::OneDInterpolator(OneDInterpolator&& src) {
@@ -134,11 +140,20 @@ OneDInterpolator::OneDInterpolator(const std::vector<double> &x, const std::vect
 //    spline = std::move(src.spline);
 //}
 
+// Move constructor
+//OneDInterpolator::OneDInterpolator(OneDInterpolator&& src) {
+//  std::swap(acc,src.acc);
+//  std::swap(spline,src.spline);
+//  std::swap(lo,src.lo);
+//  std::swap(up,src.up);
+//}
+
 // Move assignment operator
 OneDInterpolator& OneDInterpolator::operator=(OneDInterpolator&& src) {
   if(this != &src) {
     std::swap(acc,src.acc);
     std::swap(spline,src.spline);
+    std::swap(data,src.data);
     std::swap(lo,src.lo);
     std::swap(up,src.up);
   }
@@ -163,6 +178,105 @@ std::vector<double> OneDInterpolator::interpolate(std::vector<double> x) {
 // Routines to return upper and lower boundaries of interpolating function.
 double OneDInterpolator::lower() { return lo; }
 double OneDInterpolator::upper() { return up; }
+
+
+TwoDInterpolator::TwoDInterpolator() {
+  // NOTE. Allocate memory in the default constructor for the move-assign operator (via std::swap) works with the destructor.
+  x_acc = gsl_interp_accel_alloc();
+  y_acc = gsl_interp_accel_alloc();
+  spline = gsl_spline2d_alloc(gsl_interp2d_bilinear, 2, 2);
+}
+
+// Move assignment operator
+TwoDInterpolator& TwoDInterpolator::operator=(TwoDInterpolator&& interp)
+{
+  if(this != &interp)
+  {
+    std::swap(x_acc,interp.x_acc);
+    std::swap(y_acc,interp.y_acc);
+    std::swap(spline,interp.spline);
+    std::swap(x_lo,interp.x_lo);
+    std::swap(x_up,interp.x_up);
+    std::swap(y_lo,interp.y_lo);
+    std::swap(y_up,interp.y_up);
+  }
+  return *this;
+}
+
+TwoDInterpolator::TwoDInterpolator(std::string file, std::string type) {
+  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
+  ASCIItableReader table (file);
+  data = table.get_data();
+  init(type);
+}
+
+TwoDInterpolator::TwoDInterpolator(std::vector<std::vector<double>> table, std::string type) { data = table; init(type); }
+
+// Initialiser for the AxionInterpolator class.
+void TwoDInterpolator::init(std::string type) {
+  std::cout << "Entering TwoDInterpolator init..." << std::endl;
+  unique_x_vals = data[0];
+  std::sort(unique_x_vals.begin(), unique_x_vals.end());
+  unique_x_vals.erase(std::unique(unique_x_vals.begin(), unique_x_vals.end()), unique_x_vals.end());
+  int nx = unique_x_vals.size();
+  unique_y_vals = data[1];
+  std::sort(unique_y_vals.begin(), unique_y_vals.end());
+  unique_y_vals.erase(std::unique(unique_y_vals.begin(), unique_y_vals.end()), unique_y_vals.end());
+  int ny = unique_y_vals.size();
+  int n_grid_pts = data[2].size();
+
+  terminate_with_error_if(nx*ny != n_grid_pts, "ERROR! The number of grid points ("+std::to_string(n_grid_pts)+") for TwoDInterpolator does not equal the number of unique 'x' and 'y' values ("+std::to_string(nx)+" and "+std::to_string(ny)+")!.");
+
+  const double* x = &unique_x_vals[0];
+  const double* y = &unique_y_vals[0];
+  // Allocate memory for "z" values array in gsl format
+  double* z = (double*) malloc(nx * ny * sizeof(double));
+
+  if (type == "bicubic") {
+    spline = gsl_spline2d_alloc(gsl_interp2d_bicubic, nx, ny);
+  } else if (type == "bilinear") {
+    spline = gsl_spline2d_alloc(gsl_interp2d_bilinear, nx, ny);
+  } else {
+    terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class TwoDInterpolator.\n       Available types: 'bilinear' and 'bicubic'.");
+  };
+
+  x_acc = gsl_interp_accel_alloc();
+  y_acc = gsl_interp_accel_alloc();
+
+  // Determine first and last "x" and "y" values and grid step size.
+  x_lo = unique_x_vals.front();
+  x_up = unique_x_vals.back();
+  y_lo = unique_y_vals.front();
+  y_up = unique_y_vals.back();
+  double x_delta = (x_up-x_lo) / (nx-1);
+  double y_delta = (y_up-y_lo) / (ny-1);
+
+  // Intialise grid.
+  for (int i = 0; i < n_grid_pts; i++)
+  {
+    // Determine appropriate indices for the grid points.
+    double temp = (data[0][i]-x_lo) / x_delta;
+    int ind_x = (int) (temp+0.5);
+    temp = (data[1][i]-y_lo) / y_delta;
+    int ind_y = (int) (temp+0.5);
+
+    gsl_spline2d_set(spline, z, ind_x, ind_y, data[2][i]);
+  };
+    gsl_spline2d_init (spline, x, y, z, nx, ny);
+    std::cout << "TwoDInterpolator init done!" << std::endl;
+};
+
+TwoDInterpolator::~TwoDInterpolator() {
+  gsl_spline2d_free(spline);
+  gsl_interp_accel_free(x_acc);
+  gsl_interp_accel_free(y_acc);
+}
+
+// Routine to access interpolated values.
+double TwoDInterpolator::interpolate(double x, double y) { return gsl_spline2d_eval(spline, x, y, x_acc, y_acc); };
+
+// Routine to check if a point is inside the interpolating box.
+bool TwoDInterpolator::is_inside_box(double x, double y) { return ((x >= x_lo) && (x <= x_up) && (y >= y_lo) && (y <= y_up)); };
 
 
 int ASCIItableReader::read(std::string filename) {

@@ -220,12 +220,12 @@ std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double r
 // Monte Carlo-related functions. //
 ////////////////////////////////////
 
-AxionMCGenerator::AxionMCGenerator() {
+AxionMCGenerator1D::AxionMCGenerator1D() {
   inv_cdf_acc = gsl_interp_accel_alloc();
   inv_cdf = gsl_spline_alloc(gsl_interp_linear, 2);
 };
 
-void AxionMCGenerator::init_from_spectral_data(std::vector<double> ergs, std::vector<double> flux) {
+void AxionMCGenerator1D::init_from_spectral_data(std::vector<double> ergs, std::vector<double> flux) {
   int pts = ergs.size();
   inv_cdf_data_erg = std::vector<double> (pts);
   inv_cdf_data_x = std::vector<double> (pts);
@@ -246,9 +246,9 @@ void AxionMCGenerator::init_from_spectral_data(std::vector<double> ergs, std::ve
   init_inv_cdf_interpolator();
 }
 
-AxionMCGenerator::AxionMCGenerator(std::vector<double> ergs, std::vector<double> flux) { init_from_spectral_data(ergs, flux); }
+AxionMCGenerator1D::AxionMCGenerator1D(std::vector<double> ergs, std::vector<double> flux) { init_from_spectral_data(ergs, flux); }
 
-AxionMCGenerator::AxionMCGenerator(std::string file, bool is_already_inv_cdf_file) {
+AxionMCGenerator1D::AxionMCGenerator1D(std::string file, bool is_already_inv_cdf_file) {
   if (is_already_inv_cdf_file) {
     ASCIItableReader inv_cdf_data (file);
     inv_cdf_data_x = inv_cdf_data[0];
@@ -264,20 +264,20 @@ AxionMCGenerator::AxionMCGenerator(std::string file, bool is_already_inv_cdf_fil
   };
 }
 
-void AxionMCGenerator::change_paramters(double erg_min, double erg_max, double erg_delta) {
+void AxionMCGenerator1D::change_parameters(double erg_min, double erg_max, double erg_delta) {
   omega_min = std::min(erg_min,erg_max);
   omega_max = std::max(erg_min,erg_max);
   omega_delta = erg_delta;
 };
 
-std::vector<double> AxionMCGenerator::generate_ergs() {
+std::vector<double> AxionMCGenerator1D::generate_ergs() {
   std::vector<double> result;
   int n_omega_vals = int((omega_max-omega_min)/omega_delta);
   for (int i=0; i<n_omega_vals; ++i) { result.push_back(omega_min + i*omega_delta); };
   return result;
 }
 
-void AxionMCGenerator::init_with_local_spectrum(double g1, double g2, double r) {
+void AxionMCGenerator1D::init_with_local_spectrum(double g1, double g2, double r) {
 
   inv_cdf_data_erg = generate_ergs();
   int n_omega_vals = inv_cdf_data_erg.size();
@@ -306,17 +306,17 @@ void AxionMCGenerator::init_with_local_spectrum(double g1, double g2, double r) 
   full_mc_generator_ready = true;
 }
 
-AxionMCGenerator::AxionMCGenerator(SolarModel* sol, double g1, double g2, double r) {
+AxionMCGenerator1D::AxionMCGenerator1D(SolarModel* sol, double g1, double g2, double r) {
   sp = AxionSpectrum(sol);
   init_with_local_spectrum(g1, g2, r);
 }
 
-AxionMCGenerator::AxionMCGenerator(double a, double b) {
+AxionMCGenerator1D::AxionMCGenerator1D(double a, double b) {
   analytical_parameters = {a, b};
   analytical_mc_generator_ready = true;
 }
 
-AxionMCGenerator::AxionMCGenerator(AxionSpectrum* spectrum, double g1, double g2, double r) {
+AxionMCGenerator1D::AxionMCGenerator1D(AxionSpectrum* spectrum, double g1, double g2, double r) {
   SpectrumModes mode = spectrum->get_class_mode();
   switch(mode) {
     case table :
@@ -347,16 +347,11 @@ AxionMCGenerator::AxionMCGenerator(AxionSpectrum* spectrum, double g1, double g2
       init_with_local_spectrum(g1, g2, r);
       break;
     }
-    default : std::cout << "WARNING! The mode of AxionMCGenerator, used in the construction of AxionSpectrum, is inappropriate.";
+    default : std::cout << "WARNING! The mode of AxionMCGenerator1D, used in the construction of AxionSpectrum, is inappropriate.";
   };
 }
 
-AxionMCGenerator::~AxionMCGenerator() {
-  gsl_spline_free(inv_cdf);
-  gsl_interp_accel_free(inv_cdf_acc);
-}
-
-void AxionMCGenerator::init_inv_cdf_interpolator() {
+void AxionMCGenerator1D::init_inv_cdf_interpolator() {
   int pts = inv_cdf_data_x.size();
   terminate_with_error_if(pts < 2, "ERROR! You tried to initialise the MC generator with less than two data points.");
 
@@ -370,15 +365,15 @@ void AxionMCGenerator::init_inv_cdf_interpolator() {
   simple_mc_generator_ready = true;
 }
 
-void AxionMCGenerator::save_inv_cdf_to_file(std::string inv_cdf_file) {
-  const std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME;
+void AxionMCGenerator1D::save_inv_cdf_to_file(std::string inv_cdf_file) {
+  const std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Random variable | Inverse CDF of energy distribution";
   std::vector<std::vector<double>> buffer;
   buffer.push_back(inv_cdf_data_x);
   buffer.push_back(inv_cdf_data_erg);
   save_to_file(inv_cdf_file, buffer, comment);
 }
 
-double AxionMCGenerator::evaluate_inv_cdf(double x) {
+double AxionMCGenerator1D::evaluate_inv_cdf(double x) {
   double result;
   if (analytical_mc_generator_ready) {
     static double ap1 = 1.0 + analytical_parameters.first;
@@ -392,7 +387,7 @@ double AxionMCGenerator::evaluate_inv_cdf(double x) {
   return result;
 }
 
-std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
+std::vector<double> AxionMCGenerator1D::draw_axion_energies(int n) {
   std::vector<double> result;
 
   auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -405,21 +400,224 @@ std::vector<double> AxionMCGenerator::draw_axion_energies(int n) {
   return result;
 }
 
-std::vector<double> AxionMCGenerator::draw_axion_energies(int n, double g1, double g2) {
+std::vector<double> AxionMCGenerator1D::draw_axion_energies(int n, double g1, double g2) {
   terminate_with_error_if(not(full_mc_generator_ready), "ERROR! The (full version of the) MC generator has not been initialised properly!");
 
   std::vector<double> ergs = generate_ergs();
   std::vector<double> flux = sp.axion_flux(ergs, default_r, g1, g2);
-  AxionMCGenerator mc (ergs,flux);
+  AxionMCGenerator1D mc (ergs,flux);
 
   return mc.draw_axion_energies(n);
 }
 
-double AxionMCGenerator::get_norm() {
+double AxionMCGenerator1D::get_norm() {
   terminate_with_error_if(not(simple_mc_generator_ready), "ERROR! The (simple version of the) MC generator has not been initialised properly!");
   return integrated_norm;
 }
 
+AxionMCGenerator1D::~AxionMCGenerator1D() {
+  gsl_spline_free(inv_cdf);
+  gsl_interp_accel_free(inv_cdf_acc);
+}
+
+AxionMCGenerator2D::AxionMCGenerator2D() { }
+
+AxionMCGenerator2D::AxionMCGenerator2D(std::string file, bool is_already_inv_cdf_file) {
+  if (is_already_inv_cdf_file) {
+    //inv_cdf_grid = TwoDInterpolator(file);
+    //init_inv_cdf_interpolator();
+  } else {
+    terminate_with_error("ERROR! 2D interpolation + integration of files is currently not supported.");
+    //ASCIItableReader spectrum_data (file);
+    //init_from_spectral_data(spectrum_data);
+  };
+}
+
+AxionMCGenerator2D::AxionMCGenerator2D(std::vector<std::vector<double> > data, bool is_already_inv_cdf_file) {
+  if (is_already_inv_cdf_file) {
+    //inv_cdf_grid = TwoDInterpolator(data);
+    //init_inv_cdf_interpolator();
+  } else {
+    terminate_with_error("ERROR! 2D interpolation + integration of spectral data is currently not supported.");
+    //init_from_spectral_data(data);
+  };
+}
+
+AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs, std::vector<double> rads, double gaee, std::string save_fluxes_prefix) {
+  std::vector<std::vector<double> > total_fluxes, fluxes, total_gaee_fluxes, gaee_fluxes;
+  std::vector<double> cdf_rads;
+  std::string filename = "";
+  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
+  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_Primakoff.dat"; };
+  total_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
+  int n_rad_entries = total_fluxes[0].size();
+  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_Primakoff.dat"; };
+  fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
+  int n_entries = fluxes[0].size();
+  if (gaee > 0) {
+    integrand = &SolarModel::Gamma_P_all_electron;
+    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_all_electron.dat"; };
+    total_gaee_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
+    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_all_electron.dat"; };
+    gaee_fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
+    for (int i = 0; i < n_rad_entries; ++i) { total_fluxes[1][i] += gsl_pow_2(gaee/1.0e-13)*total_gaee_fluxes[1][i]; };
+    for (int i = 0; i < n_entries; ++i) { fluxes[2][i] += gsl_pow_2(gaee/1.0e-13)*gaee_fluxes[2][i]; };
+  };
+
+  double norm = 0;
+  int k = 0;
+  std::vector<double> norms (n_rad_entries, 0.0);
+  inv_cdf_ergs.resize(n_rad_entries);
+  for (int i = 0; i < n_rad_entries; i++) {
+    if (i > 0) { norm += 0.5*(total_fluxes[0][i] - total_fluxes[0][i-1])*(total_fluxes[1][i] + total_fluxes[1][i-1]); };
+    //double omega_min = sqrt(sol.omega_pl_squared(total_fluxes[0][i]));
+    //double omega_max = sol.temperature_in_keV(total_fluxes[0][i]);
+    k += 1;
+    if (i < n_rad_entries-1) {
+      while (fluxes[0][k] < total_fluxes[0][i+1]) {
+        norms[i] += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
+        k += 1;
+      };
+    } else {
+      while (k < fluxes[0].size()) {
+        norms[i] += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
+        k += 1;
+      };
+    };
+    std::cout << "Norm: " << norms[i] << std::endl;
+  };
+
+  double integral1 = 0;
+  k = 0;
+  for (int i = 0; i < n_rad_entries; i++) {
+    if (i > 0) {
+      integral1 += 0.5*(total_fluxes[0][i] - total_fluxes[0][i-1])*(total_fluxes[1][i] + total_fluxes[1][i-1]);
+      cdf_rads.push_back(integral1/norm);
+    } else {
+      cdf_rads.push_back(0);
+    };
+    std::cout << total_fluxes[0][i] << " | " << cdf_rads[i] << std::endl;
+    double integral2 = 0;
+    std::vector<double> temp_ergs;
+    std::vector<double> temp_cdf_ergs;
+     temp_ergs.push_back(fluxes[1][k]);
+     temp_cdf_ergs.push_back(0);
+     k += 1;
+    if (i < n_rad_entries-1) {
+      while (fluxes[0][k] < total_fluxes[0][i+1]) {
+        integral2 += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
+        temp_ergs.push_back(fluxes[1][k]);
+        temp_cdf_ergs.push_back(integral2/norms[i]);
+        std::cout << total_fluxes[0][i] << " vs " << fluxes[0][k] << " | " << fluxes[1][k] << " | " << integral2/norms[i] << std::endl;
+        k += 1;
+      };
+    } else {
+      while (k < n_entries) {
+        integral2 += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
+        temp_ergs.push_back(fluxes[1][k]);
+        temp_cdf_ergs.push_back(integral2/norms[i]);
+        std::cout << total_fluxes[0][i] << " vs " << fluxes[0][k] << " | " << fluxes[1][k] << " | " << integral2/norms[i] << std::endl;
+        k += 1;
+      };
+    };
+
+    std::vector<std::vector<double> > buffer1 = { temp_cdf_ergs, temp_ergs };
+    OneDInterpolator interp (buffer1);
+    inv_cdf_ergs[i] = std::move(interp);
+  };
+
+  std::vector<std::vector<double> > buffer2 = { cdf_rads, total_fluxes[0] };
+  inv_cdf_rad = OneDInterpolator(buffer2);
+
+  //std::vector<std::vector<double> > buffer2 = { fluxes[0], cdf_ergs, fluxes[1] };
+  //inv_cdf_grid = TwoDInterpolator(buffer2);
+
+  radii = total_fluxes[0];
+
+  mc_generator_ready = true;
+}
+
+//AxionMCGenerator2D::init_from_spectral_data(std::vector<std::vector<double>> data, std::vector<std::vector<double>> data);
+
+void AxionMCGenerator2D::init_inv_cdf_interpolator() {
+  //energies = inv_cdf_grid.get_unique_y_vals();
+  //radii = inv_cdf_grid.get_unique_y_vals();
+  mc_generator_ready = true;
+}
+
+void AxionMCGenerator2D::save_inv_cdf_to_file(std::string inv_cdf_file) {
+  std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [Rsol] | Random variable | Inverse CDF of energy distribution, given radius.";
+  std::vector<std::vector<double> > buffer (3);
+  for (int i=0; i < radii.size(); i++) {
+    std::cout << "Loop Printig data... " << i << " / " << radii.size() << std::endl;
+    std::vector<std::vector<double> > data = inv_cdf_ergs[i].get_data();
+    int n_ergs = data[0].size();
+    std::vector<double> rads (n_ergs, radii[i]);
+    buffer[0].insert(buffer[0].end(), rads.begin(), rads.end());
+    buffer[1].insert(buffer[1].end(), data[0].begin(), data[0].end());
+    buffer[2].insert(buffer[2].end(), data[1].begin(), data[1].end());
+  };
+  //save_to_file(inv_cdf_file, inv_cdf_grid.get_data(), comment);
+  save_to_file(inv_cdf_file+".dat", buffer, comment);
+  comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Random variable | Inverse CDF of radius distribution";
+  save_to_file(inv_cdf_file+"_aux.dat", inv_cdf_rad.get_data(), comment);
+}
+
+double AxionMCGenerator2D::evaluate_inv_cdf_rad(double x) {
+  terminate_with_error_if(not(mc_generator_ready), "ERROR! The 2D MC generator has not been initialised properly!");
+  return inv_cdf_rad.interpolate(x);
+}
+
+double AxionMCGenerator2D::evaluate_inv_cdf_erg_given_rad(double x, double rad) {
+  terminate_with_error_if(not(mc_generator_ready), "ERROR! The 2D MC generator has not been initialised properly!");
+  double result;
+  auto it = lower_bound(radii.begin(), radii.end(), rad);
+  size_t index = std::distance(radii.begin(), it);
+  if ( (it == radii.begin()) || (it == radii.end()) ) {
+    result = inv_cdf_ergs[index].interpolate(x);
+  } else {
+    double r1 = *(it-1);
+    double r2 = *it;
+    double e1 = inv_cdf_ergs[index-1].interpolate(x);
+    double e2 = inv_cdf_ergs[index].interpolate(x);
+    result = e1 + (rad - r1)*(e2 - e1)/(r2 - r1);
+  };
+  return result;
+  //return inv_cdf_grid.interpolate(rad, x);
+}
+
+std::vector<double> AxionMCGenerator2D::draw_axion_radii(int n) {
+  std::vector<double> result;
+
+  auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  std::mt19937 rng (seed);
+  std::uniform_real_distribution<double> unif(0, 1);
+
+  for (int i=0; i<n; ++i) { result.push_back(inv_cdf_rad.interpolate( unif(rng) )); };
+
+  return result;
+}
+
+std::vector<double> AxionMCGenerator2D::draw_axion_energies_given_radii(std::vector<double> radii) {
+  std::vector<double> result;
+
+  auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  std::mt19937 rng (seed);
+  std::uniform_real_distribution<double> unif(0, 1);
+
+  for (auto r = radii.begin(); r != radii.end(); ++r) {
+    result.push_back(evaluate_inv_cdf_erg_given_rad( unif(rng), *r ));
+  };
+
+  return result;
+}
+
+std::vector<double> AxionMCGenerator2D::draw_axion_energies(int n) {
+  std::vector<double> radii = draw_axion_radii(n);
+  return draw_axion_energies_given_radii(radii);
+}
+
+AxionMCGenerator2D::~AxionMCGenerator2D() { }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Various integrands for the different contributions/combinations of contributions to the solar axion flux. //
@@ -548,7 +746,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
 
   std::vector<std::vector<double>> buffer = {ergs, results, errors};
   std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [axions / cm^2 s keV], axion flux error estimate [axions / cm^2 s keV]";
-  if (saveas != ""){ save_to_file(saveas, buffer, comment); };
+  save_to_file(saveas, buffer, comment);
 
   return results;
 }

@@ -28,7 +28,7 @@ int main() {
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, "results/primakoff.dat");
   std::cout << "\n# Generating MC object from Primakoff spectrum file, drawing 10 random axions energies, and saving inverse cdf data..." << std::endl;
-  AxionMCGenerator mc_engine ("results/primakoff.dat");
+  AxionMCGenerator1D mc_engine ("results/primakoff.dat");
   std::vector<double> mc_energies = mc_engine.draw_axion_energies(10);
   std::cout << "MC'ed axion energies (in keV):" << std::endl;
   std::cout << "[ "; for (auto erg = mc_energies.begin(); erg != mc_energies.end(); ++erg) { std::cout << *erg << " "; }; std::cout << "]" << std::endl;

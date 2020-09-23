@@ -495,11 +495,11 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   f1.params = &p1;
   f2.params = &p2;
   if (erg_resolution > 0) {
-    f1.function = &erg_integrand_from_file;
-    f2.function = &erg_integrand_from_file;
-  } else {
     f1.function = &convolved_erg_integrand_from_file;
     f2.function = &convolved_erg_integrand_from_file;
+  } else {
+    f1.function = &erg_integrand_from_file;
+    f2.function = &erg_integrand_from_file;
   };
 
   std::vector<std::vector<double>> relevant_peaks;

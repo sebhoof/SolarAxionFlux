@@ -13,11 +13,13 @@
 #define __utils_hpp__
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 #include <sys/stat.h> // Needed to check if file exists before we can expect C++14 std
 
@@ -38,14 +40,14 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
 
 // OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
 // Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
-class OneDInterpolator
-{
+class OneDInterpolator {
   public:
     // Overloaded class creators for the OneDInterpolator class using the init function below.
     OneDInterpolator(std::string file, std::string type = "linear");
+    OneDInterpolator(std::vector<std::vector<double> > table, std::string type = "linear");
     OneDInterpolator(const std::vector<double> &x, const std::vector<double> &y, std::string type = "linear");
     OneDInterpolator();
-    //OneDInterpolator (OneDInterpolator&&) = default;
+    OneDInterpolator (OneDInterpolator&&) = default;
     //OneDInterpolator (OneDInterpolator&&);
     OneDInterpolator& operator=(OneDInterpolator&&);
     // Destructor
@@ -59,14 +61,50 @@ class OneDInterpolator
     // Routine to access upper and lower boundaries of available data.
     double lower();
     double upper();
+    std::vector<std::vector<double> > get_data() { return data; };
   private:
+    std::vector<std::vector<double> > data;
     // Initialiser for the OneDInterpolator class.
     void init(const std::vector<double> &x, const std::vector<double> &y, std::string type);
+    void init(std::string type);
     // The gsl objects for the interpolating functions.
     gsl_interp_accel *acc;
     gsl_spline *spline;
     // Upper and lower boundaries available for the interpolating function.
     double lo, up;
+};
+
+class TwoDInterpolator {
+  public:
+    // Overloaded class creators for the AxionInterpolator class using the init function below.
+    TwoDInterpolator();
+    TwoDInterpolator(std::string file, std::string type="bilinear");
+    TwoDInterpolator(std::vector<std::vector<double> > table, std::string type="bilinear");
+    TwoDInterpolator& operator=(TwoDInterpolator&&);
+    // Destructor.
+    ~TwoDInterpolator();
+    // Delete copy constructor and assignment operator to avoid shallow copies.
+    TwoDInterpolator(const TwoDInterpolator&) = delete;
+    TwoDInterpolator operator=(const TwoDInterpolator&) = delete;
+    // Routine to access interpolated values.
+    double interpolate(double x, double y);
+    // Routine to check if a point is inside the interpolating box.
+    bool is_inside_box(double x, double y);
+    std::vector<double> get_unique_x_vals() { return unique_x_vals; };
+    std::vector<double> get_unique_y_vals() { return unique_y_vals; };
+    std::vector<std::vector<double> > get_data() { return data; };
+  private:
+    // Initialiser for the TwoDInterpolator class.
+    void init(std::string type);
+    // The gsl objects for the interpolating functions that need to be available to the class routines.
+    gsl_interp_accel *x_acc;
+    gsl_interp_accel *y_acc;
+    gsl_spline2d *spline;
+    std::vector<std::vector<double> > data;
+    std::vector<double> unique_x_vals;
+    std::vector<double> unique_y_vals;
+    // Upper and lower "x" and "y" values available to the interpolating function.
+    double x_lo, y_lo, x_up, y_up;
 };
 
 class ASCIItableReader {
@@ -95,11 +133,12 @@ class ASCIItableReader {
     void prepend_data(double datum, int i) { data[i].insert(data[i].begin(), datum); };
     const std::vector<double> & operator[] (int i) { return data[i]; };
     const std::vector<double> & operator[] (std::string name) { return data[colnames[name]]; };
+    std::vector<std::vector<double> > get_data() { return data; };
     int getncol() { return data.size(); }
     int getnrow() { return data[0].size(); }
 
   private:
-    std::vector<std::vector<double> > data;
+    std::vector<std::vector<double>> data;
     std::map<std::string, int> colnames;
 };
 
@@ -112,6 +151,7 @@ class Isotope {
       Isotope(std::string s, int a);
       Isotope(std::pair<std::string,int> p);
       Isotope(std::string s);
+      ~Isotope() {};
 
       bool operator< (const Isotope& other) const;
       bool operator== (const Isotope& other) const;
@@ -143,10 +183,10 @@ const std::set<std::pair<int,int>> unavailable_OP = {{152,68}, {152,70}, {154,68
 const int num_op_elements = 17;
 const std::string op_element_names [num_op_elements] = {"H", "He", "C", "N", "O", "Ne", "Na", "Mg", "Al", "Si", "S", "Ar", "Ca", "Cr", "Mn", "Fe", "Ni"};
 const std::vector<std::vector<int>> op_elements = {{0}, {1,2}, {3,4}, {5,6}, {7,8,9}, {10}, {11}, {12}, {13}, {14}, {16}, {18}, {20}, {24}, {25}, {26}, {28}};
-const std::vector<std::vector<float>> ledcop_grid =  {{0.5,10.175}, {0.5,13.684}, {0.5,18.308}, {0.6,10.175}, {0.6,13.684}, {0.6,18.308}, {0.6,24.268}, {0.6,31.802}, {0.6,41.156}, {0.8,13.684}, {0.8,18.308}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.8,66.544}, {1.0,31.802}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.0,124.995}, {1.25,52.611}, {1.25,66.544}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.5,103.442}, {1.5,124.995}, {1.5,143.111}, {1.5,150.5}};
+const std::vector<std::vector<float> > ledcop_grid =  {{0.5,10.175}, {0.5,13.684}, {0.5,18.308}, {0.6,10.175}, {0.6,13.684}, {0.6,18.308}, {0.6,24.268}, {0.6,31.802}, {0.6,41.156}, {0.8,13.684}, {0.8,18.308}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.8,66.544}, {1.0,31.802}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.0,124.995}, {1.25,52.611}, {1.25,66.544}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.5,103.442}, {1.5,124.995}, {1.5,143.111}, {1.5,150.5}};
 const std::vector<float> ledcop_temperatures = {0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.25, 1.5};
 const std::vector<float> ledcop_densities = {10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5};
-const std::vector<std::vector<float>> atomic_grid = {{0.55,10.175}, {0.55,13.684},  {0.55,18.308}, {0.6,10.175}, {0.6,13.684},  {0.6,18.308}, {0.6,24.268}, {0.65,13.684}, {0.65,18.308}, {0.65,24.268}, {0.7,18.308}, {0.7,24.268}, {0.7,31.802}, {0.7,41.156}, {0.8,18.308}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.9,31.802}, {0.9,41.156}, {0.9,52.611}, {0.9,66.544}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.125,52.611}, {1.125,66.544}, {1.125,83.466}, {1.125,103.442}, {1.125,124.995}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.375,103.442}, {1.375,124.995}, {1.375,143.111}, {1.375,150.5}};
+const std::vector<std::vector<float> > atomic_grid = {{0.55,10.175}, {0.55,13.684},  {0.55,18.308}, {0.6,10.175}, {0.6,13.684},  {0.6,18.308}, {0.6,24.268}, {0.65,13.684}, {0.65,18.308}, {0.65,24.268}, {0.7,18.308}, {0.7,24.268}, {0.7,31.802}, {0.7,41.156}, {0.8,18.308}, {0.8,24.268}, {0.8,31.802}, {0.8,41.156}, {0.8,52.611}, {0.9,31.802}, {0.9,41.156}, {0.9,52.611}, {0.9,66.544}, {1.0,41.156}, {1.0,52.611}, {1.0,66.544}, {1.0,83.466}, {1.0,103.442}, {1.125,52.611}, {1.125,66.544}, {1.125,83.466}, {1.125,103.442}, {1.125,124.995}, {1.25,83.466}, {1.25,103.442}, {1.25,124.995}, {1.25,143.111}, {1.25,150.5}, {1.375,103.442}, {1.375,124.995}, {1.375,143.111}, {1.375,150.5}};
 const std::vector<float> atomic_temperatures = {0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 1.0, 1.125, 1.25, 1.375};
 const std::vector<float> atomic_densities = {10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5};
 const std::vector<double> opas_radii = {0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71};

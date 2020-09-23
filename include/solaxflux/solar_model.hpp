@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_spline.h>
@@ -85,6 +86,7 @@ class SolarModel {
     // Metadata and information
     double get_r_lo();
     double get_r_hi();
+    std::vector<double> get_supported_radii(std::vector<double> radii);
     double get_gagg_ref_value_in_inverse_GeV();
     double get_gaee_ref_value();
     std::string get_solaxlib_name_and_version();
@@ -158,6 +160,9 @@ double rad_integrand_2d(double rad, void * params);
 
 std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
 std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
+std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
+std::vector<std::vector<double>> calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, Isotope isotope, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
+std::vector<std::vector<double>> calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
 std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="", Isotope isotope={});
 
 #endif // defined __solar_model_hpp__
