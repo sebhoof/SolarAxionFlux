@@ -161,7 +161,6 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       element_ionisationsqr[pr] = temp_ionisationsqr;
   }
     
-    
   //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
   //  OP opacities
   if (opcode == OP) {
@@ -314,15 +313,6 @@ double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], 
 // Routine to return the screening paramter kappa^2 in units of keV^2 (kappa^-1 = Debye-Hueckel radius).
 double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
 // alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
-/*
-double SolarModel::alpha(double r) {
-    if (alpha_available.find(solar_model_name) != alpha_available.end()) {
-      return gsl_spline_eval(linear_interp[6], r, accel[6]);
-    } else {
-      return 4.0;
-    };
-}
-*/
 double SolarModel::alpha(double r) {
     if (alpha_available.find(solar_model_name) != alpha_available.end()) {
       return gsl_spline_eval(linear_interp[6], r, accel[6]);
@@ -333,7 +323,6 @@ double SolarModel::alpha(double r) {
             result += mass_fraction(r, element) / metallicity(r) * ionisationsqr_element(r, element) / atomic_weight({element,0});
         }
         return result;
-        
     };
 }
 
