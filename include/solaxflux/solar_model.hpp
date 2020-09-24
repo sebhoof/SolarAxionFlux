@@ -45,8 +45,7 @@ class SolarModel {
     double n_iz(double r, int isotope_index);
     double n_iz(double r, Isotope isotope);
     double n_element(double r, std::string el_name);
-    double H_mass_fraction(double r);
-    double He_mass_fraction(double r);
+    double mass_fraction(double r, std::string element);
     double metallicity(double r);
     // alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
     double alpha(double r);

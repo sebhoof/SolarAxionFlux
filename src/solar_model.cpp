@@ -290,6 +290,7 @@ SolarModel& SolarModel::operator=(SolarModel &&src) {
     std::swap(z2_n_isotope_lin_interp,src.z2_n_isotope_lin_interp);
     std::swap(n_element_acc,src.n_element_acc);
     std::swap(n_element_lin_interp,src.n_element_lin_interp);
+    std::swap(element_ionisationsqr,src.element_ionisationsqr);
   };
   return *this;
 }
@@ -313,6 +314,7 @@ double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], 
 // Routine to return the screening paramter kappa^2 in units of keV^2 (kappa^-1 = Debye-Hueckel radius).
 double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
 // alpha is the expected contribution of all metals to z2_n per nucleon density: z2_n = (X + Y + \alpha Z)*\rho / m_u
+/*
 double SolarModel::alpha(double r) {
     if (alpha_available.find(solar_model_name) != alpha_available.end()) {
       return gsl_spline_eval(linear_interp[6], r, accel[6]);
@@ -320,9 +322,24 @@ double SolarModel::alpha(double r) {
       return 4.0;
     };
 }
+*/
+double SolarModel::alpha(double r) {
+    if (alpha_available.find(solar_model_name) != alpha_available.end()) {
+      return gsl_spline_eval(linear_interp[6], r, accel[6]);
+    } else {
+        double result = 0;
+        for (int k = 2; k < num_op_elements; k++) {
+            std::string element = op_element_names[k];
+            result += mass_fraction(r, element) / metallicity(r) * ionisationsqr_element(r, element) / atomic_weight({element,0});
+        }
+        return result;
+        
+    };
+}
+
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
-double SolarModel::H_mass_fraction(double r) { return n_element(r,"H")*atomic_weight({"H",1})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
-double SolarModel::He_mass_fraction(double r){ return n_element(r,"He")*atomic_weight({"He",4})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
+double SolarModel::mass_fraction(double r, std::string element){ return
+    n_element(r,element)*atomic_weight({element,0})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
 // Routine to return the number density times charge^2 of ion iz in the zone around the distance r from the centre of the Sun (full ionisation)
 double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
 // N.B. Convenience function below (may be slow for many calls!)
@@ -330,7 +347,7 @@ double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = look
 // returns total z2_n without assuming full ionisation for some solar models where alpha is available
 double SolarModel::z2_n(double r) {
     if (alpha_available.find(solar_model_name) != alpha_available.end()) {
-        return (H_mass_fraction(r) + He_mass_fraction(r) + alpha(r)*metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
+        return (mass_fraction(r,"H") + mass_fraction(r,"He") + alpha(r)*metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
     } else {
         return  gsl_spline_eval(linear_interp[5], r, accel[5]);  // full ionisation
     };
@@ -349,7 +366,7 @@ double SolarModel::n_electron(double r) {
       return gsl_spline_eval(linear_interp[2], r, accel[2]);
     };
 }
-double SolarModel::metallicity(double r){ return 1.0 - H_mass_fraction(r) - He_mass_fraction(r);}
+double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r,"H") - mass_fraction(r,"He");}
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
 
