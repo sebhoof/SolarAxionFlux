@@ -148,7 +148,6 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   };
     
   // Read squared ionisation from ionisation tables
-
   for (int j = 0; j < op_grid_size; j++){
       std::string op_filename = path_to_data+"ionisation_tables/ionisation_table_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
       ASCIItableReader ion_data = ASCIItableReader(op_filename);
@@ -156,13 +155,11 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       std::map<std::string, double> temp_ionisationsqr;
       for (int k = 0; k < num_op_elements; k++) {
           std::string element = op_element_names[k];
-          temp_ionisationsqr[element] = ion_data["ionisationsqr"][
-                                                                  k];
+          temp_ionisationsqr[element] = ion_data["ionisationsqr"][k];
       }
       auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
       element_ionisationsqr[pr] = temp_ionisationsqr;
   }
-
     
     
   //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
@@ -542,6 +539,27 @@ double SolarModel::opacity_table_interpolator_op(double omega, double r, std::st
   return result;
 }
 
+//  double logarithmic interpolation for all ionisations
+double SolarModel::ionisationsqr_element(double r, std::string element) {
+  // Need temperature in Kelvin
+  double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
+  double ne = n_electron(r);
+  double ite = 40.0*log10(temperature);
+  double jne = 4.0*log10(ne);
+  int ite2 = int(ceil(20.0*log10(temperature))*2);
+  int ite1 = ite2 - 2;
+  int jne2 = int(ceil(log10(ne)*2)*2);
+  int jne1 = jne2 - 2;
+  double t1 = (ite-double(ite1))/2.0;
+  double t2 = (jne-double(jne1))/2.0;
+  double result = pow(pow(ionisationsqr_grid(ite1,jne1,element),1.0-t2)*pow(ionisationsqr_grid(ite1,jne2,element),t2),1.0-t1)*  pow(pow(ionisationsqr_grid(ite2,jne1,element),1.0-t2)*pow(ionisationsqr_grid(ite2,jne2,element),t2),t1);
+  if (result < 0) {
+    std::cout << "ERROR! Negative ionisation!" << std::endl;
+  };
+  return result;
+}
+
+
 double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   double temperature = temperature_in_keV(r);
   double rho = density(r);
@@ -608,27 +626,24 @@ double SolarModel::opacity_element(double omega, double r, std::string element) 
     return result;
 }
 
-/*
+
 // Read off ionisation states
 double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
   double result = 0.0;
   auto grid_position = std::make_pair(ite,jne);
   if (unavailable_OP.find(grid_position) == unavailable_OP.end()) {
-    if (opacity_lin_interp_op.find(element) == opacity_lin_interp_op.end()) {
-      terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
-    } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
-      std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
-    } else {
-      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);   // error handler modified to avoid boundary error (fill value = 0)
-      result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
-      gsl_set_error_handler (old_handler);    //  reset the error handler
+    if (element_ionisationsqr.find(grid_position) == element_ionisationsqr.end()) {
+        std::cout << "WARNING. OP Ionisation data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
+    } else if (element_ionisationsqr.at(grid_position).find(element) == element_ionisationsqr.at(grid_position).end()) {
+        terminate_with_error("ERROR! OP  Ionisation data for element "+element+" does not exist.");
+    } else  {
+      result = element_ionisationsqr.at(grid_position).at(element);
       if (gsl_isnan(result) == true) { return 0; };
     };
   };
   return result;
 }
 
-*/
 
 // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
 // TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...

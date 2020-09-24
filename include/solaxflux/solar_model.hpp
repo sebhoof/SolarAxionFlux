@@ -83,7 +83,6 @@ class SolarModel {
     
     //Interpolation routines for the ionisation tables from the Opacity Project
     double ionisationsqr_grid(int ite, int jne, std::string element);
-    double ionisationsqr_table_interpolator(double r, std::string element);
     double ionisationsqr_element(double r, std::string element);
     
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
