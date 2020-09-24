@@ -80,6 +80,12 @@ class SolarModel {
     double opacity_table_interpolator_tops(double omega, double r);
     double opacity_table_interpolator_opas(double omega, double r);
     double opacity_element(double omega, double r, std::string element);
+    
+    //Interpolation routines for the ionisation tables from the Opacity Project
+    double ionisationsqr_grid(int ite, int jne, std::string element);
+    double ionisationsqr_table_interpolator(double r, std::string element);
+    double ionisationsqr_element(double r, std::string element);
+    
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
@@ -124,6 +130,8 @@ class SolarModel {
     std::vector<std::vector<float>> tops_grid;
     std::vector<float> tops_temperatures;
     std::vector<float> tops_densities;
+    std::map< std::pair<int,int>,  std::map<std::string, double> > element_ionisationsqr;
+
     // TODO. Maybe convert n_isotope and z2_n_isotope into maps like n_element with std::map<Isotope, ...> etc.
     std::vector<gsl_interp_accel*> n_isotope_acc;
     std::vector<gsl_spline*> n_isotope_lin_interp;

@@ -1,7 +1,6 @@
 import numpy as np
 import pexpect
-#Run in folder mono
-
+#Run in folder mono of the OPCD data
 
 
 path1="/Users/lennertthormaehlen/Documents/Uni/Heidelberg/Master/Astro-approach/OP/OPCD_3.3/mono/"

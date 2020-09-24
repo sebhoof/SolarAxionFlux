@@ -146,6 +146,25 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       std::string element = op_element_names[k];
       init_interp(n_element_acc[element], n_element_lin_interp[element], radius, &n_op_element[k][0]); // Ion density for each element (= summed isotopes with same Z)
   };
+    
+  // Read squared ionisation from ionisation tables
+
+  for (int j = 0; j < op_grid_size; j++){
+      std::string op_filename = path_to_data+"ionisation_tables/ionisation_table_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
+      ASCIItableReader ion_data = ASCIItableReader(op_filename);
+      ion_data.setcolnames("atomic number", "ionisation", "ionisationsqr");
+      std::map<std::string, double> temp_ionisationsqr;
+      for (int k = 0; k < num_op_elements; k++) {
+          std::string element = op_element_names[k];
+          temp_ionisationsqr[element] = ion_data["ionisationsqr"][
+                                                                  k];
+      }
+      auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
+      element_ionisationsqr[pr] = temp_ionisationsqr;
+  }
+
+    
+    
   //  OPACITY TABLES set up interpolating functions (only for chosen opacity code)
   //  OP opacities
   if (opcode == OP) {
@@ -588,6 +607,28 @@ double SolarModel::opacity_element(double omega, double r, std::string element) 
     gsl_set_error_handler (old_handler);
     return result;
 }
+
+/*
+// Read off ionisation states
+double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
+  double result = 0.0;
+  auto grid_position = std::make_pair(ite,jne);
+  if (unavailable_OP.find(grid_position) == unavailable_OP.end()) {
+    if (opacity_lin_interp_op.find(element) == opacity_lin_interp_op.end()) {
+      terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
+    } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
+      std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
+    } else {
+      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);   // error handler modified to avoid boundary error (fill value = 0)
+      result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
+      gsl_set_error_handler (old_handler);    //  reset the error handler
+      if (gsl_isnan(result) == true) { return 0; };
+    };
+  };
+  return result;
+}
+
+*/
 
 // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
 // TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...
