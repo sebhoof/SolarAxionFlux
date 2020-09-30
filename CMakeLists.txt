@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
-project(SolarAxionFlux VERSION 0.4 DESCRIPTION "Calculate the solar axion flux from axion-photon and axion-electron interactions" LANGUAGES CXX)
+project(SolarAxionFlux VERSION 0.6 DESCRIPTION "Calculate the solar axion flux from axion-photon and axion-electron interactions" LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 
 # Must use GNUInstallDirs to install libraries into correct locations on all platforms.
