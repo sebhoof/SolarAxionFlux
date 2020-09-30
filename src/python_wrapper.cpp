@@ -1,7 +1,13 @@
+// Copyright 2020 Sebastian Hoof & Lennert J. Thormaehlen
+// See the LICENSE file for the license conditions and a disclaimer
+
 #include "python_wrapper.hpp"
 
-void test_module() {
+void module_info() {
   std::cout << "This is the " << LIBRARY_NAME << " Python interface." << std::endl;
+}
+
+void test_module() {
   std::cout << "Test successful!" << std::endl;
 }
 

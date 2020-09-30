@@ -1,3 +1,6 @@
+// Copyright 2020 Sebastian Hoof & Lennert J. Thormaehlen
+// See the LICENSE file for the license conditions and a disclaimer
+
 #include "spectral_flux.hpp"
 
 AxionSpectrum::AxionSpectrum() {};

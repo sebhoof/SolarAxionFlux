@@ -1,3 +1,6 @@
+// Copyright 2020 Sebastian Hoof & Lennert J. Thormaehlen
+// See the LICENSE file for the license conditions and a disclaimer
+
 #ifndef __python_wrapper_hpp__
 #define __python_wrapper_hpp__
 
@@ -9,6 +12,9 @@
 #include "spectral_flux.hpp"
 #include "experimental_flux.hpp"
 
+// The name of the module and other info
+void module_info();
+// A simple unit test for the Python wrapper
 void test_module();
 void py11_save_Primakoff_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff");
 void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max, int n_ergs, double a, double b, std::string solar_model_file, std::string output_file_root);
