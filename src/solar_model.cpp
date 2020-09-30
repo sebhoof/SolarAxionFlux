@@ -618,7 +618,7 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
   return result;
 }
 
-//  opacity for individual isotope (only possible for OP)
+// Opacity for individual isotope (only possible for OP)
 double SolarModel::opacity_element(double omega, double r, std::string element) {
   const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
 
@@ -763,7 +763,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector
   } else {
     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, integrand);
-  };
+  }
 }
 
 std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
@@ -772,7 +772,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> 
   } else {
     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, process);
-  };
+  }
 }
 
 // Metadata and information
@@ -900,10 +900,8 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
     results.push_back(factor*integral);
     errors.push_back(factor*error);
     std::cout << r_max << " " << *erg << " " << factor*integral << " +/- " << factor*error << std::endl;
-    //if (saveas != ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
-  };
+  }
 
-  //if (saveas!= "") { output.close(); };
   gsl_integration_workspace_free (w);
 
   std::vector<std::vector<double>> buffer = {ergs, results, errors};
@@ -934,12 +932,6 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   gsl_function f2;
   f2.function = &rad_integrand_2d;
 
-  //std::ofstream output;
-  //if (saveas != "") {
-  //  output.open(saveas);
-  //  output << "# Spectral flux over full solar disc, r in [" << r_min << ", " << r_max << "] R_sol." << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
-  //};
-
   //std::cout << "# DEBUG INFO: r in [" << r_min << ", " << r_max << "] ..." << std::endl;
 
   for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
@@ -950,10 +942,8 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
     gsl_integration_qag (&f2, r_min, r_max, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, int_method_2d, w2, &integral, &error);
     results.push_back(factor*norm_factor1*integral);
     errors.push_back(factor*norm_factor1*error);
-    //if (saveas != ""){ output << ergs[i] << " " << factor*norm_factor1*integral << " " << factor*norm_factor1*error << std::endl; };
-  };
+  }
 
-  //if (saveas != "") { output.close(); };
   //gsl_integration_workspace_free (w1);
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);

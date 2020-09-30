@@ -728,12 +728,6 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
   f.function = integrand;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
 
-  std::ofstream output;
-  //if (saveas != "") {
-  //  output.open(saveas);
-  //  output << "# Spectral flux over full solar volume by " << LIBRARY_NAME << ".\n# Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]" << std::endl;
-  //};
-
   for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
     double integral, error;
     integration_params p = {*erg, &s, isotope};
@@ -741,10 +735,8 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
     gsl_integration_qag (&f, s.get_r_lo(), s.get_r_hi(), int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
     results.push_back(factor*integral);
     errors.push_back(factor*error);
-    //if (saveas != ""){ output << *erg << " " << factor*integral << factor*error << std::endl; };
-  };
+  }
 
-  //if (saveas!= "") { output.close(); };
   gsl_integration_workspace_free (w);
 
   std::vector<std::vector<double>> buffer = {ergs, results, errors};
@@ -773,8 +765,8 @@ double spectral_flux_integrand(double erg, void * params) {
   f.function = p2->integrand;
   integration_params p = {erg, s, isotope};
   f.params = &p;
-  gsl_integration_qag (&f, s->get_r_lo(), s->get_r_hi(), 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w, &result, &error);
-  gsl_integration_workspace_free (w);
+  gsl_integration_qag(&f, s->get_r_lo(), s->get_r_hi(), 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w, &result, &error);
+  gsl_integration_workspace_free(w);
   return factor*result/normfactor;
 }
 
@@ -788,16 +780,13 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isoto
     integration_params2 p2 = {&s, &integrand_all_axionelectron, isotope};
     //integration_params2 p2 = {&s, &integrand_Primakoff, isotope};
     f.params = &p2;
-    gsl_integration_qag (&f, lowerlimit, upperlimit, int_abs_prec, int_rel_prec, int_space_size, int_method_2, w, &result, &error);
-    gsl_integration_workspace_free (w);
+    gsl_integration_qag(&f, lowerlimit, upperlimit, int_abs_prec, int_rel_prec, int_space_size, int_method_2, w, &result, &error);
+    gsl_integration_workspace_free(w);
     return result*normfactor;
 }
 
-
-// TODO: Tidy up and keep these functions available in spectral flux.
 double flux_from_file_integrand(double erg, void * params) {
   OneDInterpolator * interp = (OneDInterpolator *)params;
-  //std::cout << "DEBUG INFO. flux_from_file_integrand(" << erg << " keV) = " << interp->interpolate(erg) << " ." << std::endl;
   return interp->interpolate(erg);
 }
 
@@ -820,14 +809,14 @@ double integrated_flux_from_file(double erg_min, double erg_max, std::string spe
   if (includes_electron_interactions) {
     std::vector<double> relevant_peaks;
     relevant_peaks.push_back(erg_min);
-    for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_min < *peak_erg) && (*peak_erg < erg_max) ) { relevant_peaks.push_back(*peak_erg); }; };
+    for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_min < *peak_erg) && (*peak_erg < erg_max) ) { relevant_peaks.push_back(*peak_erg); } }
     relevant_peaks.push_back(erg_max);
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &result, &error);
   } else {
     gsl_integration_qag(&f, erg_min, erg_max, abs_prec2, rel_prec2, int_space_size, int_method_1, w, &result, &error);
-  };
+  }
 
-  gsl_integration_workspace_free (w);
+  gsl_integration_workspace_free(w);
 
   return result;
 }

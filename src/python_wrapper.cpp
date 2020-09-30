@@ -3,11 +3,24 @@
 
 #include "python_wrapper.hpp"
 
-void module_info() {
-  std::cout << "This is the " << LIBRARY_NAME << " Python interface." << std::endl;
+PYBIND11_MODULE(pyaxionflux, m) {
+  m.doc() = "Python wrapper for "+LIBRARY_NAME+" library functions";
+
+  m.def("module_info", &test_module, "Basic information about the library.");
+  m.def("test_module", &test_module, "A few simple unit tests of the library.");
+  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
+  m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file and varies the opacities with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
+  m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
+  m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
+  m.def("calculate_inverse_cdfs_from_solar_model", &py11_calculate_inverse_cdfs_from_solar_model, "EXPERIMENTAL. Calculate the inverse CDF for the axion spectrum from a solar model with signature (solar_model_file, radii, energies, gaee, save_output_prefix).");
+  m.def("draw_mc_samples_from_file", &py11_draw_mc_samples_from_file, "EXPERIMENTAL. Draw MC samples from a tabulated spectrum.");
+  m.def("save_solar_model", &py11_save_solar_model, "EXPERIMENTAL. Export the relevant information from a solar model.");
 }
 
+void module_info() { std::cout << "This is the " << LIBRARY_NAME << " Python interface." << std::endl; }
+
 void test_module() {
+  run_unit_test();
   std::cout << "Test successful!" << std::endl;
 }
 
@@ -16,7 +29,7 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
 
   std::vector<double> ergs;
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
-  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); };
+  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
 
   if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) {
     std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl;
@@ -30,11 +43,8 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
   // Do the calculation for each radius
   for (int j = 0; j < n_rads; j++) {
     double r = rad_min + j*rad_stepsize;
-    std::string output_file = output_file_root+"_"+std::to_string(j)+".dat";
-    //std::ofstream output;
-    //output.open(output_file);
-    //output << "# Solar axion spectrum using solar model '" << solar_model_file << "' and r_max = " << r << "." << std::endl;
-    //output.close();
+    std::string output_file = output_file_root;
+    if (n_rads > 1) { output_file += "_"+std::to_string(j)+".dat"; }
     if (process == "Primakoff") {
       calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
     } else if (process == "electron") {
@@ -52,7 +62,7 @@ void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max
 
   std::vector<double> ergs;
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
-  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); };
+  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
 
   std::string output_file = output_file_root+"_Primakoff.dat";
   calculate_spectral_flux_Primakoff(ergs, s, output_file);
@@ -69,7 +79,7 @@ void py11_save_reference_counts(std::vector<double> masses, std::string dataset,
   } else {
     setup = cast_2017_setup;
     setup.dataset = dataset;
-  };
+  }
   axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name, true);
 }
 
@@ -108,21 +118,9 @@ void py11_save_solar_model(std::string solar_model_file, std::string out_file) {
     temperature.push_back( s.temperature_in_keV(r) );
     omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
     kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-  };
+    // TODO: Finish implementing this.
+  }
 
   std::vector<std::vector<double>> buffer = { radii, temperature, omega_pl, kappa_squared };
   save_to_file(out_file, buffer);
-}
-
-
-PYBIND11_MODULE(pyaxionflux, m) {
-    m.doc() = "Solar Axion Flux library functions";
-    m.def("test_module", &test_module, "A simple routine to test the Python interface.");
-    m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
-    m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
-    m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
-    m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
-    m.def("calculate_inverse_cdfs_from_solar_model", &py11_calculate_inverse_cdfs_from_solar_model, "Calculate (solar_model_file, radii, energies, gaee, save_output_prefix).");
-    m.def("draw_mc_samples_from_file", &py11_draw_mc_samples_from_file, ".");
-    m.def("save_solar_model", &py11_save_solar_model, ".");
 }
