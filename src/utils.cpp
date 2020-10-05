@@ -9,7 +9,7 @@ void terminate_with_error(std::string err_string) {
 }
 
 void terminate_with_error_if(bool condition, std::string err_string) {
-  if (condition) { terminate_with_error(err_string); };
+  if (condition) { terminate_with_error(err_string); }
 }
 
 void my_handler(const char * reason, const char * file, int line, int gsl_errno) {
@@ -35,9 +35,9 @@ void locate_data_folder(std::string path_to_model_file, std::string &path_to_dat
   } else {
     path_to_data = ".";
     model_file_name = path_to_model_file;
-  };
+  }
   path_to_data += "/../"; // Since we expect model file to be in data/solar_models.
-};
+}
 
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment, bool overwrite) {
   if (path != "") {
@@ -46,8 +46,8 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
         //std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
       } else {
         std::cout << "File " << path << " exists! Now saving to " << path << "_new" << std::endl; path += "_new";
-      };
-    };
+      }
+    }
 
     std::ofstream output;
     output.open(path);
@@ -58,9 +58,9 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
       while ((pos = comment.find(newline, pos)) != std::string::npos) {
         comment.replace(pos, newline.length(), comment_newline);
         pos += comment_newline.length();
-      };
+      }
       output << "# " << comment << std::endl;
-    };
+    }
     output << std::scientific << std::setprecision(8);
     int n_cols = buffer.size();
     if (n_cols > 0) {
@@ -68,15 +68,15 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
       if (n_rows > 0) {
         for (int i=0; i<n_rows; ++i) {
           output << buffer[0][i];
-          for (int j=1; j<n_cols; ++j) { output << " " << buffer[j][i]; };
+          for (int j=1; j<n_cols; ++j) { output << " " << buffer[j][i]; }
           output << std::endl;
-        };
+        }
       } else {
         std::cout << "WARNING! The data you are trying to write to " << path << " is empty! Created an empty file." << std::endl;
-      };
-    };
+      }
+    }
     output.close();
-  };
+  }
 }
 
 OneDInterpolator::OneDInterpolator() {
@@ -99,7 +99,7 @@ void OneDInterpolator::init(const std::vector<double> &x, const std::vector<doub
     spline = gsl_spline_alloc(gsl_interp_linear, pts);
   } else {
     terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
-  };
+  }
   gsl_spline_init(spline, x_ptr, y_ptr, pts);
   lo = x.front();
   up = x.back();
@@ -163,7 +163,7 @@ double OneDInterpolator::interpolate(double x) { return gsl_spline_eval(spline, 
 
 std::vector<double> OneDInterpolator::interpolate(std::vector<double> x) {
   std::vector<double> result;
-  for (auto it = x.begin(); it != x.end(); it++) { result.push_back(interpolate(*it)); };
+  for (auto it = x.begin(); it != x.end(); it++) { result.push_back(interpolate(*it)); }
   return result;
 }
 
@@ -230,7 +230,7 @@ void TwoDInterpolator::init(std::string type) {
     spline = gsl_spline2d_alloc(gsl_interp2d_bilinear, nx, ny);
   } else {
     terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class TwoDInterpolator.\n       Available types: 'bilinear' and 'bicubic'.");
-  };
+  }
 
   x_acc = gsl_interp_accel_alloc();
   y_acc = gsl_interp_accel_alloc();
@@ -244,8 +244,7 @@ void TwoDInterpolator::init(std::string type) {
   double y_delta = (y_up-y_lo) / (ny-1);
 
   // Intialise grid.
-  for (int i = 0; i < n_grid_pts; i++)
-  {
+  for (int i = 0; i < n_grid_pts; i++) {
     // Determine appropriate indices for the grid points.
     double temp = (data[0][i]-x_lo) / x_delta;
     int ind_x = (int) (temp+0.5);
@@ -253,10 +252,10 @@ void TwoDInterpolator::init(std::string type) {
     int ind_y = (int) (temp+0.5);
 
     gsl_spline2d_set(spline, z, ind_x, ind_y, data[2][i]);
-  };
+  }
     gsl_spline2d_init (spline, x, y, z, nx, ny);
     std::cout << "TwoDInterpolator init done!" << std::endl;
-};
+}
 
 TwoDInterpolator::~TwoDInterpolator() {
   gsl_spline2d_free(spline);
@@ -265,10 +264,10 @@ TwoDInterpolator::~TwoDInterpolator() {
 }
 
 // Routine to access interpolated values.
-double TwoDInterpolator::interpolate(double x, double y) { return gsl_spline2d_eval(spline, x, y, x_acc, y_acc); };
+double TwoDInterpolator::interpolate(double x, double y) { return gsl_spline2d_eval(spline, x, y, x_acc, y_acc); }
 
 // Routine to check if a point is inside the interpolating box.
-bool TwoDInterpolator::is_inside_box(double x, double y) { return ((x >= x_lo) && (x <= x_up) && (y >= y_lo) && (y <= y_up)); };
+bool TwoDInterpolator::is_inside_box(double x, double y) { return ((x >= x_lo) && (x <= x_up) && (y >= y_lo) && (y <= y_up)); }
 
 
 int ASCIItableReader::read(std::string filename) {
@@ -314,33 +313,33 @@ void Isotope::init(std::string s, int a) {
                                                  {"Ar", 18}, {"K", 19}, {"Ca", 20}, {"Sc", 21}, {"Ti", 22}, {"V", 23}, {"Cr", 24}, {"Mn", 25}, {"Fe", 26}, {"Co", 27}, {"Ni", 28} };
   if (z_value_map.find(s) == z_value_map.end()) {
     std::string avail_keys = "";
-    for (auto& p: z_value_map) { avail_keys += p.first + " "; };
+    for (auto& p: z_value_map) { avail_keys += p.first + " "; }
     terminate_with_error("ERROR! Element named '"+s+"' not found! Available keys are:\n"+avail_keys);
   } else {
     element_z_value = z_value_map.at(s);
-  };
+  }
 }
-Isotope::Isotope(std::string s, int a) { init(s,a); };
-Isotope::Isotope(std::pair<std::string,int> p) { init(p.first,p.second); };
+Isotope::Isotope(std::string s, int a) { init(s,a); }
+Isotope::Isotope(std::pair<std::string,int> p) { init(p.first,p.second); }
 // This is for convenience in order to define elements as an Isotope; for now: empty contructor
 // TODO: do init(s,-1) here or allow strings like "He_3" etc. Also, new feature: if el_a_value < -1, trigger adding up all values for the same el_name
-Isotope::Isotope(std::string s) { };
+Isotope::Isotope(std::string s) {}
 bool Isotope::operator< (const Isotope& other) const { return (other.name() < element_name) || ( (other.name() == element_name) && (other.a_val() < isotope_a_value) ); }
 bool Isotope::operator== (const Isotope& other) const { return ((other.name() == element_name) && (other.a_val() == isotope_a_value)); }
-std::string Isotope::name() const { return element_name; };
-std::string Isotope::index_name() const { return "X_"+element_name+std::to_string(isotope_a_value); };
-int Isotope::a_val() const { return isotope_a_value; };
-int Isotope::z_val() const { return element_z_value; };
-bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->name(); };
+std::string Isotope::name() const { return element_name; }
+std::string Isotope::index_name() const { return "X_"+element_name+std::to_string(isotope_a_value); }
+int Isotope::a_val() const { return isotope_a_value; }
+int Isotope::z_val() const { return element_z_value; }
+bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->name(); }
 
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 
 std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi) {
-  const std::vector<double> all_peaks = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163,
-                                         5.64394, 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  const std::vector<double> all_peaks = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163,
+                                          5.64394, 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
   std::vector<double> result;
   result.push_back(erg_lo);
-  for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_lo < *peak_erg) && (*peak_erg < erg_hi) ) { result.push_back(*peak_erg); }; };
+  for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_lo < *peak_erg) && (*peak_erg < erg_hi) ) { result.push_back(*peak_erg); } }
   result.push_back(erg_hi);
 
   return result;

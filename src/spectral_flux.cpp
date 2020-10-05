@@ -3,7 +3,7 @@
 
 #include "spectral_flux.hpp"
 
-AxionSpectrum::AxionSpectrum() {};
+AxionSpectrum::AxionSpectrum() {}
 
 void AxionSpectrum::init_numbered_interp(const int index, const double* x, const double* y) {
   acc[index] = gsl_interp_accel_alloc();
@@ -22,13 +22,13 @@ void AxionSpectrum::init_table_mode(std::string file, double g1, double g2) {
   terminate_with_error_if((n_cols<2)||(n_cols>4), "ERROR! Your input file '"+file+"' appears to have less than 2 or more than 4 columns!");
   //data.resize(n_cols);
   // TODO: Interpolation of the specturm is better for log10(flux), but need a safe and numerically sound way to deal with 0 w/o causing problems in integration.
-  //for (int i=0; i<n_cols-1; ++i) { data[i] = std::move(data[i]); };
+  //for (int i=0; i<n_cols-1; ++i) { data[i] = std::move(data[i]); }
   //data[n_cols-1] = std::move(safe_log10(data[n_cols-1]));
   if (table_submode < 3) {
     acc.resize(n_cols-1);
     spline.resize(n_cols-1);
     init_numbered_interp(0, &data[0][0], &data[1][0]);
-    if (table_submode == 2) { init_numbered_interp(1, &data[0][0], &data[2][0]); };
+    if (table_submode == 2) { init_numbered_interp(1, &data[0][0], &data[2][0]); }
   } else {
     int n_grids = 1 + (g2>0);
     acc_2d.resize(n_grids);
@@ -53,7 +53,7 @@ void AxionSpectrum::init_table_mode(std::string file, double g1, double g2) {
       spline_2d[i] = gsl_spline2d_alloc(gsl_interp2d_bilinear, nx, ny);
       acc_2d[i].first = gsl_interp_accel_alloc();
       acc_2d[i].second = gsl_interp_accel_alloc();
-    };
+    }
 
     // Determine first and last "x" and "y" values and grid step size.
     double x_lo = x_vec.front();
@@ -70,15 +70,13 @@ void AxionSpectrum::init_table_mode(std::string file, double g1, double g2) {
       int ind_x = (int) (temp+0.5);
       temp = (data[1][j]-y_lo) / y_delta;
       int ind_y = (int) (temp+0.5);
-      for (int i=0; i<n_grids; ++i) {
-        gsl_spline2d_set(spline_2d[i], z[i], ind_x, ind_y, data[i+2][j]);
-      };
-    };
-    for (int i=0; i<n_grids; ++i) { gsl_spline2d_init(spline_2d[i], x, y, z[i], nx, ny); };
-  };
+      for (int i=0; i<n_grids; ++i) { gsl_spline2d_set(spline_2d[i], z[i], ind_x, ind_y, data[i+2][j]); }
+    }
+    for (int i=0; i<n_grids; ++i) { gsl_spline2d_init(spline_2d[i], x, y, z[i], nx, ny); }
+  }
 }
 
-AxionSpectrum::AxionSpectrum(std::string file, double g1, double g2) { init_table_mode(file, g1, g2); };
+AxionSpectrum::AxionSpectrum(std::string file, double g1, double g2) { init_table_mode(file, g1, g2); }
 
 void AxionSpectrum::init_solar_model_mode(SolarModel* sol, SolarModelMemberFn process2) {
   mode = solar_model; // Do not set default_g1, default_g2 here! This info in the solar model.
@@ -86,16 +84,16 @@ void AxionSpectrum::init_solar_model_mode(SolarModel* sol, SolarModelMemberFn pr
   function2 = process2;
   solar_model_okay = s->is_initialised();
   terminate_with_error_if(not(solar_model_okay), "ERROR! The instance of SolarModel used to initialse an instance of AxionSpectrum has not been initialised properly.");
-};
+}
 
-AxionSpectrum::AxionSpectrum(SolarModel* sol, SolarModelMemberFn process2) { init_solar_model_mode(sol, process2); };
+AxionSpectrum::AxionSpectrum(SolarModel* sol, SolarModelMemberFn process2) { init_solar_model_mode(sol, process2); }
 
 void AxionSpectrum::init_analytical_mode(double norm, double g1, double a, double b) {
   mode = analytical; // Do not set default_g1 here! This info in the parameters.
-  analytical_parameters = {norm, g1, a, b};
-};
+  analytical_parameters = { norm, g1, a, b };
+}
 
-AxionSpectrum::AxionSpectrum(double norm, double g1, double a, double b) { init_analytical_mode(norm, g1, a, b); };
+AxionSpectrum::AxionSpectrum(double norm, double g1, double a, double b) { init_analytical_mode(norm, g1, a, b); }
 
 void AxionSpectrum::switch_mode(SpectrumModes new_mode) {
   if (new_mode != mode) {
@@ -112,24 +110,24 @@ void AxionSpectrum::switch_mode(SpectrumModes new_mode) {
         break;
       default :
         std::cout << "WARNING! You tried to change to an unknown mode." << std::endl;
-    };
+    }
     if (check) {
       mode = new_mode;
     } else {
       std::cout << "WARNING! Changing mode of AxionSpectrum is not permitted; the class instance has not been initialised for the new mode." << std::endl;
-    };
-  };
+    }
+  }
 }
 
 AxionSpectrum::~AxionSpectrum() {
-  for (auto s : spline) { gsl_spline_free(s); };
-  for (auto s : spline_2d) { gsl_spline2d_free(s); };
-  for (auto a : acc) { gsl_interp_accel_free(a); };
-  for (auto a : acc_2d) { gsl_interp_accel_free(a.first); gsl_interp_accel_free(a.second); };
-};
+  for (auto s : spline) { gsl_spline_free(s); }
+  for (auto s : spline_2d) { gsl_spline2d_free(s); }
+  for (auto a : acc) { gsl_interp_accel_free(a); }
+  for (auto a : acc_2d) { gsl_interp_accel_free(a.first); gsl_interp_accel_free(a.second); }
+}
 
 std::tuple<int, double, double> AxionSpectrum::get_table_parameters() { return std::make_tuple(table_submode, default_g1, default_g2); }
-std::vector<double> AxionSpectrum::get_analytical_parameters() { return analytical_parameters; };
+std::vector<double> AxionSpectrum::get_analytical_parameters() { return analytical_parameters; }
 SpectrumModes AxionSpectrum::get_class_mode() {
   std::cout << "INFO. The current mode is '";
   switch (mode) {
@@ -138,10 +136,10 @@ SpectrumModes AxionSpectrum::get_class_mode() {
     case solar_model : std::cout << "solar_model"; break;
     case undefined : std::cout << "undefined"; break;
     default : std::cout << "n/a'. This is a bug, please report it"; break;
-  };
+  }
   std::cout << "'." << std::endl;
   return mode;
-};
+}
 
 std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> ergs, std::vector<double> radii, double g1, double g2) {
   std::vector<std::vector<double>> result;
@@ -153,22 +151,22 @@ std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> e
     std::vector<double> total_flux;
     switch(mode) {
       case table :
-        if ((table_submode == 1) && (g2 > 0) && not(g2_warning_issued)) { std::cout << "WARNING! You don't have a second spectrum loaded! The value of g2 > 0 has no effect." << std::endl; g2_warning_issued = true; };
-        if ((table_submode < 3) && (*r < 1) && not(r_warning_issued)) { std::cout << "WARNING! You didn't provide data for radii! The value of r < 1 has no effect." << std::endl; r_warning_issued = true; };
+        if ((table_submode == 1) && (g2 > 0) && not(g2_warning_issued)) { std::cout << "WARNING! You don't have a second spectrum loaded! The value of g2 > 0 has no effect." << std::endl; g2_warning_issued = true; }
+        if ((table_submode < 3) && (*r < 1) && not(r_warning_issued)) { std::cout << "WARNING! You didn't provide data for radii! The value of r < 1 has no effect." << std::endl; r_warning_issued = true; }
         for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
           double ref_g1_flux = 0;
           double ref_g2_flux = 0;
           if (table_submode < 4) {
             ref_g1_flux = gsl_pow_2(g1/default_g1) * gsl_spline_eval(spline[0], *erg, acc[0]);
-            if (table_submode > 1) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline_eval(spline[1], *erg, acc[1]); };
+            if (table_submode > 1) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline_eval(spline[1], *erg, acc[1]); }
           } else {
             ref_g1_flux = gsl_pow_2(g1/default_g1) * gsl_spline2d_eval(spline_2d[0], *r, *erg, acc_2d[0].first, acc_2d[0].second);
-            if (default_g2 > 0) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline2d_eval(spline_2d[1], *r, *erg, acc_2d[1].first, acc_2d[1].second); };
-          };
+            if (default_g2 > 0) { ref_g2_flux = gsl_pow_2(g2/default_g2) * gsl_spline2d_eval(spline_2d[1], *r, *erg, acc_2d[1].first, acc_2d[1].second); }
+          }
           //g1_flux.push_back(ref_g1_flux);
           //g2_flux.push_back(ref_g2_flux);
           total_flux.push_back(ref_g1_flux+ref_g2_flux);
-        };
+        }
         break;
       case solar_model :
       {
@@ -182,7 +180,7 @@ std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> e
           //g1_flux.push_back(ref_g1_flux);
           //g2_flux.push_back(ref_g2_flux);
           total_flux.push_back(ref_g1_flux+ref_g2_flux);
-        };
+        }
         break;
       }
       case analytical :
@@ -190,30 +188,35 @@ std::vector<std::vector<double>> AxionSpectrum::axion_flux(std::vector<double> e
           double ref_g1_flux = analytical_parameters[0] * gsl_pow_2(g1/analytical_parameters[1]) * pow(*erg,analytical_parameters[2]) * exp(-analytical_parameters[3]*(*erg));
           //g1_flux.push_back(ref_g1_flux);
           total_flux.push_back(ref_g1_flux);
-        };
+        }
         break;
       case undefined :
         terminate_with_error("ERROR! The AxionSpectrum class has not been initialised properly.");
         break;
       default :
         terminate_with_error("FATAL ERROR! The AxionSpectrum mode was somehow set to an unknown value; this is a bug, please report it.");
-    };
+    }
     result.push_back(total_flux);
-  };
+  }
   return result;
 }
 
 double AxionSpectrum::axion_flux(double erg, double g1) { return axion_flux(erg, g1, 0); }
+
 double AxionSpectrum::axion_flux(double erg, double g1, double g2) { return axion_flux(erg, 1, g1, 0); }
+
 double AxionSpectrum::axion_flux(double erg, double r, double g1, double g2) {
-  std::vector<double> ergs = {erg};
+  std::vector<double> ergs = { erg };
   std::vector<double> result = axion_flux(ergs, r, g1, g2);
   return result[0];
 }
-std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1) { return axion_flux(ergs, g1, 0); };
-std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1, double g2) { return axion_flux(ergs, 1, g1, 0); };
+
+std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1) { return axion_flux(ergs, g1, 0); }
+
+std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double g1, double g2) { return axion_flux(ergs, 1, g1, 0); }
+
 std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double r, double g1, double g2) {
-  std::vector<double> radii = {r};
+  std::vector<double> radii = { r };
   std::vector<std::vector<double>> result = axion_flux(ergs, radii, g1, g2);
   return result[0];
 }
@@ -226,7 +229,7 @@ std::vector<double> AxionSpectrum::axion_flux(std::vector<double> ergs, double r
 AxionMCGenerator1D::AxionMCGenerator1D() {
   inv_cdf_acc = gsl_interp_accel_alloc();
   inv_cdf = gsl_spline_alloc(gsl_interp_linear, 2);
-};
+}
 
 void AxionMCGenerator1D::init_from_spectral_data(std::vector<double> ergs, std::vector<double> flux) {
   int pts = ergs.size();
@@ -241,10 +244,10 @@ void AxionMCGenerator1D::init_from_spectral_data(std::vector<double> ergs, std::
     norm += 0.5 * (ergs[i] - ergs[i-1]) * (flux[i] + flux[i-1]);
     inv_cdf_data_erg[i] = ergs[i];
     inv_cdf_data_x[i] = norm;
-  };
+  }
 
   integrated_norm = norm;
-  for (int i=0; i<pts; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+  for (int i=0; i<pts; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; }
 
   init_inv_cdf_interpolator();
 }
@@ -264,19 +267,19 @@ AxionMCGenerator1D::AxionMCGenerator1D(std::string file, bool is_already_inv_cdf
   } else {
     ASCIItableReader spectrum_data (file);
     init_from_spectral_data(spectrum_data[0], spectrum_data[1]);
-  };
+  }
 }
 
 void AxionMCGenerator1D::change_parameters(double erg_min, double erg_max, double erg_delta) {
   omega_min = std::min(erg_min,erg_max);
   omega_max = std::max(erg_min,erg_max);
   omega_delta = erg_delta;
-};
+}
 
 std::vector<double> AxionMCGenerator1D::generate_ergs() {
   std::vector<double> result;
   int n_omega_vals = int((omega_max-omega_min)/omega_delta);
-  for (int i=0; i<n_omega_vals; ++i) { result.push_back(omega_min + i*omega_delta); };
+  for (int i=0; i<n_omega_vals; ++i) { result.push_back(omega_min + i*omega_delta); }
   return result;
 }
 
@@ -300,10 +303,10 @@ void AxionMCGenerator1D::init_with_local_spectrum(double g1, double g2, double r
     norm += 0.5 * omega_delta * (flux1[i] + flux1[i-1]);
     norm += 0.5 * omega_delta * (flux2[i] + flux2[i-1]);
     inv_cdf_data_x[i] = norm;
-  };
+  }
 
   integrated_norm = norm;
-  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; };
+  for (int i=0; i<n_omega_vals; ++i) { inv_cdf_data_x[i] = inv_cdf_data_x[i]/integrated_norm; }
 
   init_inv_cdf_interpolator();
   full_mc_generator_ready = true;
@@ -315,7 +318,7 @@ AxionMCGenerator1D::AxionMCGenerator1D(SolarModel* sol, double g1, double g2, do
 }
 
 AxionMCGenerator1D::AxionMCGenerator1D(double a, double b) {
-  analytical_parameters = {a, b};
+  analytical_parameters = { a, b };
   analytical_mc_generator_ready = true;
 }
 
@@ -334,13 +337,13 @@ AxionMCGenerator1D::AxionMCGenerator1D(AxionSpectrum* spectrum, double g1, doubl
       if (table_submode > 2) {
         sp = *spectrum;
         full_mc_generator_ready = true;
-      };
+      }
       break;
     }
     case analytical :
     {
       std::vector<double> p = spectrum->get_analytical_parameters();
-      analytical_parameters = {p[2], p[3]};
+      analytical_parameters = { p[2], p[3] };
       analytical_mc_generator_ready = true;
       break;
     }
@@ -351,7 +354,7 @@ AxionMCGenerator1D::AxionMCGenerator1D(AxionSpectrum* spectrum, double g1, doubl
       break;
     }
     default : std::cout << "WARNING! The mode of AxionMCGenerator1D, used in the construction of AxionSpectrum, is inappropriate.";
-  };
+  }
 }
 
 void AxionMCGenerator1D::init_inv_cdf_interpolator() {
@@ -386,7 +389,7 @@ double AxionMCGenerator1D::evaluate_inv_cdf(double x) {
     result = gsl_spline_eval(inv_cdf, x, inv_cdf_acc);
   } else {
     terminate_with_error("ERROR! The (simple version of the) MC generator has not been initialised properly!");
-  };
+  }
   return result;
 }
 
@@ -398,7 +401,7 @@ std::vector<double> AxionMCGenerator1D::draw_axion_energies(int n) {
   std::uniform_real_distribution<double> unif(0, 1);
 
   //std::cout << "Test U[0,1]: " << unif(rng) << std::endl;
-  for (int i=0; i<n; ++i) { result.push_back(evaluate_inv_cdf( unif(rng) )); };
+  for (int i=0; i<n; ++i) { result.push_back(evaluate_inv_cdf( unif(rng) )); }
 
   return result;
 }
@@ -433,7 +436,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(std::string file, bool is_already_inv_cdf
     terminate_with_error("ERROR! 2D interpolation + integration of files is currently not supported.");
     //ASCIItableReader spectrum_data (file);
     //init_from_spectral_data(spectrum_data);
-  };
+  }
 }
 
 AxionMCGenerator2D::AxionMCGenerator2D(std::vector<std::vector<double> > data, bool is_already_inv_cdf_file) {
@@ -443,7 +446,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(std::vector<std::vector<double> > data, b
   } else {
     terminate_with_error("ERROR! 2D interpolation + integration of spectral data is currently not supported.");
     //init_from_spectral_data(data);
-  };
+  }
 }
 
 AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs, std::vector<double> rads, double gaee, std::string save_fluxes_prefix) {
@@ -451,28 +454,28 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
   std::vector<double> cdf_rads;
   std::string filename = "";
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_Primakoff.dat"; };
+  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_Primakoff.dat"; }
   total_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
   int n_rad_entries = total_fluxes[0].size();
-  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_Primakoff.dat"; };
+  if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_Primakoff.dat"; }
   fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
   int n_entries = fluxes[0].size();
   if (gaee > 0) {
     integrand = &SolarModel::Gamma_P_all_electron;
-    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_all_electron.dat"; };
+    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_all_electron.dat"; }
     total_gaee_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
-    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_all_electron.dat"; };
+    if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_all_electron.dat"; }
     gaee_fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
-    for (int i = 0; i < n_rad_entries; ++i) { total_fluxes[1][i] += gsl_pow_2(gaee/1.0e-13)*total_gaee_fluxes[1][i]; };
-    for (int i = 0; i < n_entries; ++i) { fluxes[2][i] += gsl_pow_2(gaee/1.0e-13)*gaee_fluxes[2][i]; };
-  };
+    for (int i = 0; i < n_rad_entries; ++i) { total_fluxes[1][i] += gsl_pow_2(gaee/1.0e-13)*total_gaee_fluxes[1][i]; }
+    for (int i = 0; i < n_entries; ++i) { fluxes[2][i] += gsl_pow_2(gaee/1.0e-13)*gaee_fluxes[2][i]; }
+  }
 
   double norm = 0;
   int k = 0;
   std::vector<double> norms (n_rad_entries, 0.0);
   inv_cdf_ergs.resize(n_rad_entries);
   for (int i = 0; i < n_rad_entries; i++) {
-    if (i > 0) { norm += 0.5*(total_fluxes[0][i] - total_fluxes[0][i-1])*(total_fluxes[1][i] + total_fluxes[1][i-1]); };
+    if (i > 0) { norm += 0.5*(total_fluxes[0][i] - total_fluxes[0][i-1])*(total_fluxes[1][i] + total_fluxes[1][i-1]); }
     //double omega_min = sqrt(sol.omega_pl_squared(total_fluxes[0][i]));
     //double omega_max = sol.temperature_in_keV(total_fluxes[0][i]);
     k += 1;
@@ -480,15 +483,15 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
       while (fluxes[0][k] < total_fluxes[0][i+1]) {
         norms[i] += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
         k += 1;
-      };
+      }
     } else {
       while (k < fluxes[0].size()) {
         norms[i] += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
         k += 1;
-      };
-    };
+      }
+    }
     std::cout << "Norm: " << norms[i] << std::endl;
-  };
+  }
 
   double integral1 = 0;
   k = 0;
@@ -498,7 +501,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
       cdf_rads.push_back(integral1/norm);
     } else {
       cdf_rads.push_back(0);
-    };
+    }
     std::cout << total_fluxes[0][i] << " | " << cdf_rads[i] << std::endl;
     double integral2 = 0;
     std::vector<double> temp_ergs;
@@ -513,7 +516,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
         temp_cdf_ergs.push_back(integral2/norms[i]);
         std::cout << total_fluxes[0][i] << " vs " << fluxes[0][k] << " | " << fluxes[1][k] << " | " << integral2/norms[i] << std::endl;
         k += 1;
-      };
+      }
     } else {
       while (k < n_entries) {
         integral2 += 0.5*(fluxes[1][k] - fluxes[1][k-1])*(fluxes[2][k] + fluxes[2][k-1]);
@@ -521,13 +524,13 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
         temp_cdf_ergs.push_back(integral2/norms[i]);
         std::cout << total_fluxes[0][i] << " vs " << fluxes[0][k] << " | " << fluxes[1][k] << " | " << integral2/norms[i] << std::endl;
         k += 1;
-      };
-    };
+      }
+    }
 
     std::vector<std::vector<double> > buffer1 = { temp_cdf_ergs, temp_ergs };
     OneDInterpolator interp (buffer1);
     inv_cdf_ergs[i] = std::move(interp);
-  };
+  }
 
   std::vector<std::vector<double> > buffer2 = { cdf_rads, total_fluxes[0] };
   inv_cdf_rad = OneDInterpolator(buffer2);
@@ -559,7 +562,7 @@ void AxionMCGenerator2D::save_inv_cdf_to_file(std::string inv_cdf_file) {
     buffer[0].insert(buffer[0].end(), rads.begin(), rads.end());
     buffer[1].insert(buffer[1].end(), data[0].begin(), data[0].end());
     buffer[2].insert(buffer[2].end(), data[1].begin(), data[1].end());
-  };
+  }
   //save_to_file(inv_cdf_file, inv_cdf_grid.get_data(), comment);
   save_to_file(inv_cdf_file+".dat", buffer, comment);
   comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Random variable | Inverse CDF of radius distribution";
@@ -584,7 +587,7 @@ double AxionMCGenerator2D::evaluate_inv_cdf_erg_given_rad(double x, double rad) 
     double e1 = inv_cdf_ergs[index-1].interpolate(x);
     double e2 = inv_cdf_ergs[index].interpolate(x);
     result = e1 + (rad - r1)*(e2 - e1)/(r2 - r1);
-  };
+  }
   return result;
   //return inv_cdf_grid.interpolate(rad, x);
 }
@@ -596,7 +599,7 @@ std::vector<double> AxionMCGenerator2D::draw_axion_radii(int n) {
   std::mt19937 rng (seed);
   std::uniform_real_distribution<double> unif(0, 1);
 
-  for (int i=0; i<n; ++i) { result.push_back(inv_cdf_rad.interpolate( unif(rng) )); };
+  for (int i=0; i<n; ++i) { result.push_back(inv_cdf_rad.interpolate( unif(rng) )); }
 
   return result;
 }
@@ -610,7 +613,7 @@ std::vector<double> AxionMCGenerator2D::draw_axion_energies_given_radii(std::vec
 
   for (auto r = radii.begin(); r != radii.end(); ++r) {
     result.push_back(evaluate_inv_cdf_erg_given_rad( unif(rng), *r ));
-  };
+  }
 
   return result;
 }
@@ -687,12 +690,12 @@ double integrand_opacity(double r, void * params) {
   //if (sol->opcode == OP) {
   //  double element_contrib = 0.0;
   //  // Add opacity terms all non-H or He elements (metals)
-  //  for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); };
+  //  for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); }
   //  result = 0.5*gsl_pow_2(r*erg/pi)*element_contrib;
   //}
   //if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
   //    result = 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
-  //};
+  //}
 
   //return result;
   return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
@@ -730,7 +733,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
 
   for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
     double integral, error;
-    integration_params p = {*erg, &s, isotope};
+    integration_params p = { *erg, &s, isotope };
     f.params = &p;
     gsl_integration_qag (&f, s.get_r_lo(), s.get_r_hi(), int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
     results.push_back(factor*integral);
@@ -739,7 +742,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, Isotope is
 
   gsl_integration_workspace_free (w);
 
-  std::vector<std::vector<double>> buffer = {ergs, results, errors};
+  std::vector<std::vector<double>> buffer = { ergs, results, errors };
   std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [axions / cm^2 s keV], axion flux error estimate [axions / cm^2 s keV]";
   save_to_file(saveas, buffer, comment);
 
@@ -763,7 +766,7 @@ double spectral_flux_integrand(double erg, void * params) {
   double result, error;
   gsl_function f;
   f.function = p2->integrand;
-  integration_params p = {erg, s, isotope};
+  integration_params p = { erg, s, isotope };
   f.params = &p;
   gsl_integration_qag(&f, s->get_r_lo(), s->get_r_hi(), 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w, &result, &error);
   gsl_integration_workspace_free(w);
@@ -777,8 +780,8 @@ double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isoto
     gsl_function f;
     f.function = spectral_flux_integrand;
     gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-    integration_params2 p2 = {&s, &integrand_all_axionelectron, isotope};
-    //integration_params2 p2 = {&s, &integrand_Primakoff, isotope};
+    integration_params2 p2 = { &s, &integrand_all_axionelectron, isotope };
+    //integration_params2 p2 = { &s, &integrand_Primakoff, isotope };
     f.params = &p2;
     gsl_integration_qag(&f, lowerlimit, upperlimit, int_abs_prec, int_rel_prec, int_space_size, int_method_2, w, &result, &error);
     gsl_integration_workspace_free(w);
@@ -792,14 +795,14 @@ double flux_from_file_integrand(double erg, void * params) {
 
 double integrated_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file, bool includes_electron_interactions) {
   // Peak positions for axion electron interactions
-  const std::vector<double> all_peaks = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                         5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  const std::vector<double> all_peaks = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163,
+                                          5.64394, 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
   double result, error;
 
   OneDInterpolator spectral_flux (spectral_flux_file);
   if ( (erg_min < spectral_flux.lower()) || (erg_max > spectral_flux.upper()) ) {
     terminate_with_error("ERROR! The integration boundaries given to 'integrated_flux_from_file' are incompatible with the min/max available energy in the file "+spectral_flux_file+".");
-  };
+  }
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
   gsl_function f;
