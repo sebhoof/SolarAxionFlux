@@ -22,7 +22,10 @@
 
 #include "constants.hpp"
 
-// Generic helper functions
+/////////////////////////////////////////////////////
+//  General functions  (I/O, error handling, ...)  //
+/////////////////////////////////////////////////////
+
 void terminate_with_error(std::string err_string);
 void terminate_with_error_if(bool condition, std::string err_string);
 void my_handler(const char * reason, const char * file, int line, int gsl_errno);
@@ -30,7 +33,45 @@ bool file_exists(const std::string& filename);
 void locate_data_folder(std::string path_to_model_file, std::string &path_to_data, std::string &model_file_name);
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment = "", bool overwrite = true);
 
-// OneDInterpolator class: Provides a general 1-D interpolation container based on the gsl library.
+// ASCIItableReader class from GAMBIT (main author: Christoph Weniger)
+class ASCIItableReader {
+  public:
+    ASCIItableReader(std::string filename) { read(filename); }
+    ASCIItableReader() {}
+    ~ASCIItableReader() {}
+
+    int read(std::string filename);
+    void setcolnames(std::vector<std::string> names);
+
+    template <typename... Args>
+    void setcolnames(std::string name, Args... args) {
+      std::vector<std::string> vec;
+      vec.push_back(name);
+      setcolnames(vec, args...);
+    }
+    template <typename... Args>
+    void setcolnames(std::vector<std::string> vec, std::string name, Args... args) {
+      vec.push_back(name);
+      setcolnames(vec, args...);
+    }
+
+    void prepend_data(double datum, int i) { data[i].insert(data[i].begin(), datum); }
+    const std::vector<double> & operator[] (int i) { return data[i]; }
+    const std::vector<double> & operator[] (std::string name) { return data[colnames[name]]; }
+    std::vector<std::vector<double> > get_data() { return data; }
+    int getncol() { return data.size(); }
+    int getnrow() { return data[0].size(); }
+
+  private:
+    std::vector<std::vector<double>> data;
+    std::map<std::string, int> colnames;
+};
+
+///////////////////////////////
+//  Interpolation functions  //
+///////////////////////////////
+
+// OneDInterpolator class: Provides a general one-dimensional interpolation container based on the gsl library.
 // Can be declared static for efficiency & easy one-time initialisation of interpolating functions.
 class OneDInterpolator {
   public:
@@ -66,6 +107,7 @@ class OneDInterpolator {
     double lo, up;
 };
 
+// TwoDInterpolator class: Provides a general one-dimensional interpolation container based on the gsl library.
 class TwoDInterpolator {
   public:
     // Overloaded class creators for the AxionInterpolator class using the init function below.
@@ -99,44 +141,11 @@ class TwoDInterpolator {
     double x_lo, y_lo, x_up, y_up;
 };
 
-class ASCIItableReader {
-  public:
-    ASCIItableReader(std::string filename) { read(filename); }
-    ASCIItableReader() {}
-    ~ASCIItableReader() {}
+////////////////////////////////////////////////////
+//  General physics helper functions and classes  //
+////////////////////////////////////////////////////
 
-    int read(std::string filename);
-    void setcolnames(std::vector<std::string> names);
-
-    template <typename... Args>
-    void setcolnames(std::string name, Args... args)
-    {
-      std::vector<std::string> vec;
-      vec.push_back(name);
-      setcolnames(vec, args...);
-    }
-    template <typename... Args>
-    void setcolnames(std::vector<std::string> vec, std::string name, Args... args)
-    {
-      vec.push_back(name);
-      setcolnames(vec, args...);
-    }
-
-    void prepend_data(double datum, int i) { data[i].insert(data[i].begin(), datum); }
-    const std::vector<double> & operator[] (int i) { return data[i]; }
-    const std::vector<double> & operator[] (std::string name) { return data[colnames[name]]; }
-    std::vector<std::vector<double> > get_data() { return data; }
-    int getncol() { return data.size(); }
-    int getnrow() { return data[0].size(); }
-
-  private:
-    std::vector<std::vector<double>> data;
-    std::map<std::string, int> colnames;
-};
-
-// For the future: el_a_value=0 is a default for 'only tracked in bulk';
-// For the OP code, just use the op list with names(!) as below and automatically sum over all Isotopes with iz[0] == IsotopeName!
-// If a_val() > 0, use this, else get default bulk value from global table (maybe create own namespace).
+// Isotope class
 class Isotope {
    public:
       Isotope() {}
@@ -160,6 +169,7 @@ class Isotope {
       int isotope_a_value;
 };
 
+// Average weights of isotopes (depending of availability: exact, in the Sun, on Earth)
 const std::map<Isotope, double> isotope_avg_weight { {{"H",1}, 1.007825}, {{"H",0}, 1.008}, {{"He",4}, 4.002603}, {{"He",3}, 3.016029},
     {{"He",0}, 4.002602}, {{"C",12}, 12.000000}, {{"C",13}, 13.003355}, {{"C",0}, 12.011}, {{"N",14}, 14.003074}, {{"N",15}, 15.000109}, {{"N",0}, 14.0067}, {{"O",16}, 15.994915},
     {{"O",17}, 16.999132}, {{"O",18}, 17.999160}, {{"O",0}, 15.999}, {{"Ne",0}, 20.1312812}, {{"Na",0}, 22.989769}, {{"Mg",0}, 24.3055}, {{"Al",0}, 26.9815385}, {{"Si",0}, 28.085}, {{"P",0}, 30.973762}, {{"S",0}, 32.0675},
@@ -167,6 +177,7 @@ const std::map<Isotope, double> isotope_avg_weight { {{"H",1}, 1.007825}, {{"H",
                                                       {{"Fe",0}, 55.845}, {{"Co",0}, 58.933194}, {{"Ni",0}, 58.6934} };
 double atomic_weight(Isotope isotope);
 
+// Map opacity code names to labels; catalogue of available opacity data
 enum opacitycode { OP, OPAS, LEDCOP, ATOMIC };
 const std::map<opacitycode,std::string> opacitycode_name = { {OP,"OP"}, {OPAS,"OPAS"}, {LEDCOP,"LEDCOP"}, {ATOMIC,"ATOMIC"} };
 const std::set<std::string> alpha_available = { "data/solar_models/SolarModel_AGS05.dat", "data/solar_models/SolarModel_AGSS09.dat", "data/solar_models/SolarModel_AGSS09ph.dat", "data/solar_models/SolarModel_B16-AGSS09.dat",
@@ -198,12 +209,13 @@ const std::vector<float> atomic_temperatures = { 0.1, 0.125, 0.15, 0.175, 0.2, 0
 const std::vector<float> atomic_densities = { 10.175, 13.684, 18.308, 24.268, 31.802, 41.156, 52.611, 66.544, 83.466, 103.442, 124.995, 143.111, 150.5 };
 const std::vector<double> opas_radii = { 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71 };
 
+// Get the (approximate) locations of the peaks in the axion-electron spectrum to allow for more accurate integration
 std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
 
 // Variables and wrapper functions for integration routines
 // Variables to define the behaviour of the GSL integrators.
 const double ref_erg_value = 2.0, ref_r_value = 0.05;
-// Others (possibly outdated by now)
+// TODO: possibly outdated by now
 const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8, int_space_size_cquad = 1e6;
 const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
 const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;
