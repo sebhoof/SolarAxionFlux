@@ -24,11 +24,11 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   if (n_cols == 35) {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_C13", "X_N14", "X_N15", "X_O16", "X_O17", "X_O18", "X_Ne", "X_Na", "X_Mg", "X_Al", "X_Si", "X_P", "X_S", "X_Cl", "X_Ar",
                      "X_K", "X_Ca", "X_Sc", "X_Ti", "X_V", "X_Cr", "X_Mn", "X_Fe", "X_Co", "X_Ni");
-    tracked_isotopes = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"C",13}, {"N",14}, {"N",15}, {"O",16}, {"O",17}, {"O",18}, {"Ne",0}, {"Na",0}, {"Mg",0}, {"Al",0}, {"Si",0}, {"P",0}, {"S",0}, {"Cl",0}, {"Ar",0}, {"K",0}, {"Ca",0}, {"Sc",0},
-                     {"Ti",0}, {"V",0}, {"Cr",0}, {"Mn",0}, {"Fe",0}, {"Co",0}, {"Ni",0}};
+    tracked_isotopes = { {"H",1}, {"He",4}, {"He",3}, {"C",12}, {"C",13}, {"N",14}, {"N",15}, {"O",16}, {"O",17}, {"O",18}, {"Ne",0}, {"Na",0}, {"Mg",0}, {"Al",0}, {"Si",0}, {"P",0}, {"S",0}, {"Cl",0}, {"Ar",0}, {"K",0}, {"Ca",0}, {"Sc",0},
+                         {"Ti",0}, {"V",0}, {"Cr",0}, {"Mn",0}, {"Fe",0}, {"Co",0}, {"Ni",0} };
   } else if (n_cols == 12) {
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
-    tracked_isotopes = {{"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16}};
+    tracked_isotopes = { {"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16} };
   } else {
     terminate_with_error("ERROR! Solar model file '"+path_to_model_file+"' not compatible with this code!");
   }
@@ -249,24 +249,24 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
 
 // Class destructor
 SolarModel::~SolarModel() {
-  for (auto interp : linear_interp) { gsl_spline_free(interp); };
-  for (auto interp : n_isotope_lin_interp) { gsl_spline_free(interp); };
-  for (auto interp : z2_n_isotope_lin_interp) { gsl_spline_free(interp); };
-  for (auto map : n_element_lin_interp) { gsl_spline_free(map.second); };
+  for (auto interp : linear_interp) { gsl_spline_free(interp); }
+  for (auto interp : n_isotope_lin_interp) { gsl_spline_free(interp); }
+  for (auto interp : z2_n_isotope_lin_interp) { gsl_spline_free(interp); }
+  for (auto map : n_element_lin_interp) { gsl_spline_free(map.second); }
   for (auto map_1 : opacity_lin_interp_op) {
-    for (auto map_2 : map_1.second) { gsl_spline_free(map_2.second); };
-  };
-  for (auto map : opacity_lin_interp_tops) { gsl_spline_free(map.second); };
-  for (auto map : opacity_lin_interp_opas) { gsl_spline_free(map.second); };
-  for (auto acc : accel) { gsl_interp_accel_free(acc); };
-  for (auto acc : n_isotope_acc) { gsl_interp_accel_free(acc); };
-  for (auto acc : z2_n_isotope_acc) { gsl_interp_accel_free(acc); };
-  for (auto map : n_element_acc) { gsl_interp_accel_free(map.second); };
+    for (auto map_2 : map_1.second) { gsl_spline_free(map_2.second); }
+  }
+  for (auto map : opacity_lin_interp_tops) { gsl_spline_free(map.second); }
+  for (auto map : opacity_lin_interp_opas) { gsl_spline_free(map.second); }
+  for (auto acc : accel) { gsl_interp_accel_free(acc); }
+  for (auto acc : n_isotope_acc) { gsl_interp_accel_free(acc); }
+  for (auto acc : z2_n_isotope_acc) { gsl_interp_accel_free(acc); }
+  for (auto map : n_element_acc) { gsl_interp_accel_free(map.second); }
   for (auto map_1 : opacity_acc_op) {
-    for (auto map_2 : map_1.second) { gsl_interp_accel_free(map_2.second); };
-  };
-  for (auto map : opacity_acc_tops) { gsl_interp_accel_free(map.second); };
-  for (auto map : opacity_acc_opas) { gsl_interp_accel_free(map.second); };
+    for (auto map_2 : map_1.second) { gsl_interp_accel_free(map_2.second); }
+  }
+  for (auto map : opacity_acc_tops) { gsl_interp_accel_free(map.second); }
+  for (auto map : opacity_acc_opas) { gsl_interp_accel_free(map.second); }
 }
 
 // Move assignment operator
@@ -303,7 +303,7 @@ SolarModel& SolarModel::operator=(SolarModel &&src) {
     std::swap(n_element_acc,src.n_element_acc);
     std::swap(n_element_lin_interp,src.n_element_lin_interp);
     std::swap(element_ionisationsqr,src.element_ionisationsqr);
-  };
+  }
   return *this;
 }
 
@@ -382,7 +382,7 @@ double integrand(double x, void * params) {
 }
 
 double aux_function(double u, double y) {
-  integrand_params_aux_fun p = {u, y};
+  integrand_params_aux_fun p = { u, y };
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
   double result, error;
   gsl_function f;
@@ -520,7 +520,7 @@ double SolarModel::opacity_table_interpolator_op2(double omega, double r, std::s
     std::cout << "ERROR! Negative opacity!" << std::endl;
     std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
     std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,element) << " " << op_grid_interp_erg(u1,ite2,jne2,element) << " | " << result << std::endl;
-  };
+  }
   return result;
 }
 
@@ -647,9 +647,9 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
         terminate_with_error("ERROR! OP  Ionisation data for element "+element+" does not exist.");
     } else  {
       result = element_ionisationsqr.at(grid_position).at(element);
-      if (gsl_isnan(result) == true) { return 0; };
-    };
-  };
+      if (gsl_isnan(result) == true) { return 0; }
+    }
+  }
   return result;
 }
 
@@ -700,7 +700,7 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
     double element_contrib = 0.0;
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
     element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
-    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); };
+    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); }
     result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
     double u = erg/temperature_in_keV(r);
@@ -735,13 +735,13 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
     integrand = map_interaction_name_to_function.at(interaction_name);
   } else {
     std::string avail_keys = "";
-    for (auto& x: map_interaction_name_to_function) { avail_keys += x.first + " "; };
+    for (auto& x: map_interaction_name_to_function) { avail_keys += x.first + " "; }
     std::cout << "NON-FATAL ERROR! The interaction '"+interaction_name+"' is not available. Enter one of the valid options below and fix your code." << std::endl;
     std::cout << avail_keys << std::endl;
     std::string new_interaction_name;
     std::cout << "Enter a valid interaction name here: "; std::cin >> new_interaction_name;
     integrand = get_SolarModel_function_pointer(new_interaction_name);
-  };
+  }
   return integrand;
 }
 
@@ -753,7 +753,7 @@ std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<do
   } else {
     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
     return calculate_spectral_flux(ergs, *this, integrand);
-  };
+  }
 }
 
 std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max) {
@@ -785,11 +785,11 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
   double rad_min = *it;
   it = std::max_element(radii.begin(), radii.end());
   double rad_max = *it;
-  if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING! Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; };
+  if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING! Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
   supported_radii.push_back(r_lo);
   for (auto r = radii.begin(); r !=radii.end(); ++r) {
-    if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); };
-  };
+    if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); }
+  }
   supported_radii.push_back(0.95*r_hi);
   return supported_radii;
 }
@@ -800,7 +800,7 @@ std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
 void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
-bool SolarModel::is_initialised() { return initialisation_status; };
+bool SolarModel::is_initialised() { return initialisation_status; }
 
 double rho_integrand_1d(double rho, void * params) {
   // Retrieve parameters and other integration variables.
@@ -869,7 +869,7 @@ double erg_integrand_2d(double erg, void * params) {
   double r_max = s->get_r_hi();
   if (r_min < r_max) {
     gsl_integration_cquad(&f1, r_min, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w1, &result, &error, &n_evals);
-  };
+  }
 
   //result = (p2->rad)*result;
   return result;
@@ -904,7 +904,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
 
   gsl_integration_workspace_free (w);
 
-  std::vector<std::vector<double>> buffer = {ergs, results, errors};
+  std::vector<std::vector<double>> buffer = { ergs, results, errors };
   std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [cm^-2 s^-1 keV^-1], axion flux error estimate [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
@@ -948,7 +948,7 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
 
-  std::vector<std::vector<double>> buffer = {ergs, results, errors};
+  std::vector<std::vector<double>> buffer = { ergs, results, errors };
   std::string comment = "Spectral flux over full solar disc, r in ["+std::to_string(r_min)+", "+std::to_string(r_max)+"] R_sol by "+LIBRARY_NAME+". Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]";
   save_to_file(saveas, buffer, comment);
 

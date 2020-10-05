@@ -69,7 +69,7 @@ void run_unit_test() {
   //std::cout << calculate_flux(lowerg,higherg,s,{}) << std::endl;
   std::cout << "\n# Computing reference counts in CAST2007 experiment from all interactions (from files)..." << std::endl;
   auto t4s = std::chrono::high_resolution_clock::now();
-  std::vector<double> axion_masses = {1.0e-6, 2.0e-6, 5.0e-6, 1.0e-5, 2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4, 5.0e-4, 1.0e-3, 2.0e-3, 5.0e-3, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0};
+  std::vector<double> axion_masses = { 1.0e-6, 2.0e-6, 5.0e-6, 1.0e-5, 2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4, 5.0e-4, 1.0e-3, 2.0e-3, 5.0e-3, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0 };
   axion_reference_counts_from_file(&cast_2007_setup, axion_masses, "results/primakoff.dat", "results/all_gaee.dat", "results/reference_counts_cast2007.dat");
   auto t4e = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the reference counts took " << std::chrono::duration_cast<std::chrono::seconds>(t4e-t4s).count() << " seconds." << std::endl;

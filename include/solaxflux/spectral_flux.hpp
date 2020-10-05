@@ -16,7 +16,7 @@
 #include "utils.hpp"
 #include "solar_model.hpp"
 
-enum SpectrumModes {table, analytical, solar_model, undefined};
+enum SpectrumModes { table, analytical, solar_model, undefined };
 
 class AxionSpectrum {
   public:

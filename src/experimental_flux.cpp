@@ -13,7 +13,7 @@ double conversion_prob_correction(double mass, double erg, double length) {
   if (mass > 0) {
     double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
     result = gsl_pow_2(gsl_sf_sinc(argument/pi));
-  };
+  }
   return result;
 }
 
@@ -21,67 +21,67 @@ double conversion_prob_correction(double mass, double erg, double length) {
 double eff_exposure_cast2007(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2007_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_a(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_A_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_b(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_B_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_c(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_C_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_d(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_D_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_e(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_E_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_f(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_F_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_g(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_G_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_h(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_H_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_i(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_I_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_j(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_J_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_k(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_K_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 double eff_exposure_cast2017_l(double erg) {
   static OneDInterpolator eff_exp ("data/exposures/CAST2017_L_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-};
+}
 
 // Baseline IAXO data from [arXiv:1904.09155]
 double eff_exposure_iaxo(double erg) {
@@ -90,7 +90,7 @@ double eff_exposure_iaxo(double erg) {
   const double area = 2.3e4;
   const double eff_exp = eff*time*area;
   return eff_exp;
-};
+}
 
 // babyIAXO data from [arXiv:1904.09155]
 double eff_exposure_babyiaxo(double erg) {
@@ -99,7 +99,7 @@ double eff_exposure_babyiaxo(double erg) {
   const double area = 0.77e4;
   const double eff_exp = eff*time*area;
   return eff_exp;
-};
+}
 
 // IAXO+ data from [arXiv:1904.09155]
 double eff_exposure_iaxoplus(double erg) {
@@ -108,7 +108,7 @@ double eff_exposure_iaxoplus(double erg) {
   const double area = 3.9e4;
   const double eff_exp = eff*time*area;
   return eff_exp;
-};
+}
 
 /*
 double eff_exposure(double erg, std::string dataset) {
@@ -117,7 +117,7 @@ double eff_exposure(double erg, std::string dataset) {
   if (previous_dataset != dataset) {
     eff_exp = OneDInterpolator("data/exposures/"+dataset+"_EffectiveExposure.dat");
     previous_dataset = dataset;
-  };
+  }
   // Effective exposure file is in cm x days.
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
@@ -165,7 +165,7 @@ double eff_exposure(double erg, experiment dataset) {
       res = eff_exposure_iaxoplus(erg); break;
     default:
       terminate_with_error("ERROR! Data set not known!");
-  };
+  }
   return res;
 }
 
@@ -196,7 +196,7 @@ double convolution_kernel(double erg, void * params) {
 double convolved_erg_integrand_from_file(double erg, void * params) {
   double result, error;
   struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
-  struct convolution_params q = {erg, p};
+  struct convolution_params q = { erg, p };
   std::vector<double> relevant_peaks = get_relevant_peaks(p->support[0], p->support[1]);
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
@@ -261,7 +261,7 @@ std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, doubl
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &flux, &flux_error);
     //gsl_integration_qag (&f, support[0], support[1], int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &flux, &flux_error);
     result.push_back(flux);
-  };
+  }
   gsl_integration_workspace_free(w);
 
   return result;
@@ -279,7 +279,7 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
-  double support [2] = {bin_lo, bin_hi};
+  double support [2] = { bin_lo, bin_hi };
 
   // Do convolution if necessary.
   double erg_resolution = setup->erg_resolution;
@@ -291,7 +291,7 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
     save_to_file(spectral_flux_file+"_convolved", {ergs, flux}, "");
   } else {
     spectral_flux = OneDInterpolator(spectral_flux_file);
-  };
+  }
 
   double gagg_result, gagg_error;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
@@ -308,7 +308,7 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
     double counts = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gagg_result;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
-  };
+  }
   gsl_integration_workspace_free (w);
 
   return result;
@@ -348,7 +348,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
     //std::cout << "integral 3 = " << gagg_result << std::endl;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
-  };
+  }
 
   //gsl_integration_workspace_free (w1);
   gsl_integration_cquad_workspace_free(w1);
@@ -360,8 +360,8 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
 
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
-  const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  const double all_peaks [32] = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
+                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
   static OneDInterpolator spectral_flux (spectral_flux_file);
 
   int n_bins = setup->n_bins;
@@ -382,7 +382,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
     erg_hi += bin_delta;
     std::vector<double> relevant_peaks;
     relevant_peaks.push_back(erg_lo);
-    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); }; };
+    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); } }
     relevant_peaks.push_back(erg_hi);
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
@@ -390,7 +390,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
     double counts = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gaee_result;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
-  };
+  }
   gsl_integration_workspace_free (w);
 
   return result;
@@ -400,8 +400,8 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   std::vector<double> result;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double factor = distance_factor*conversion_prob_factor;
-  const double all_peaks [32] = {0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785};
+  const double all_peaks [32] = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
+                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
@@ -430,14 +430,14 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
     erg_hi += bin_delta;
     std::vector<double> relevant_peaks;
     relevant_peaks.push_back(erg_lo);
-    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); }; };
+    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); } }
     relevant_peaks.push_back(erg_hi);
     //gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size, gagg_method, w3, &gagg_result, &gagg_error);
     gsl_integration_qagp(&f3, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w3, &gaee_result, &gaee_error);
     double counts = factor*norm_factor1*norm_factor3*gsl_pow_2((gagg/1.0e-10)*(gaee/1.0e-13)*(setup->b_field/9.0)*(setup->length/9.26))*gaee_result;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
-  };
+  }
 
   //gsl_integration_workspace_free (w1);
   gsl_integration_cquad_workspace_free(w1);
@@ -477,18 +477,18 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
       std::vector<double> flux_gaee = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gaee);
       spectral_flux_gaee = OneDInterpolator(ergs, flux_gaee);
       save_to_file(spectral_flux_file_gaee+"_conv", {ergs, flux_gaee}, "");
-    };
+    }
 
   } else {
     spectral_flux_gagg = OneDInterpolator(spectral_flux_file_gagg);
-    if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); };
-  };
+    if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
+  }
   */
 
   double gagg_result, gagg_error, gaee_result, gaee_error;
   OneDInterpolator spectral_flux_gagg (spectral_flux_file_gagg);
   OneDInterpolator spectral_flux_gaee;
-  if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); };
+  if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
 
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
@@ -503,15 +503,15 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   } else {
     f1.function = &erg_integrand_from_file;
     f2.function = &erg_integrand_from_file;
-  };
+  }
 
   std::vector<std::vector<double>> relevant_peaks;
   if (spectral_flux_file_gaee != "") {
     for (int bin = 0; bin < n_bins; ++bin) {
       double erg_lo = bin_lo + bin*bin_delta;
       relevant_peaks.push_back(get_relevant_peaks(erg_lo, erg_lo+bin_delta));
-    };
-  };
+    }
+  }
 
   std::vector<double> gagg_ergs, gaee_ergs;
   if ((erg_resolution > 0) && save_convolved_spectra) {
@@ -520,8 +520,8 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
     if (spectral_flux_file_gaee != "") {
       ASCIItableReader temp2 (spectral_flux_file_gaee);
       gaee_ergs = temp1[0];
-    };
-  };
+    }
+  }
 
   std::vector<double> expanded_masses, bin_centres, results_gagg, results_gaee;
   std::vector<double> convolved_spectra_masses_gagg, convolved_spectra_masses_gaee, convolved_spectra_energies_gagg, convolved_spectra_energies_gaee, convolved_spectra_results_gagg, convolved_spectra_results_gaee;
@@ -533,15 +533,15 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
         convolved_spectra_masses_gagg.push_back(*mass);
         convolved_spectra_energies_gagg.push_back(*erg);
         convolved_spectra_results_gagg.push_back(GSL_FN_EVAL(&f1,*erg));
-      };
+      }
       if (spectral_flux_file_gaee != "") {
         for (auto erg = gaee_ergs.begin(); erg != gaee_ergs.end(); ++erg) {
           convolved_spectra_masses_gaee.push_back(*mass);
           convolved_spectra_energies_gaee.push_back(*erg);
           convolved_spectra_results_gaee.push_back(GSL_FN_EVAL(&f2,*erg));
-        };
-      };
-    };
+        }
+      }
+    }
     for (int bin = 0; bin < n_bins; ++bin) {
       expanded_masses.push_back(*mass);
       double erg_lo = bin_lo + bin*bin_delta;
@@ -553,15 +553,15 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
       if (spectral_flux_file_gaee != "") {
         gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w2, &gaee_result, &gaee_error);
         results_gaee.push_back(overall_factor*gaee_result);
-      };
-    };
-  };
+      }
+    }
+  }
 
   std::string header = "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff";
   result.push_back(expanded_masses);
   result.push_back(bin_centres);
   result.push_back(results_gagg);
-  if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); header += " | Counts from axion-electron"; };
+  if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); header += " | Counts from axion-electron"; }
   save_to_file(saveas, result, header);
 
   header = "Reference flux (convolved) for g_agamma = 10^-10 1/GeV\nColumns: Axion mass [eV] | Energy [keV] | Primakoff flux [s^-1 cm^-1 keV^-1]";
@@ -575,7 +575,7 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
     convolved_spectra_gaee.push_back(convolved_spectra_energies_gaee);
     convolved_spectra_gaee.push_back(convolved_spectra_results_gaee);
     save_to_file(spectral_flux_file_gaee+"_convolved", convolved_spectra_gaee, header);
-  };
+  }
 
   gsl_integration_workspace_free (w1);
   gsl_integration_workspace_free (w2);
@@ -585,7 +585,7 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
 
 double safe_log10(double x, double lgx0) {
   double result = lgx0;
-  if (x > 0) { result = log10(x); };
+  if (x > 0) { result = log10(x); }
   return result;
 }
 
@@ -621,9 +621,9 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     n_masses = m.size();
     log_masses = std::vector<double> (n_masses);
     min_m = m[0];
-    if ((min_m > 0) && (min_m < 1.0e-4)) { lgm0 = log10(min_m); };
-    if (n_masses > 1) { if ((min_m = 0) && (m[1] < 1.0e-4)) { lgm0 = log10(m[1]) - 100.0; }; };
-    for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); };
+    if ((min_m > 0) && (min_m < 1.0e-4)) { lgm0 = log10(min_m); }
+    if (n_masses > 1) { if ((min_m = 0) && (m[1] < 1.0e-4)) { lgm0 = log10(m[1]) - 100.0; } }
+    for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); }
     // Extract unique energy bin values from the file.
     std::vector<double> bins = data[1];
     sort(bins.begin(), bins.end());
@@ -636,7 +636,7 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     if (n_cols > 3) {
       interp_ref_counts_gaee = std::vector<OneDInterpolator> (n_bins);
       ref_counts_gaee.resize(n_bins, std::vector<double> (n_masses));
-    };
+    }
 
     // Assign the data from the file to the appropriate places.
     for (int i=0; i<n_rows; ++i) {
@@ -645,8 +645,8 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
       auto itk = std::find(m.begin(), m.end(), data[0][i]);
       int k = std::distance(m.begin(), itk);
       ref_counts_gagg[j][k] = data[2][i];
-      if (n_cols > 3) { ref_counts_gaee[j][k] = data[3][i]; };
-    };
+      if (n_cols > 3) { ref_counts_gaee[j][k] = data[3][i]; }
+    }
 
     if (n_masses > 1) {
       for (int j=0; j<n_bins; ++j) {
@@ -656,10 +656,10 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
         if (n_cols > 3) {
           OneDInterpolator temp_gaee (log_masses, ref_counts_gaee[j]);
           interp_ref_counts_gaee[j] = std::move(temp_gaee);
-        };
-      };
-    };
-  };
+        }
+      }
+    }
+  }
 
   // Reference values are gagg = 10^-10/GeV and gaee = 10^-13.
   double gagg_rel_sq = gagg*gagg/1.0e-20;
@@ -668,17 +668,17 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
   if (n_masses > 1) {
     for (int i = 0; i < n_bins; ++i) {
       double temp = gagg_rel_sq*interp_ref_counts_gagg[i].interpolate(lgm);
-      if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); };
+      if (n_cols > 3) { temp += gaee_rel_sq*interp_ref_counts_gaee[i].interpolate(lgm); }
       result.push_back(gagg_rel_sq*temp);
-    };
+    }
   } else {
     terminate_with_error_if(mass != min_m, "ERROR! Your reference counts file is only valid for an axion mass of m = "+std::to_string(min_m)+" eV!");
     for (int i = 0; i < n_bins; ++i) {
       double temp = gagg_rel_sq*ref_counts_gagg[i][0];
-      if (n_cols > 3) { temp += gaee_rel_sq*ref_counts_gaee[i][0]; };
+      if (n_cols > 3) { temp += gaee_rel_sq*ref_counts_gaee[i][0]; }
       result.push_back(gagg_rel_sq*temp);
-    };
-  };
+    }
+  }
 
   return result;
 }

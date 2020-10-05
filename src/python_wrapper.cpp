@@ -33,7 +33,7 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
 
   if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) {
     std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl;
-  };
+  }
   // Check min/max and avoid Python roundoff errors
   rad_min = std::min(std::max(rad_min, 1.000001*s.get_r_lo()), 0.999999*s.get_r_hi());
   rad_max = std::max(std::min(rad_max, 0.999999*s.get_r_hi()), 1.000001*s.get_r_lo());
@@ -51,8 +51,8 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
       calculate_spectral_flux_axionelectron(ergs, s, r, output_file);
     } else {
       terminate_with_error("ERROR! the process '"+process+"' is not a valid option. Choose 'Primakoff' or 'electron'.");
-    };
-  };
+    }
+  }
 }
 
 void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max, int n_ergs, double a, double b, std::string solar_model_file, std::string output_file_root) {
@@ -102,7 +102,7 @@ std::vector<std::vector<double> > py11_draw_mc_samples_from_file (std::string mc
   AxionMCGenerator2D mc (mc_file_prefix, true);
   std::vector<double> radii = mc.draw_axion_radii(n);
   std::vector<double> energies = mc.draw_axion_energies_given_radii(radii);
-  std::vector<std::vector<double> > result = {radii, energies};
+  std::vector<std::vector<double> > result = { radii, energies };
   return result;
 }
 
