@@ -10,8 +10,8 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   std::string path_to_data, model_file_name;
   locate_data_folder(path_to_model_file, path_to_data, model_file_name);
   if ((set_opcode != OP) && (model_file_name != "SolarModel_AGSS09.dat")) {
-      std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
-      std::cout << "         Results will be inconsistent." << std::endl;
+    std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
+    std::cout << "         Results will be inconsistent." << std::endl;
   }
   // Set whether to use approximations from https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf equation 16 a or alternatively sum over all elements assuming full ionisation
   raffelt_approx = set_raffelt_approx;
@@ -106,7 +106,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       std::string element = op_element_names[k];
       for (int j = 0; j < num_tracked_isotopes; j++) {
         Isotope isotope = tracked_isotopes[j];
-        if (isotope.name() == element) { temp += data[j+6][i] * rhorel / atomic_weight(isotope); }
+        if (isotope.get_element_name() == element) { temp += data[j+6][i] * rhorel / atomic_weight(isotope); }
       }
       n_op_element[k].push_back(temp);
     }
@@ -273,7 +273,6 @@ SolarModel::~SolarModel() {
 SolarModel& SolarModel::operator=(SolarModel &&src) {
   if (this != &src) {
     std::swap(initialisation_status,src.initialisation_status);
-    //std::swap(opcode,src.opcode);
     std::swap(raffelt_approx,src.raffelt_approx);
     std::swap(solar_model_name,src.solar_model_name);
     std::swap(data,src.data);
@@ -313,6 +312,7 @@ void SolarModel::init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const 
   interp = gsl_spline_alloc(gsl_interp_linear, num_interp_pts);
   gsl_spline_init(interp, x, y, num_interp_pts);
 }
+
 void SolarModel::init_numbered_interp(const int index, const double* x, const double* y) { init_interp(accel[index], linear_interp[index], x, y); }
 
 // Isotope index lookup
@@ -359,6 +359,31 @@ double SolarModel::n_electron(double r) {
 double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - mass_fraction(r, "He"); }
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
+
+// N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
+// TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...
+double SolarModel::opacity_element(double omega, double r, Isotope isotope) { return opacity_element(omega, r, isotope.get_element_name()); }
+
+// Opacity for total solar mixture
+double SolarModel::opacity(double omega, double r) {
+    double result = 0.0;
+    static double temp_0 = temperature_in_keV(r_lo);
+    const double r_cz_theo = 0.713;
+    const double temp_cz = temperature_in_keV(r_cz_theo);
+    if (opcode == OP) {
+      for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); }
+    } else if ((opcode == LEDCOP) || (opcode == ATOMIC)){
+      result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
+    } else if (opcode == OPAS) {
+      result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
+    }
+    // Apply opacity correction term and truncate to zero if necessary.
+    if (r < r_cz_theo) {
+      result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
+      result = std::max(result, 0.0);
+    }
+    return result;
+}
 
 // Auxiliary function required for FF and ee contribution
 const double abs_prec_aux_fun = 0;
@@ -434,20 +459,83 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
-  if (omega == 0) {return 0;}
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
-  double u = omega/temperature_in_keV(r);
-  double y = sqrt(kappa_squared(r)/(m_electron*temperature_in_keV(r)));
-  return prefactor2 * gsl_pow_2(n_electron(r)) * exp(-u) * aux_function(u,y) / (omega * sqrt(temperature_in_keV(r)) * pow(m_electron,3.5));
+  if (omega > 0) {
+    double u = omega/temperature_in_keV(r);
+    double y = sqrt(kappa_squared(r)/(m_electron*temperature_in_keV(r)));
+    return prefactor2 * gsl_pow_2(n_electron(r)) * exp(-u) * aux_function(u,y) / (omega * sqrt(temperature_in_keV(r)) * pow(m_electron,3.5));
+  } else {
+    return 0;
+  }
 }
 
 // Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
 double SolarModel::Gamma_P_Compton(double omega, double r) {
-  if (omega == 0) {return 0;}
   const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
+  if (omega > 0) {
+    double u = omega/temperature_in_keV(r);
+    double v = omega/m_electron;
+    return prefactor3 * v*v*n_electron(r)/gsl_expm1(u);
+  } else {
+    return 0;
+  }
+}
+
+// opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
+double SolarModel::Gamma_P_opacity(double omega, double r, std::string element) {
+  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
-  return prefactor3 * v*v*n_electron(r)/gsl_expm1(u);
+  return prefactor5*v*v*opacity_element(omega,r,element)/gsl_expm1(u);
+}
+
+double SolarModel::Gamma_P_opacity(double omega, double r, Isotope isotope) {
+  std::string element = isotope.get_element_name();
+  return Gamma_P_opacity(omega, r, element);
+}
+
+// full opacity contribution; first term of Eq. (2.21) of [arXiv:1310.0823]
+double SolarModel::Gamma_P_opacity(double omega, double r) {
+  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
+  double u = omega/temperature_in_keV(r);
+  double v = omega/m_electron;
+  return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
+}
+
+double SolarModel::Gamma_P_all_electron(double erg, double r) {
+  double result = 0;
+  if (opcode == OP) {
+    double element_contrib = 0.0;
+    static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
+    element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
+    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); }
+    result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
+  } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
+    double u = erg/temperature_in_keV(r);
+    double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
+    result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
+  } else if (opcode == OPAS) {
+    result = Gamma_P_opacity (erg, r);
+  } else {
+    terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
+  }
+  return result;
+}
+
+double SolarModel::Gamma_P_Primakoff(double erg, double r) {
+  const double prefactor6 = g_agg*g_agg/(32.0*pi);
+  if (erg > 0) {
+    double w_pl_sq = omega_pl_squared(r);
+    if (w_pl_sq/(erg*erg) > 1.0) { return 0; }
+    double ks_sq = kappa_squared(r);
+    double T_in_keV = temperature_in_keV(r);
+    double x = 4.0*(erg*erg)/ks_sq;
+    double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
+    double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
+    return prefactor6*phase_factor*rate;
+  } else {
+    return 0;
+  }
 }
 
 // Read off interpolated elements for op, tops and opas
@@ -613,9 +701,12 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
   double temperature = temperature_in_keV(r);
   double t1 = (temperature-Tlow)/(Tup-Tlow);
   double result = pow(opas_grid_interp_erg(omega*1000.0,Rup),1.0-t1)*pow(opas_grid_interp_erg(omega*1000.0,Rlow),t1);
-  if (result < 0) { std::cout << "ERROR! Negative opacity!" << std::endl; }
-
-  return result;
+  if (result >= 0) {
+    return result;
+  } else {
+    std::cout << "ERROR! Negative opacity (" << result << ") at r = " << r << ", omega = " << omega << "! Will set opacity to 0 and continue but this is a bug, so please report it." << std::endl;
+    return 0;
+  }
 }
 
 // Opacity for individual isotope (only possible for OP)
@@ -623,10 +714,7 @@ double SolarModel::opacity_element(double omega, double r, std::string element) 
   const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
 
   gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
-  if (opcode != OP) {
-    std::cout << "WARNING. Chosen opacity code does not provide opacities for indivdual elements" << std::endl;
-    return 0;
-  }
+  terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
 
   double u = omega/temperature_in_keV(r);
   double result = prefactor4*n_element(r, element)*opacity_table_interpolator_op(omega, r, element)*(-gsl_expm1(-u));
@@ -653,85 +741,11 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
   return result;
 }
 
-
-// N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
-// TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...
-double SolarModel::opacity_element(double omega, double r, Isotope isotope) { return opacity_element(omega, r, isotope.name()); }
-
-// Opacity for total solar mixture
-double SolarModel::opacity(double omega, double r) {
-    double result = 0.0;
-    static double temp_0 = temperature_in_keV(r_lo);
-    const double r_cz_theo = 0.713;
-    const double temp_cz = temperature_in_keV(r_cz_theo);
-    if (opcode == OP) {
-      for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); }
-    } else if ((opcode == LEDCOP) || (opcode == ATOMIC)){
-      result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
-    } else if (opcode == OPAS) {
-      result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
-    }
-    // Apply opacity correction term and truncate to zero if necessary.
-    if (r < r_cz_theo) {
-      result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
-      result = std::max(result, 0.0);
-    }
-    return result;
-}
-// opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
-double SolarModel::Gamma_P_opacity(double omega, double r, std::string element) {
-  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
-  double u = omega/temperature_in_keV(r);
-  double v = omega/m_electron;
-  return prefactor5*v*v*opacity_element(omega,r,element)/gsl_expm1(u);
-}
-
-// full opacity contribution; first term of Eq. (2.21) of [arXiv:1310.0823]
-double SolarModel::Gamma_P_opacity(double omega, double r) {
-  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
-  double u = omega/temperature_in_keV(r);
-  double v = omega/m_electron;
-  return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
-}
-
-double SolarModel::Gamma_P_all_electron(double erg, double r) {
-  double result = 0.0;
-  if (opcode == OP) {
-    double element_contrib = 0.0;
-    static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
-    element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
-    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); }
-    result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
-  } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
-    double u = erg/temperature_in_keV(r);
-    double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
-    result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
-  } else if (opcode == OPAS) {
-    result = Gamma_P_opacity (erg, r);
-  } else {
-    terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
-  }
-  return result;
-}
-
-double SolarModel::Gamma_P_Primakoff(double erg, double r) {
-  if (erg == 0) { return 0; }
-  const double prefactor6 = g_agg*g_agg/(32.0*pi);
-  double ks_sq = kappa_squared(r);
-  double w_pl_sq = omega_pl_squared(r);
-  double T_in_keV = temperature_in_keV(r);
-  double x = 4.0*(erg*erg)/ks_sq;
-  if (w_pl_sq/(erg*erg) > 1.0) { return 0; }
-  double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
-  double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
-  return  prefactor6*phase_factor*rate;
-}
-
 // TODO: Utilise this + the new typedef
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name) {
   SolarModelMemberFn integrand;
   auto iter = map_interaction_name_to_function.find(interaction_name);
-  if (iter !=  map_interaction_name_to_function.end()) {
+  if (iter != map_interaction_name_to_function.end()) {
     integrand = map_interaction_name_to_function.at(interaction_name);
   } else {
     std::string avail_keys = "";
@@ -746,34 +760,34 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
 }
 
 // Calculate the solar axion spectrum for axion-photon and axion-electron interactions
-std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max) {
-  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-  if (r_max < r_hi) {
-    return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
-  } else {
-    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-    return calculate_spectral_flux(ergs, *this, integrand);
-  }
-}
-
-std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max) {
-  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
-  if (r_max < r_hi) {
-    return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
-  } else {
-    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-    return calculate_spectral_flux(ergs, *this, integrand);
-  }
-}
-
-std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
-  if (r_max < r_hi) {
-    return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
-  } else {
-    std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-    return calculate_spectral_flux(ergs, *this, process);
-  }
-}
+// std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max) {
+//   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
+//   if (r_max < r_hi) {
+//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
+//   } else {
+//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
+//     return calculate_spectral_flux(ergs, *this, integrand);
+//   }
+// }
+//
+// std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max) {
+//   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
+//   if (r_max < r_hi) {
+//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
+//   } else {
+//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
+//     return calculate_spectral_flux(ergs, *this, integrand);
+//   }
+// }
+//
+// std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
+//   if (r_max < r_hi) {
+//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
+//   } else {
+//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
+//     return calculate_spectral_flux(ergs, *this, process);
+//   }
+// }
 
 // Metadata and information
 double SolarModel::get_r_lo() { return r_lo; }
@@ -787,9 +801,7 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
   double rad_max = *it;
   if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING! Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
   supported_radii.push_back(r_lo);
-  for (auto r = radii.begin(); r !=radii.end(); ++r) {
-    if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); }
-  }
+  for (auto r = radii.begin(); r !=radii.end(); ++r) { if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); } }
   supported_radii.push_back(0.95*r_hi);
   return supported_radii;
 }
@@ -800,247 +812,8 @@ std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
 void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
+std::vector<double> SolarModel::get_opacity_correction() {
+  std::vector<double> result = { opacity_correction_a, opacity_correction_b };
+  return result;
+}
 bool SolarModel::is_initialised() { return initialisation_status; }
-
-double rho_integrand_1d(double rho, void * params) {
-  // Retrieve parameters and other integration variables.
-  struct solar_model_integration_parameters * p1 = (struct solar_model_integration_parameters *)params;
-  double erg = (p1->erg);
-  SolarModel *s = p1->s;
-
-  // N.B. Factor of 2 from integration over theta angle.
-  return 2.0 * gsl_pow_2(0.5*erg/pi) * (s->*(p1->integrand))(erg, rho);
-}
-
-double rho_integrand_2d(double rho, void * params) {
-  // Retrieve parameters and other integration variables.
-  struct solar_model_integration_parameters * p1 = (struct solar_model_integration_parameters *)params;
-  double erg = (p1->erg);
-  double rad = (p1->rad);
-  SolarModel *s = p1->s;
-
-  // Normalising factor ~ max values, which occur for rho = get_r_lo()
-  // double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->get_r_lo());
-  const double norm_factor1 = 1.0;
-  double cylinder = rho*rho - rad*rad;
-  cylinder = rho/sqrt(cylinder);
-
-  //std::cout << "# DEBUG INFO: rho = " << rho << ", rad = " << rad << ", erg = " << erg << ", res = " << cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1 << std::endl;
-
-  //return cylinder*(p1->integrand(erg, rho));
-  return cylinder * gsl_pow_2(0.5*erg/pi)*( (s->*(p1->integrand))(erg, rho) ) / norm_factor1;
-}
-
-double rad_integrand_2d(double rad, void * params) {
-  struct solar_model_integration_parameters * p2 = (struct solar_model_integration_parameters *)params;
-  p2->rad = rad;
-  SolarModel *s = p2->s;
-  double r_max = std::min(p2->r_max, s->get_r_hi());
-
-  gsl_function f1;
-  f1.function = &rho_integrand_2d;
-  f1.params = p2;
-
-  //auto t1 = std::chrono::high_resolution_clock::now();
-  double result, error;
-  size_t n_evals;
-  //gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
-  //gsl_integration_qags(&f1, rad, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
-  gsl_integration_cquad(&f1, rad, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w1, &result, &error, &n_evals);
-  //auto t2 = std::chrono::high_resolution_clock::now();
-  //std::cout << "# DEBUG INFO: rad = " << rad << ", integral 1 = " << result << " after " << n_evals << " evals (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << " ms)." << std::endl;
-
-  result = rad*result;
-  return result;
-}
-
-double erg_integrand_2d(double erg, void * params) {
-  struct solar_model_integration_parameters * p2 = (struct solar_model_integration_parameters *)params;
-  p2->erg = erg;
-  SolarModel *s = p2->s;
-
-  gsl_function f1;
-  f1.function = &rho_integrand_2d;
-  f1.params = p2;
-
-  double result = 0, error = 0;
-  size_t n_evals;
-  double r_min = p2->rad;
-  double r_max = s->get_r_hi();
-  if (r_min < r_max) {
-    gsl_integration_cquad(&f1, r_min, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w1, &result, &error, &n_evals);
-  }
-
-  //result = (p2->rad)*result;
-  return result;
-}
-
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
-  std::vector<double> results, errors;
-  std::ofstream output;
-
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
-
-  double r_min = s.get_r_lo();
-  double r_max = s.get_r_hi();
-
-  solar_model_integration_parameters p { 0.0, 0.0, r_max, &s, integrand, nullptr };
-  gsl_function f;
-  f.function = rho_integrand_1d;
-
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-    double integral, error;
-    p.erg = *erg;
-    f.params = &p;
-    gsl_integration_qag (&f, r_min, r_max, int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, w, &integral, &error);
-    results.push_back(factor*integral);
-    errors.push_back(factor*error);
-    std::cout << r_max << " " << *erg << " " << factor*integral << " +/- " << factor*error << std::endl;
-  }
-
-  gsl_integration_workspace_free (w);
-
-  std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [cm^-2 s^-1 keV^-1], axion flux error estimate [cm^-2 s^-1 keV^-1]";
-  save_to_file(saveas, buffer, comment);
-
-  return results;
-}
-
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  std::vector<double> results, errors;
-
-  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
-
-  double r_min = s.get_r_lo();
-  r_max = std::min(r_max, s.get_r_hi());
-  //double norm_factor1 = (s.*integrand)(ref_erg_value, r_min);
-  const double norm_factor1 = 1.0;
-  //solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
-  //double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-  //solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, func_ptr, w1 };
-  solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
-  gsl_function f2;
-  f2.function = &rad_integrand_2d;
-
-  //std::cout << "# DEBUG INFO: r in [" << r_min << ", " << r_max << "] ..." << std::endl;
-
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-    double integral, error;
-    p2.erg = *erg;
-    f2.params = &p2;
-    // was 0.1*factor
-    gsl_integration_qag (&f2, r_min, r_max, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, int_method_2d, w2, &integral, &error);
-    results.push_back(factor*norm_factor1*integral);
-    errors.push_back(factor*norm_factor1*error);
-  }
-
-  //gsl_integration_workspace_free (w1);
-  gsl_integration_cquad_workspace_free(w1);
-  gsl_integration_workspace_free (w2);
-
-  std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar disc, r in ["+std::to_string(r_min)+", "+std::to_string(r_max)+"] R_sol by "+LIBRARY_NAME+". Columns: energy values [keV], axion flux [axions/cm^2 s keV], axion flux error estimate [axions/cm^2 s keV]";
-  save_to_file(saveas, buffer, comment);
-
-  return results;
-}
-
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) { std::string NONE = ""; return calculate_spectral_flux_solar_disc(ergs, NONE, r_max, s, integrand, saveas); }
-
-std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  std::vector<double> results, errors;
-  std::vector<double> valid_radii = s.get_supported_radii(radii);
-
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
-  gsl_function f2;
-  f2.function = &erg_integrand_2d;
-
-  results.push_back(0);
-  errors.push_back(0);
-  for (auto rad = valid_radii.begin()+1; rad != valid_radii.end()-1; rad++) {
-    std::cout << "Working on r = " << *rad << std::endl;
-    double integral, error;
-    solar_model_integration_parameters p2 { 0.0, *rad, s.get_r_hi(), &s, integrand, w1 };
-    f2.params = &p2;
-    double omega_pl = sqrt(s.omega_pl_squared(*rad));
-    gsl_integration_qagiu(&f2, omega_pl, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, w2, &integral, &error);
-    results.push_back(factor*integral);
-    errors.push_back(factor*error);
-  }
-
-  results.push_back(0);
-  errors.push_back(0);
-
-  std::cout << "Step 1, success... " << std::endl;
-
-  gsl_integration_cquad_workspace_free(w1);
-  gsl_integration_workspace_free (w2);
-
-  std::vector<std::vector<double>> buffer = { valid_radii, results, errors };
-  std::string comment = "Total spectral flux for a given radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
-  save_to_file(saveas, buffer, comment);
-
-  return buffer;
-}
-
-std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, Isotope isotope, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  std::vector<double> all_ergs, all_radii, results;
-
-  gsl_integration_cquad_workspace * w = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-
-  std::vector<double> valid_radii = s.get_supported_radii(radii);
-
-  solar_model_integration_parameters p { 0.0, 0.0, s.get_r_hi(), &s, integrand, w };
-  for (auto rad = valid_radii.begin(); rad != valid_radii.end(); rad++) {
-      p.rad = *rad;
-      double omega_min = sqrt(s.omega_pl_squared(*rad));
-      double omega_max = 50.0*s.temperature_in_keV(*rad);
-      all_radii.push_back(*rad);
-      all_ergs.push_back(omega_min);
-      results.push_back(0);
-      for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-        std::cout << "Trying erg = " << *erg << ", rad = " << *rad << " ..." << std::endl;
-        if ((*erg > omega_min) && (*erg < omega_max)) {
-          std::cout << "Erg = " << *erg << " accepted" << std::endl;
-          all_radii.push_back(*rad);
-          all_ergs.push_back(*erg);
-          results.push_back(erg_integrand_2d(*erg, &p));
-        }
-      }
-      all_radii.push_back(*rad);
-      all_ergs.push_back(omega_max);
-      results.push_back(erg_integrand_2d(omega_max, &p));
-  }
-
-  std::cout << "Step 2, success... " << std::endl;
-
-  gsl_integration_cquad_workspace_free(w);
-
-  std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
-  std::string comment = "Spectral flux over full solar disc at fixed radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
-  save_to_file(saveas, buffer, comment);
-
-  return buffer;
-}
-
-std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
-  std::string NONE = "";
-  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, NONE, radii, s, integrand, saveas);
-}

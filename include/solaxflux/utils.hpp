@@ -81,7 +81,6 @@ class OneDInterpolator {
     OneDInterpolator(const std::vector<double> &x, const std::vector<double> &y, std::string type = "linear");
     OneDInterpolator();
     OneDInterpolator (OneDInterpolator&&) = default;
-    //OneDInterpolator (OneDInterpolator&&);
     OneDInterpolator& operator=(OneDInterpolator&&);
     // Destructor
     ~OneDInterpolator();
@@ -148,7 +147,7 @@ class TwoDInterpolator {
 // Isotope class
 class Isotope {
    public:
-      Isotope() {}
+      Isotope();
       Isotope(std::string s, int a);
       Isotope(std::pair<std::string,int> p);
       Isotope(std::string s);
@@ -158,7 +157,7 @@ class Isotope {
       bool operator== (const Isotope& other) const;
 
       void init(std::string s, int a);
-      std::string name() const;
+      std::string get_element_name() const;
       std::string index_name() const;
       int a_val() const;
       int z_val() const;
@@ -211,13 +210,5 @@ const std::vector<double> opas_radii = { 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0
 
 // Get the (approximate) locations of the peaks in the axion-electron spectrum to allow for more accurate integration
 std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
-
-// Variables and wrapper functions for integration routines
-// Variables to define the behaviour of the GSL integrators.
-const double ref_erg_value = 2.0, ref_r_value = 0.05;
-// TODO: possibly outdated by now
-const int int_method_1 = 5, int_method_2 = 2, int_space_size = 1e8, int_space_size_cquad = 1e6;
-const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
-const double abs_prec2 = 0.0, rel_prec2 = 1.0e-3;
 
 #endif // defined __utils_hpp__

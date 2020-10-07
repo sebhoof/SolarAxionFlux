@@ -67,14 +67,15 @@ class SolarModel {
     double Gamma_P_ee(double omega, double r);
     double Gamma_P_Compton(double omega, double r);
     double Gamma_P_opacity(double omega, double r, std::string element);
+    double Gamma_P_opacity(double omega, double r, Isotope isotope); // overloaded for convenience; opacity only depends on chemical element, not on isotope
     double Gamma_P_opacity(double omega, double r); // sum over all elements
     double Gamma_P_Primakoff(double omega, double r);
     double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
 
     // Calculate the solar axion spectrum for axion-photon and axion-electron interactions
-    std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max=1);
-    std::vector<double> calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max=1);
-    std::vector<double> calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double,double), double r_max=1);
+    // std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max=1);
+    // std::vector<double> calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max=1);
+    // std::vector<double> calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double,double), double r_max=1);
 
     // Interpolation routines for the opacity data
     double op_grid_interp_erg(double u, int ite, int jne, std::string element);
@@ -96,6 +97,7 @@ class SolarModel {
     // Set the opacity correction of the Opacity Project values according to opacity*(1 + delta), with
     // delta = a + b * log10(T(0)/T(r)) / log10(T(0)/T(r_CZ)), where r_CZ = location of convective zone
     void set_opacity_correction(double a, double b);
+    std::vector<double> get_opacity_correction();
 
     // Metadata and information from the Solar model
     double get_r_lo();
@@ -128,6 +130,13 @@ class SolarModel {
     std::vector<Isotope> tracked_isotopes;
     std::vector<gsl_interp_accel*> accel;
     std::vector<gsl_spline*> linear_interp;
+    // TODO. Maybe convert n_isotope and z2_n_isotope into maps like n_element with std::map<Isotope, ...> etc.
+    std::vector<gsl_interp_accel*> n_isotope_acc;
+    std::vector<gsl_spline*> n_isotope_lin_interp;
+    std::vector<gsl_interp_accel*> z2_n_isotope_acc;
+    std::vector<gsl_spline*> z2_n_isotope_lin_interp;
+    std::map<std::string, gsl_interp_accel*> n_element_acc;
+    std::map<std::string, gsl_spline*> n_element_lin_interp;
     std::map< std::string, std::map<std::pair<int,int>, gsl_interp_accel*> > opacity_acc_op;
     std::map< std::string, std::map<std::pair<int,int>, gsl_spline*> > opacity_lin_interp_op;
     std::map<std::pair<float,float>, gsl_interp_accel*> opacity_acc_tops;
@@ -138,13 +147,6 @@ class SolarModel {
     std::vector<float> tops_temperatures;
     std::vector<float> tops_densities;
     std::map< std::pair<int,int>,  std::map<std::string, double> > element_ionisationsqr;
-    // TODO. Maybe convert n_isotope and z2_n_isotope into maps like n_element with std::map<Isotope, ...> etc.
-    std::vector<gsl_interp_accel*> n_isotope_acc;
-    std::vector<gsl_spline*> n_isotope_lin_interp;
-    std::vector<gsl_interp_accel*> z2_n_isotope_acc;
-    std::vector<gsl_spline*> z2_n_isotope_lin_interp;
-    std::map<std::string, gsl_interp_accel*> n_element_acc;
-    std::map<std::string, gsl_spline*> n_element_lin_interp;
     // private routines to initialise internal interpolators.
     void init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const double* x, const double* y);
     void init_numbered_interp(const int index, const double* x, const double* y);
@@ -157,29 +159,5 @@ typedef double (SolarModel::*SolarModelMemberFn)(double,double);
 const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function { {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
                                                                                   {"opacity",&SolarModel::Gamma_P_opacity}, {"all_electron",&SolarModel::Gamma_P_all_electron} };
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
-
-// Variables and wrapper functions for solar model integration routines
-// Variables to define the behaviour of the GSL integrators.
-// Integration over the full Sun (1D)
-const int int_method_1d = 5, int_space_size_1d = 1e8;
-const double int_abs_prec_1d = 0.0, int_rel_prec_1d = 1.0e-3;
-// Integration over the central Solar disc (2D)
-const int int_method_2d = 5, int_space_size_2d = 1e6, int_space_size_2d_cquad = 1e6;
-const double int_abs_prec_2d = 0.0, int_rel_prec_2d = 1.0e-2;
-// Parameter structs for GSL integrators.
-struct solar_model_integration_parameters { double erg; double rad; double r_max; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_cquad_workspace* w1; };
-// Function wrappers for GSL integration over various Solar geometries.
-// Integration over the full Sun (1D)
-double rho_integrand_1d(double rho, void * params);
-// Integration over the central Solar disc (2D)
-double rho_integrand_1d(double rho, void * params);
-double rad_integrand_2d(double rad, void * params);
-
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, Isotope isotope, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<std::vector<double>> calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, Isotope isotope, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<std::vector<double>> calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="", Isotope isotope={});
 
 #endif // defined __solar_model_hpp__

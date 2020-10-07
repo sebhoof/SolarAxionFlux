@@ -294,11 +294,17 @@ bool TwoDInterpolator::is_inside_box(double x, double y) { return ((x >= x_lo) &
 ////////////////////////////////////////////////////
 
 // Isotope constructor, destructor, init()
+
+Isotope::Isotope() {
+  element_name = "NN";
+  element_z_value = -1;
+  isotope_a_value = -1;
+}
+
 // FUTURE: for now: empty contructor, do init(s,-1) here or allow strings like "He_3" etc. Also, new feature: if el_a_value < -1, trigger adding up all values for the same el_name
 // FUTURE: el_a_value=0 is a default for 'only tracked in bulk';
 // For the OP code, just use the op list with names(!) as below and automatically sum over all Isotopes with iz[0] == IsotopeName!
 // If a_val() > 0, use this, else get default bulk value from global table (maybe create own namespace).
-Isotope::Isotope(std::string s) {}
 
 void Isotope::init(std::string s, int a) {
   element_name = s;
@@ -315,17 +321,19 @@ void Isotope::init(std::string s, int a) {
   }
 }
 
+Isotope::Isotope(std::string s) { init(s,-1); }
+
 Isotope::Isotope(std::string s, int a) { init(s,a); }
 
 Isotope::Isotope(std::pair<std::string,int> p) { init(p.first,p.second); }
 
 // Compare isotopes
-bool Isotope::operator< (const Isotope& other) const { return (other.name() < element_name) || ( (other.name() == element_name) && (other.a_val() < isotope_a_value) ); }
+bool Isotope::operator< (const Isotope& other) const { return (other.get_element_name() < element_name) || ( (other.get_element_name() == element_name) && (other.a_val() < isotope_a_value) ); }
 
-bool Isotope::operator== (const Isotope& other) const { return ((other.name() == element_name) && (other.a_val() == isotope_a_value)); }
+bool Isotope::operator== (const Isotope& other) const { return ((other.get_element_name() == element_name) && (other.a_val() == isotope_a_value)); }
 
 // Isotope functions to return isotope info
-std::string Isotope::name() const { return element_name; }
+std::string Isotope::get_element_name() const { return element_name; }
 
 std::string Isotope::index_name() const { return "X_"+element_name+std::to_string(isotope_a_value); }
 
@@ -333,7 +341,7 @@ int Isotope::a_val() const { return isotope_a_value; }
 
 int Isotope::z_val() const { return element_z_value; }
 
-bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->name(); }
+bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->get_element_name(); }
 
 // Return atomic weight of an isotope (not a class member)
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }

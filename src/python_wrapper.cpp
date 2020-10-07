@@ -21,7 +21,7 @@ void module_info() { std::cout << "This is the " << LIBRARY_NAME << " Python int
 
 void test_module() {
   run_unit_test();
-  std::cout << "Test successful!" << std::endl;
+  std::cout << "Unit test successful!" << std::endl;
 }
 
 void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root, std::string process) {
@@ -31,9 +31,7 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
   for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
 
-  if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) {
-    std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl;
-  }
+  if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) { std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl; }
   // Check min/max and avoid Python roundoff errors
   rad_min = std::min(std::max(rad_min, 1.000001*s.get_r_lo()), 0.999999*s.get_r_hi());
   rad_max = std::max(std::min(rad_max, 0.999999*s.get_r_hi()), 1.000001*s.get_r_lo());
@@ -56,9 +54,10 @@ void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max,
 }
 
 void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max, int n_ergs, double a, double b, std::string solar_model_file, std::string output_file_root) {
-  std::cout << "Setting up Solar model from file " << solar_model_file << " and parameters (" << a << ", " << b << ") ..." << std::endl;
   SolarModel s (solar_model_file, OP);
   s.set_opacity_correction(a, b);
+  std::vector<double> check = s.get_opacity_correction();
+  std::cout << "Set up Solar model from file " << solar_model_file << " and parameters (" << check[0] << ", " << check[1] << "), expected (" << a << ", " << b << ")" << std::endl;
 
   std::vector<double> ergs;
   double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
@@ -87,7 +86,7 @@ std::vector<double> py11_interpolate_saved_reference_counts(double mass, double 
   return counts_prediciton_from_file(mass, gagg, reference_counts_file, gaee);
 }
 
-void py11_calculate_inverse_cdfs_from_solar_model (std::string solar_model_file, std::vector<double> radii, std::vector<double> energies, double gaee, std::string save_output_prefix) {
+void py11_calculate_inverse_cdfs_from_solar_model(std::string solar_model_file, std::vector<double> radii, std::vector<double> energies, double gaee, std::string save_output_prefix) {
   SolarModel s (solar_model_file, OP);
   std::cout << s.temperature_in_keV(0.9) << std::endl;
   std::cout << s.temperature_in_keV(0.95) << std::endl;
@@ -98,7 +97,7 @@ void py11_calculate_inverse_cdfs_from_solar_model (std::string solar_model_file,
   mc.save_inv_cdf_to_file(save_output_prefix+"_inverseCDFdata");
 }
 
-std::vector<std::vector<double> > py11_draw_mc_samples_from_file (std::string mc_file_prefix, int n) {
+std::vector<std::vector<double> > py11_draw_mc_samples_from_file(std::string mc_file_prefix, int n) {
   AxionMCGenerator2D mc (mc_file_prefix, true);
   std::vector<double> radii = mc.draw_axion_radii(n);
   std::vector<double> energies = mc.draw_axion_energies_given_radii(radii);
