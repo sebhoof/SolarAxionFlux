@@ -45,6 +45,11 @@ double conversion_prob_correction(double mass, double erg, double length);
 const int ergint_from_file_abs_prec = 0.0;
 const double ergint_from_file_rel_prec = 1.0e-3, ergint_from_file_method = 5;
 
+const double ref_erg_value = 2.0, ref_r_value = 0.05;
+const int int_space_size = 1e8, int_space_size_cquad = 1e6;
+const double int_abs_prec = 0.0, int_rel_prec = 1.0e-2;
+const int int_method_1 = 5;
+
 // Data structs to pass variables to functions and integrators.
 //struct erg_integration_params { double mass; double length; double r_max; std::string dataset; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; gsl_integration_workspace* w2; };
 struct erg_integration_params { double mass; double length; double r_max; std::string dataset; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_cquad_workspace* w1; gsl_integration_workspace* w2; };

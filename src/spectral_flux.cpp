@@ -9,327 +9,171 @@
 
 // N.B. The solar axion fluxes will be calculated in units of [axions cm^-2 s^-1 keV^-1]
 
-// TODO: Remove unnecessary wrappers; perhaps use SolarModelMemberFn definition
+// Below are all standard integration routines
 
-// // Primakoff contribution [ref].
-// double integrand_Primakoff(double r, void * params) {
-//   struct integration_params * p = (struct integration_params *)params;
-//   double erg = (p->erg);
-//   SolarModel* sol = (p->sol);
-//
-//   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Primakoff(erg, r));
-// }
-
-// // Compton contribution [ref]
-// double integrand_Compton(double r, void * params) {
-//   struct integration_params * p = (struct integration_params *)params;
-//   double erg = (p->erg);
-//   SolarModel* sol = (p->sol);
-//
-//   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_Compton(erg, r));
-// }
-
-// Weighted Compton contribution [ref]
-double integrand_weightedCompton(double r, void * params) {
-  struct integration_params * p = (struct integration_params *)params;
-  double erg = (p->erg);
-  if (erg == 0) {return 0;}
-  SolarModel* sol = (p->sol);
-  double u = erg/(sol->temperature_in_keV(r));
-
-  return 0.5*gsl_pow_2(r*erg/pi)*0.5*(1.0 - 1.0/gsl_expm1(u))*(sol->Gamma_P_Compton(erg, r));
-}
-
-double integrand_opacity_element(double r, void * params) {
-  struct integration_params * p = (struct integration_params *)params;
-  double erg = (p->erg);
-  std::string el_name = (p->isotope).get_element_name();
-  SolarModel* sol = (p->sol);
-
-  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, el_name));
-}
-
-// double integrand_opacity(double r, void * params) {
-//   struct integration_params * p = (struct integration_params *)params;
-//   //double result = 0.0;
-//   double erg = (p->erg);
-//   SolarModel* sol = (p->sol);
-//
-//   // TODO: Check if this is conistent now!
-//   //if (sol->opcode == OP) {
-//   //  double element_contrib = 0.0;
-//   //  // Add opacity terms all non-H or He elements (metals)
-//   //  for (int k = 2; k < num_op_elements; k++) { element_contrib += sol->Gamma_P_opacity(erg, r, op_element_names[k]); }
-//   //  result = 0.5*gsl_pow_2(r*erg/pi)*element_contrib;
-//   //}
-//   //if ((sol->opcode == OPAS) || (sol->opcode == LEDCOP) || (sol->opcode == ATOMIC)) {
-//   //    result = 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
-//   //}
-//
-//   //return result;
-//   return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_opacity(erg, r);
-// }
-
-// Includes FF flux and ee contribution as in arxiv[1310.0823].
-double integrand_all_ff(double r, void * params) {
-  struct integration_params * p = (struct integration_params *)params;
-  double erg = (p->erg);
-  SolarModel* sol = (p->sol);
-
-  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_ff(erg, r) + sol->Gamma_P_ee(erg, r));
-}
-
-// double integrand_all_axionelectron(double r, void * params) {
-//   struct integration_params * p = (struct integration_params *)params;
-//   double erg = (p->erg);
-//   SolarModel* sol = (p->sol);
-//
-//   return 0.5*gsl_pow_2(r*erg/pi) * sol->Gamma_P_all_electron(erg,r);
-// }
-
-// TODO: This essentially is meant to be replaced by 'calculate_spectral_flux' in the Solar models file (can't handle isotopes or elements, yet)
-// TODO: Cross check units/factors and simplify.
-std::vector<double> calculate_spectral_flux_var(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), std::string saveas, Isotope isotope) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
-  std::vector<double> results, errors;
-
-  gsl_function f;
-  f.function = integrand;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-    double integral, error;
-    integration_params p = { *erg, &s, isotope };
-    f.params = &p;
-    gsl_integration_qag (&f, s.get_r_lo(), s.get_r_hi(), int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &integral, &error);
-    results.push_back(factor*integral);
-    errors.push_back(factor*error);
-  }
-
-  gsl_integration_workspace_free (w);
-
-  std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [axions / cm^2 s keV], axion flux error estimate [axions / cm^2 s keV]";
-  save_to_file(saveas, buffer, comment);
-
-  return results;
-}
-
- // Generic integrator to compute the spectral flux in some energy range.
- // TODO: Tidy up and keep as a simple function -> move to SolarModel class as a member function?
-double spectral_flux_integrand(double erg, void * params) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
-  struct integration_params2 * p2 = (struct integration_params2 *)params;
-  Isotope isotope = (p2->isotope);
-  SolarModel* s = (p2->sol);
-  const double normfactor = 1.0;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  double result, error;
-  gsl_function f;
-  f.function = p2->integrand;
-  integration_params p = { erg, s, isotope };
-  f.params = &p;
-  gsl_integration_qag(&f, s->get_r_lo(), s->get_r_hi(), 0.1*int_abs_prec, 0.1*int_rel_prec, int_space_size, int_method_1, w, &result, &error);
-  gsl_integration_workspace_free(w);
-  return factor*result/normfactor;
-}
-
-// TODO: See comment for function above.
-double calculate_flux(double lowerlimit, double upperlimit, SolarModel &s, Isotope isotope) {
-    const double normfactor = 1.0e20;
-    double result, error;
-    gsl_function f;
-    f.function = spectral_flux_integrand;
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-    integration_params2 p2 = { &s, &integrand_all_axionelectron, isotope };
-    //integration_params2 p2 = { &s, &integrand_Primakoff, isotope };
-    f.params = &p2;
-    gsl_integration_qag(&f, lowerlimit, upperlimit, int_abs_prec, int_rel_prec, int_space_size, int_method_2, w, &result, &error);
-    gsl_integration_workspace_free(w);
-    return result*normfactor;
-}
-
-double flux_from_file_integrand(double erg, void * params) {
-  OneDInterpolator * interp = (OneDInterpolator *)params;
-  return interp->interpolate(erg);
-}
-
-double integrated_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file, bool includes_electron_interactions) {
-  // Peak positions for axion electron interactions
-  const std::vector<double> all_peaks = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163,
-                                          5.64394, 5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
-  double result, error;
-
-  OneDInterpolator spectral_flux (spectral_flux_file);
-  if ( (erg_min < spectral_flux.lower()) || (erg_max > spectral_flux.upper()) ) {
-    terminate_with_error("ERROR! The integration boundaries given to 'integrated_flux_from_file' are incompatible with the min/max available energy in the file "+spectral_flux_file+".");
-  }
-
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  gsl_function f;
-  f.function = &flux_from_file_integrand;
-  f.params = &spectral_flux;
-
-  if (includes_electron_interactions) {
-    std::vector<double> relevant_peaks;
-    relevant_peaks.push_back(erg_min);
-    for (auto peak_erg = all_peaks.begin(); peak_erg != all_peaks.end(); peak_erg++) { if ( (erg_min < *peak_erg) && (*peak_erg < erg_max) ) { relevant_peaks.push_back(*peak_erg); } }
-    relevant_peaks.push_back(erg_max);
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &result, &error);
-  } else {
-    gsl_integration_qag(&f, erg_min, erg_max, abs_prec2, rel_prec2, int_space_size, int_method_1, w, &result, &error);
-  }
-
-  gsl_integration_workspace_free(w);
-
-  return result;
-}
-
-// FROM SOLAR MODELS FILE
 double rho_integrand_1d(double rho, void * params) {
-  // Retrieve parameters and other integration variables.
   struct solar_model_integration_parameters_1d * p1 = (struct solar_model_integration_parameters_1d *)params;
   double erg = (p1->erg);
   SolarModel *s = p1->s;
 
-  // N.B. Factor of 2 from integration over theta angle.
-  return 2.0 * gsl_pow_2(0.5*erg*rho/pi) * (s->*(p1->integrand))(erg, rho);
+  return 2.0 * gsl_pow_2(0.5*erg*rho/pi) * (s->*(p1->integrand))(erg, rho); // N.B. Factor of 2 from integration over theta angle.
+}
+
+double erg_integrand_1d(double erg, void * params) {
+  double result, error;
+
+  struct solar_model_integration_parameters_1d * p2 = (struct solar_model_integration_parameters_1d *)params;
+  p2->erg = erg;
+  //gsl_function f;
+  //f.function = rho_integrand_1d;
+  //f.params = &p2;
+
+  //gsl_integration_qag(&f, p2->s->get_r_lo(), p2->s->get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, p2->w, &result, &error);
+  gsl_integration_qag(p2->f, p2->s->get_r_lo(), p2->s->get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, p2->w, &result, &error);
+
+  return result;
 }
 
 double rho_integrand_2d(double rho, void * params) {
-  // Retrieve parameters and other integration variables.
-  struct solar_model_integration_parameters * p1 = (struct solar_model_integration_parameters *)params;
-  double erg = (p1->erg);
-  double rad = (p1->rad);
-  SolarModel *s = p1->s;
+  struct solar_model_integration_parameters_2d * p3 = (struct solar_model_integration_parameters_2d *)params;
+  double erg = (p3->erg);
+  double rad = (p3->rad);
+  //SolarModel *s = p3->s;
 
-  // Normalising factor ~ max values, which occur for rho = get_r_lo()
-  // double norm_factor1 = (s->*(p1->integrand))(ref_erg_value, s->get_r_lo());
-  //const double norm_factor1 = 1.0;
   double cylinder = rho*rho - rad*rad;
   cylinder = rho/sqrt(cylinder);
 
-  //std::cout << "# DEBUG INFO: rho = " << rho << ", rad = " << rad << ", erg = " << erg << ", res = " << cylinder * ( (s->*(p1->integrand))(erg, rho) ) / norm_factor1 << std::endl;
-
-  //return cylinder*(p1->integrand(erg, rho));
-  return cylinder * gsl_pow_2(0.5*erg/pi)*( (s->*(p1->integrand))(erg, rho) );
+  return 2.0 * cylinder * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, rho) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
 }
 
 double rad_integrand_2d(double rad, void * params) {
-  struct solar_model_integration_parameters * p2 = (struct solar_model_integration_parameters *)params;
+  //std::cout << "INFO. rad_integrand_2d was called." << std::endl;
+  struct solar_model_integration_parameters_2d * p2 = (struct solar_model_integration_parameters_2d *)params;
   p2->rad = rad;
-  SolarModel *s = p2->s;
-  double r_max = std::min(p2->r_max, s->get_r_hi());
+  //SolarModel *s = p2->s;
+  //double r_max = std::min(p2->r_max, p2->s->get_r_hi()); // should have already been checked!
 
-  gsl_function f1;
-  f1.function = &rho_integrand_2d;
-  f1.params = p2;
+  //gsl_function f2;
+  //f1.function = &rho_integrand_2d;
+  //f1.params = p2;
 
-  //auto t1 = std::chrono::high_resolution_clock::now();
+  auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
   size_t n_evals;
-  //gsl_integration_qag(&f1, rad, r_max, 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
-  //gsl_integration_qags(&f1, rad, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
-  gsl_integration_cquad(&f1, rad, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w1, &result, &error, &n_evals);
-  //auto t2 = std::chrono::high_resolution_clock::now();
+  //gsl_integration_qag(&f2, rad, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
+  //gsl_integration_qags(&f2, rad, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
+  //gsl_integration_cquad(&f2, rad, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
+  gsl_integration_cquad(p2->f2, rad, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
+  auto t2 = std::chrono::high_resolution_clock::now();
   //std::cout << "# DEBUG INFO: rad = " << rad << ", integral 1 = " << result << " after " << n_evals << " evals (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << " ms)." << std::endl;
 
-  result = rad*result;
+  result *= rad;
+  //std::cout << "INFO. rad_integrand_2d result: " << result << std::endl;
   return result;
 }
 
 double erg_integrand_2d(double erg, void * params) {
-  struct solar_model_integration_parameters * p2 = (struct solar_model_integration_parameters *)params;
-  p2->erg = erg;
-  SolarModel *s = p2->s;
+  struct solar_model_integration_parameters_2d * p1 = (struct solar_model_integration_parameters_2d *)params;
+  p1->erg = erg;
 
-  gsl_function f1;
-  f1.function = &rho_integrand_2d;
-  f1.params = p2;
+  //gsl_function f1;
+  //f1.function = &rad_integrand_2d;
+  //f1.params = p3;
 
-  double result = 0, error = 0;
+  double result, error;
   size_t n_evals;
-  double r_min = p2->rad;
-  double r_max = s->get_r_hi();
-  if (r_min < r_max) {
-    gsl_integration_cquad(&f1, r_min, r_max, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w1, &result, &error, &n_evals);
-  }
 
-  //result = (p2->rad)*result;
+  //gsl_integration_cquad(&f1, p1->r_1, p1->r_2, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
+  gsl_integration_cquad(p1->f1, p1->r_1, p1->r_2, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
+  //std::cout << "INFO. erg_integrand_2d result: " << result << std::endl;
   return result;
 }
 
 std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
-  // TODO: Define double norm = f(2.0) and add it to the integration_params with default norm = 1. Integrate function *1/norm and rescale result *norm at the end.
-  std::vector<double> results, errors;
+  std::vector<double> results;
   std::ofstream output;
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
-
-  solar_model_integration_parameters_1d p { 0.0, &s, integrand };
   gsl_function f;
   f.function = rho_integrand_1d;
+  solar_model_integration_parameters_1d p { 0.0, &s, integrand, &f, w };
+  f.params = &p;
 
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-    double integral, error;
-    p.erg = *erg;
-    f.params = &p;
-    gsl_integration_qag(&f, s.get_r_lo(), s.get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, w, &integral, &error);
-    results.push_back(factor*integral);
-    errors.push_back(factor*error);
-    //std::cout << p.erg << " " << factor*integral << " +/- " << factor*error << std::endl;
-  }
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) { results.push_back( distance_factor*erg_integrand_1d(*erg, &p) ); }
 
   gsl_integration_workspace_free(w);
 
-  std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV], axion flux [cm^-2 s^-1 keV^-1], axion flux error estimate [cm^-2 s^-1 keV^-1]";
+  std::vector<std::vector<double> > buffer = { ergs, results };
+  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return results;
 }
 
-std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
+std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(double erg_lo, double erg_hi, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   std::vector<double> results, errors;
   std::vector<double> valid_radii = s.get_supported_radii(radii);
+  double r_min = valid_radii.front();
+  double r_max = valid_radii.back();
+  int n_r_vals = valid_radii.size();
+  std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
 
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_2d);
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
-  gsl_function f2;
-  f2.function = &erg_integrand_2d;
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
 
-  results.push_back(0);
-  errors.push_back(0);
-  for (auto rad = valid_radii.begin()+1; rad != valid_radii.end()-1; rad++) {
-    std::cout << "Working on r = " << *rad << std::endl;
+  //solar_model_integration_parameters_2d p2 { 0.0, 0.0, 0.0, 0.0, &s, integrand, w1, w2 };
+  //gsl_function f2;
+  //f2.function = &erg_integrand_2d;
+  //f2.params = &p2;
+  gsl_function f;
+  f.function = &erg_integrand_2d;
+  gsl_function f1;
+  f1.function = &rad_integrand_2d;
+  gsl_function f2;
+  f2.function = &rho_integrand_2d;
+  solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
+  f.params = &p;
+  f1.params = &p;
+  f2.params = &p;
+
+  for (int i = 0; i < n_r_vals; ++i) {
     double integral, error;
-    solar_model_integration_parameters p2 { 0.0, *rad, s.get_r_hi(), &s, integrand, w1 };
-    f2.params = &p2;
-    double omega_pl = sqrt(s.omega_pl_squared(*rad));
-    gsl_integration_qagiu(&f2, omega_pl, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, w2, &integral, &error);
-    results.push_back(factor*integral);
-    errors.push_back(factor*error);
+
+    if (i > 0) {
+      //p2.r_1 = valid_radii[i-1];
+      p.r_1 = valid_radii[i-1];
+    } else {
+      //p2.r_1 = s.get_r_lo();
+      p.r_1 = s.get_r_lo();
+    }
+
+    //p2.r_2 = valid_radii[i];
+    p.r_2 = valid_radii[i];
+    //if (p2.r_2 > p2.r_1) {
+    if (p.r_2 > p.r_1) {
+      //double omega_pl = sqrt(s.omega_pl_squared(p2.r_2));
+      //gsl_integration_qagiu(&f, omega_pl, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
+      //gsl_integration_qagiu(&f, 0.0, 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
+      //gsl_integration_qag(&f, 0.0, 50.0, 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, int_method_2d, w, &integral, &error);
+      gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(),10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
+    } else {
+      integral = 0;
+      error = 0;
+    }
+
+    if (i > 0) {
+      results.push_back( results.back() + distance_factor*integral );
+      errors.push_back( sqrt(gsl_pow_2(errors.back()) + gsl_pow_2(distance_factor*error)) );
+    } else {
+      results.push_back(distance_factor*integral);
+      errors.push_back(distance_factor*error);
+    }
   }
 
-  results.push_back(0);
-  errors.push_back(0);
-
-  std::cout << "Step 1, success... " << std::endl;
-
+  gsl_integration_workspace_free(w);
   gsl_integration_cquad_workspace_free(w1);
-  gsl_integration_workspace_free (w2);
+  gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double>> buffer = { valid_radii, results, errors };
   std::string comment = "Total spectral flux for a given radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
@@ -339,40 +183,67 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
 }
 
 std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-  const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-  // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
   std::vector<double> all_ergs, all_radii, results;
 
-  gsl_integration_cquad_workspace * w = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
 
   std::vector<double> valid_radii = s.get_supported_radii(radii);
+  double r_min = valid_radii.front();
+  double r_max = valid_radii.back();
+  int n_r_vals = valid_radii.size();
 
-  solar_model_integration_parameters p { 0.0, 0.0, s.get_r_hi(), &s, integrand, w };
-  for (auto rad = valid_radii.begin(); rad != valid_radii.end(); rad++) {
-      p.rad = *rad;
-      double omega_min = sqrt(s.omega_pl_squared(*rad));
-      double omega_max = 50.0*s.temperature_in_keV(*rad);
-      all_radii.push_back(*rad);
-      all_ergs.push_back(omega_min);
+  gsl_function f1;
+  f1.function = &rad_integrand_2d;
+  gsl_function f2;
+  f2.function = &rho_integrand_2d;
+  solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
+  f1.params = &p;
+  f2.params = &p;
+  // //std::cout << "No. of valid radii: " << n_r_vals << std::endl;
+  // // For r = r_min:
+  // //double omega_min = sqrt(s.omega_pl_squared(r_min));
+  // //double omega_max = 50.0*s.temperature_in_keV(r_min);
+  // //all_radii.push_back(r_min);
+  // //all_ergs.push_back(omega_min);
+  // //results.push_back(0);
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+    //if ((*erg > omega_min) && (*erg < omega_max)) {
+      all_radii.push_back(r_min);
+      all_ergs.push_back(*erg);
       results.push_back(0);
-      for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-        std::cout << "Trying erg = " << *erg << ", rad = " << *rad << " ..." << std::endl;
-        if ((*erg > omega_min) && (*erg < omega_max)) {
-          std::cout << "Erg = " << *erg << " accepted" << std::endl;
-          all_radii.push_back(*rad);
-          all_ergs.push_back(*erg);
-          results.push_back(erg_integrand_2d(*erg, &p));
-        }
-      }
-      all_radii.push_back(*rad);
-      all_ergs.push_back(omega_max);
-      results.push_back(erg_integrand_2d(omega_max, &p));
+    //}
+  }
+  //all_radii.push_back(r_min);
+  //all_ergs.push_back(omega_max);
+  //results.push_back(0);
+  // For all other r:
+  for (int i = 1; i < n_r_vals; ++i) {
+    //p.r_1 = valid_radii[i-1];
+    p.r_1 = r_min;
+    p.r_2 = valid_radii[i];
+    //std::cout << "Working on r = " << p.r_2 << std::endl;
+    //double omega_min = sqrt(s.omega_pl_squared(p.r_2));
+    //double omega_max = 50.0*s.temperature_in_keV(p.r_2);
+    //all_radii.push_back(p.r_2);
+    //all_ergs.push_back(omega_min);
+    //results.push_back(0);
+    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+      //std::cout << "Trying erg = " << *erg << ", rad = " << *rad << " ..." << std::endl;
+      //if ((*erg > omega_min) && (*erg < omega_max)) {
+        //std::cout << "Erg = " << *erg << " accepted" << std::endl;
+        all_radii.push_back(p.r_2);
+        all_ergs.push_back(*erg);
+        results.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
+      //}
+    }
+    //all_radii.push_back(p.r_2);
+    //all_ergs.push_back(omega_max);
+    //results.push_back( distance_factor*erg_integrand_2d(omega_max, &p));
   }
 
-  std::cout << "Step 2, success... " << std::endl;
-
-  gsl_integration_cquad_workspace_free(w);
+  gsl_integration_cquad_workspace_free(w1);
+  gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
   std::string comment = "Spectral flux over full solar disc at fixed radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
@@ -382,9 +253,6 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
 }
 
 // std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-//   // Constant factor for consistent units, i.e. integrated flux will be in units of cm^-2 s^-1 keV^-1.
-//   const double factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*distance_sol,2) * (1.0e6*hbar) );
-//   // = Rsol^3 [in keV^-3] / (2 pi^2 d^2 [in cm^2] * 1 [1 corresponds to s x keV))
 //   std::vector<double> results, errors;
 //
 //   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size);
@@ -393,12 +261,10 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
 //
 //   double r_min = s.get_r_lo();
 //   r_max = std::min(r_max, s.get_r_hi());
-//   //double norm_factor1 = (s.*integrand)(ref_erg_value, r_min);
-//   const double norm_factor1 = 1.0;
-//   //solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
+//   //solar_model_integration_parameters_2d p2 { 0.0, 0.0, 0.0, &s, integrand, w1, w2 };
 //   //double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-//   //solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, func_ptr, w1 };
-//   solar_model_integration_parameters p2 { 0.0, 0.0, r_max, &s, integrand, w1 };
+//   //solar_model_integration_parameters_2d p2 { 0.0, 0.0, 0.0, &s, func_ptr, w1, w2 };
+//   solar_model_integration_parameters_2d p2 { 0.0, 0.0, 0.0, &s, integrand, w1, w2 };
 //   gsl_function f2;
 //   f2.function = &rad_integrand_2d;
 //
@@ -410,8 +276,8 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
 //     f2.params = &p2;
 //     // was 0.1*factor
 //     gsl_integration_qag (&f2, r_min, r_max, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, int_method_2d, w2, &integral, &error);
-//     results.push_back(factor*norm_factor1*integral);
-//     errors.push_back(factor*norm_factor1*error);
+//     results.push_back(distance_factor*norm_factor1*integral);
+//     errors.push_back(distance_factor*norm_factor1*error);
 //   }
 //
 //   //gsl_integration_workspace_free (w1);
@@ -438,29 +304,25 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
 // TODO: Simplify the arguments (maybe and keep some for the Python library and for convenience)
 // TODO: Perhaps introduce a string argument for the process and make use of the new 'map_interaction_name_to_function' feature
 
-//std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double), std::string saveas) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand, saveas); }
-//std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,Isotope isotope, double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, isotope, s, integrand, ""); }
-//std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,double r_max, SolarModel &s, double (*integrand)(double, double)) { return calculate_spectral_flux_solar_disc(ergs, r_max, 0, s, integrand); }
-// -> solar_model.cpp/hpp
-//std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_Primakoff, saveas); }
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  SolarModelMemberFn fun = &SolarModel::Gamma_P_Primakoff;
-  return calculate_spectral_flux(ergs, s, fun, saveas);
+  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_Primakoff, saveas);
 }
+
+std::vector<std::vector<double> > calculate_spectral_flux_Primakoff(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas) {
+  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, &SolarModel::Gamma_P_Primakoff, saveas);
+}
+
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
   //double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
   //return calculate_spectral_flux_solar_disc(ergs, r_max, s, integrand, saveas);
-  SolarModelMemberFn fun = &SolarModel::Gamma_P_Primakoff;
-  return calculate_spectral_flux_solar_disc(ergs, r_max, s, fun, saveas);
+  return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_P_Primakoff, saveas);
 }
-//std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_Compton, saveas); }
+
 std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) {
   return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_Compton, saveas);
   //return calculate_spectral_flux_solar_disc(ergs, 1.0, s, &SolarModel::Gamma_P_Compton, saveas);
 }
-std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_weightedCompton, saveas); }
-std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_all_ff,saveas); }
-//std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_all_axionelectron, saveas); }
+
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas) {
   return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_all_electron, saveas);
 }
@@ -469,9 +331,117 @@ std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> er
   //return calculate_spectral_flux_solar_disc(ergs, r_max, s, integrand, saveas);
   return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_P_all_electron, saveas);
 }
-//std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_var(ergs, s, &integrand_opacity, saveas); }
+//std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) { return calculate_spectral_flux_custom(ergs, s, &integrand_opacity, saveas); }
 std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) {
   return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_opacity, saveas);
+}
+// Here, we also define some simple, custom integration routines similar to the ones defined above
+
+// First, define custom wrappers
+// TODO: Remove unnecessary wrappers; perhaps use SolarModelMemberFn definition
+
+// Weighted Compton contribution
+double integrand_weightedCompton(double r, void * params) {
+  struct solar_model_integration_params_custom * p = (struct solar_model_integration_params_custom *)params;
+  double erg = (p->erg);
+  if (erg == 0) {return 0;}
+  SolarModel* sol = (p->sol);
+  double u = erg/(sol->temperature_in_keV(r));
+
+  return 0.5*gsl_pow_2(r*erg/pi)*0.5*(1.0 - 1.0/gsl_expm1(u))*(sol->Gamma_P_Compton(erg, r));
+}
+
+// Includes FF flux and ee contribution as in arXiv:1310.0823
+double integrand_all_ff(double r, void * params) {
+  struct solar_model_integration_params_custom * p = (struct solar_model_integration_params_custom *)params;
+  double erg = (p->erg);
+  SolarModel* sol = (p->sol);
+
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_ff(erg, r) + sol->Gamma_P_ee(erg, r));
+}
+
+// Calculate the flux from opacity for one element only
+double integrand_opacity_element(double r, void * params) {
+  struct solar_model_integration_params_custom * p = (struct solar_model_integration_params_custom *)params;
+  double erg = (p->erg);
+  std::string el_name = (p->isotope).get_element_name();
+  SolarModel* sol = (p->sol);
+
+  return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_P_opacity(erg, r, el_name));
+}
+
+std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), std::string saveas, Isotope isotope) {
+  std::vector<double> results, errors;
+
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
+  gsl_function f;
+  f.function = integrand;
+  solar_model_integration_params_custom p = { 0.0, &s, isotope };
+  f.params = &p;
+
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+    double integral, error;
+    p.erg = *erg;
+    gsl_integration_qag(&f, s.get_r_lo(), s.get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, w, &integral, &error);
+    results.push_back(distance_factor*integral);
+    errors.push_back(distance_factor*error);
+  }
+
+  gsl_integration_workspace_free(w);
+
+  std::vector<std::vector<double>> buffer = { ergs, results, errors };
+  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV] | axion flux [axions / cm^2 s keV] | axion flux error estimate [axions / cm^2 s keV]";
+  save_to_file(saveas, buffer, comment);
+
+  return results;
+}
+
+std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return calculate_spectral_flux_custom(ergs, s, &integrand_weightedCompton, saveas);
+}
+
+std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return calculate_spectral_flux_custom(ergs, s, &integrand_all_ff,saveas);
+}
+
+std::vector<double> calculate_spectral_flux_opacity_element(std::vector<double> ergs, SolarModel &s, std::string element, std::string saveas) {
+  Isotope isotope (element);
+  return calculate_spectral_flux_custom(ergs, s, &integrand_opacity_element, saveas, isotope);
+}
+
+// Additional integration routines for integrating the content of a file.
+
+double flux_from_file_integrand(double erg, void * params) {
+  OneDInterpolator * interp = (OneDInterpolator *)params;
+  return interp->interpolate(erg);
+}
+
+double integrated_flux_from_file(double erg_min, double erg_max, std::string spectral_flux_file, bool includes_electron_interactions) {
+  double result, error;
+
+  OneDInterpolator spectral_flux_interpolator (spectral_flux_file);
+  if ( (erg_min < spectral_flux_interpolator.lower()) || (erg_max > spectral_flux_interpolator.upper()) ) {
+    erg_min = std::max(erg_min, spectral_flux_interpolator.lower());
+    erg_max = std::min(erg_max, spectral_flux_interpolator.upper());
+    std::cout << "WARNING! Integration boundaries for 'integrated_flux_from_file' are incompatible with the min/max available energy in the file "+spectral_flux_file
+              << ". Setting integration region to overlap: [" << erg_min << ", " << erg_max << "]." << std::endl;
+  }
+
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_file);
+  gsl_function f;
+  f.function = &flux_from_file_integrand;
+  f.params = &spectral_flux_interpolator;
+
+  if (includes_electron_interactions) {
+    std::vector<double> relevant_peaks = get_relevant_peaks(erg_min, erg_max);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &result, &error);
+  } else {
+    gsl_integration_qag(&f, erg_min, erg_max, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w, &result, &error);
+  }
+
+  gsl_integration_workspace_free(w);
+
+  return result;
 }
 
 //////////////////////////////////////////////////////////
@@ -930,7 +900,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
   std::string filename = "";
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
   if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_Primakoff.dat"; }
-  total_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
+  total_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(0.0, 50.0, rads, sol, integrand, filename);
   int n_rad_entries = total_fluxes[0].size();
   if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_Primakoff.dat"; }
   fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
@@ -938,7 +908,7 @@ AxionMCGenerator2D::AxionMCGenerator2D(SolarModel &sol, std::vector<double> ergs
   if (gaee > 0) {
     integrand = &SolarModel::Gamma_P_all_electron;
     if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_total_all_electron.dat"; }
-    total_gaee_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(rads, sol, integrand, filename);
+    total_gaee_fluxes = calculate_total_flux_solar_disc_at_fixed_radii(0.0, 50.0, rads, sol, integrand, filename);
     if (save_fluxes_prefix != "") { filename = save_fluxes_prefix+"_all_electron.dat"; }
     gaee_fluxes = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, rads, sol, integrand, filename);
     for (int i = 0; i < n_rad_entries; ++i) { total_fluxes[1][i] += gsl_pow_2(gaee/1.0e-13)*total_gaee_fluxes[1][i]; }

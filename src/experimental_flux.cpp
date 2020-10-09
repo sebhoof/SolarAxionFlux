@@ -212,6 +212,7 @@ double convolved_erg_integrand_from_file(double erg, void * params) {
   return result;
 }
 
+// TODO OUTDATED!
 double erg_integrand(double erg, void * params) {
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
@@ -222,10 +223,10 @@ double erg_integrand(double erg, void * params) {
   double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
   double exposure = eff_exposure(erg, p3->dataset);
 
-  struct solar_model_integration_parameters p2 { erg, 0.0, r_max, s, p3->integrand, p3->w1 };
-
   gsl_function f2;
   f2.function = &rad_integrand_2d;
+  struct solar_model_integration_parameters_2d p2 { erg, 0.0, 0.0, 0.0, s, p3->integrand, &f2, p3->w1, &f2, p3->w1 };
+
   f2.params = &p2;
 
   double spectral_flux, spectral_flux_error;
