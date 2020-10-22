@@ -25,7 +25,7 @@ const double distance_factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*d
 // Variables and wrapper functions for solar model integration routines
 // Variables to define the behaviour of the GSL integrators.
 // Integration over the full Sun (1D)
-const int int_method_1d = 5, int_space_size_1d = 1e8;
+const int int_method_1d = 5, int_space_size_1d = 1e6;
 const double int_abs_prec_1d = 0.0, int_rel_prec_1d = 1.0e-3;
 // 1D-Integration for files
 const int int_method_file = 5, int_space_size_file = 1e6;

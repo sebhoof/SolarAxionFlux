@@ -3,18 +3,18 @@
 
 #include "experimental_flux.hpp"
 
-////////////////////////////////////////
-//  Experimental setup and coherence  //
-////////////////////////////////////////
 
-// Conversion probability correction for massive axions.
+///////////////////////////////////////////////////////
+//  Experimental axion-photon conversion and spectra //
+///////////////////////////////////////////////////////
+
+// Conversion probability correction for massive axions (mass in eV)
 double conversion_prob_correction(double mass, double erg, double length) {
-  double result = 1.0;
   if (mass > 0) {
     double argument = 0.25*1.0e-3*(length/eVm)*mass*mass/erg;
-    result = gsl_pow_2(gsl_sf_sinc(argument/pi));
+    return gsl_pow_2(gsl_sf_sinc(argument/pi));
   }
-  return result;
+  return 1.0;
 }
 
 // Effective exposures (in seconds x cm^2) for various experiments.
@@ -83,7 +83,7 @@ double eff_exposure_cast2017_l(double erg) {
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
-// Baseline IAXO data from [arXiv:1904.09155]
+// Baseline IAXO exposure from [arXiv:1904.09155]
 double eff_exposure_iaxo(double erg) {
   const double eff = 0.7*0.8;
   const double time = 3.0 * 0.5 * 365.0*24.0*60.0*60.0;
@@ -92,7 +92,7 @@ double eff_exposure_iaxo(double erg) {
   return eff_exp;
 }
 
-// babyIAXO data from [arXiv:1904.09155]
+// babyIAXO exposure from [arXiv:1904.09155]
 double eff_exposure_babyiaxo(double erg) {
   const double eff = 0.35*0.7;
   const double time = 1.5 * 0.5 * 365.0*24.0*60.0*60.0;
@@ -101,7 +101,7 @@ double eff_exposure_babyiaxo(double erg) {
   return eff_exp;
 }
 
-// IAXO+ data from [arXiv:1904.09155]
+// IAXO+ exposure from [arXiv:1904.09155]
 double eff_exposure_iaxoplus(double erg) {
   const double eff = 0.7*0.8;
   const double time = 5.0 * 0.5 * 365.0*24.0*60.0*60.0;
@@ -109,19 +109,6 @@ double eff_exposure_iaxoplus(double erg) {
   const double eff_exp = eff*time*area;
   return eff_exp;
 }
-
-/*
-double eff_exposure(double erg, std::string dataset) {
-  static std::string previous_dataset = "";
-  static OneDInterpolator eff_exp;
-  if (previous_dataset != dataset) {
-    eff_exp = OneDInterpolator("data/exposures/"+dataset+"_EffectiveExposure.dat");
-    previous_dataset = dataset;
-  }
-  // Effective exposure file is in cm x days.
-  return 24.0*60.0*60.0*eff_exp.interpolate(erg);
-}
-*/
 
 double eff_exposure(double erg, std::string dataset) {
   experiment exp = experiment_name.at(dataset);
@@ -169,12 +156,16 @@ double eff_exposure(double erg, experiment dataset) {
   return res;
 }
 
-/////////////////////////
-//  Wrapper functions  //
-/////////////////////////
 
-double erg_integrand_from_file(double erg, void * params) {
-  struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
+//////////////////////////////////////////////////////////////////////////////////////
+//  Modified and extended integration routines (possibly include energy dispersion) //
+//////////////////////////////////////////////////////////////////////////////////////
+
+// Various wrapper and helper functions
+
+// Additional integration routines for integrating the content of a file (with effective exposure; no convolution)
+double exp_flux_integrand_from_file(double erg, void * params) {
+  struct exp_flux_from_file_integration_parameters * p = (struct exp_flux_from_file_integration_parameters *)params;
 
   double sincsq = conversion_prob_correction(p->mass, erg, p->length);
   double exposure = eff_exposure(erg, p->dataset);
@@ -182,6 +173,12 @@ double erg_integrand_from_file(double erg, void * params) {
   double exp_flux = p->spectral_flux->interpolate(erg);
 
   return exposure*exp_flux*sincsq;
+}
+
+double simple_convolution_kernel(double erg, void * params) {
+  struct simple_convolution_params * p = (struct simple_convolution_params *)params;
+  double two_sigma2 = 2.0*gsl_pow_2(p->sigma);
+  return (p->spectral_flux->interpolate(erg))*exp(-gsl_pow_2(p->erg0 - erg)/two_sigma2)/sqrt(two_sigma2*pi);
 }
 
 double convolution_kernel(double erg, void * params) {
@@ -193,26 +190,27 @@ double convolution_kernel(double erg, void * params) {
   return exposure*exp_flux*sincsq * exp(-gsl_pow_2(p->erg0 - erg)/two_sigma2)/sqrt(two_sigma2*pi);
 }
 
-double convolved_erg_integrand_from_file(double erg, void * params) {
+// Additional integration routines for integrating the content of a file (with effective exposure and convolution)
+double convolved_exp_flux_integrand_from_file(double erg, void * params) {
   double result, error;
-  struct exp_flux_params_file * p = (struct exp_flux_params_file *)params;
+  struct exp_flux_from_file_integration_parameters * p = (struct exp_flux_from_file_integration_parameters *)params;
   struct convolution_params q = { erg, p };
   std::vector<double> relevant_peaks = get_relevant_peaks(p->support[0], p->support[1]);
 
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size_file);
 
   gsl_function f;
   f.function = &convolution_kernel;
   f.params = &q;
 
-  gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &result, &error);
+  gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &result, &error);
 
   gsl_integration_workspace_free(w);
 
   return result;
 }
 
-// TODO OUTDATED!
+// TODO OUTDATED! Basically the alternative to 'from file integration'?
 double erg_integrand(double erg, void * params) {
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
@@ -230,23 +228,19 @@ double erg_integrand(double erg, void * params) {
   f2.params = &p2;
 
   double spectral_flux, spectral_flux_error;
-  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec , 0.1*int_rel_prec , int_space_size, int_method_1, p3->w2, &spectral_flux, &spectral_flux_error);
+  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec_file , 0.1*int_rel_prec_file , int_space_size_file, int_method_file, p3->w2, &spectral_flux, &spectral_flux_error);
 
   return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
 }
 
-double simple_convolution_kernel(double erg, void * params) {
-  struct simple_convolution_params * p = (struct simple_convolution_params *)params;
-  double two_sigma2 = 2.0*gsl_pow_2(p->sigma);
-  return (p->spectral_flux->interpolate(erg))*exp(-gsl_pow_2(p->erg0 - erg)/two_sigma2)/sqrt(two_sigma2*pi);
-}
 
+// TODO: Here actual integration routines from file
 std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, double support[2], double resolution, std::string filename) {
   std::vector<double> result;
   OneDInterpolator spectrum (filename);
 
   double flux, flux_error;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size_file);
 
   struct simple_convolution_params p = { resolution, 0, &spectrum };
 
@@ -258,9 +252,9 @@ std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, doubl
   for (auto erg0 = ergs.begin(); erg0 != ergs.end(); ++erg0) {
     p.erg0 = *erg0;
     std::cout << *erg0 << " " << flux << std::endl;
-    //gsl_integration_qags(&f, support[0], support[1], int_abs_prec, int_rel_prec, int_space_size, w, &flux, &flux_error);
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w, &flux, &flux_error);
-    //gsl_integration_qag (&f, support[0], support[1], int_abs_prec, int_rel_prec, int_space_size, int_method_1, w, &flux, &flux_error);
+    //gsl_integration_qags(&f, support[0], support[1], int_abs_prec, int_rel_prec, int_space_size_file, w, &flux, &flux_error);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &flux, &flux_error);
+    //gsl_integration_qag (&f, support[0], support[1], int_abs_prec, int_rel_prec, int_space_size_file, int_method_1, w, &flux, &flux_error);
     result.push_back(flux);
   }
   gsl_integration_workspace_free(w);
@@ -268,10 +262,7 @@ std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, doubl
   return result;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//  Functions to calculate the counts in all bins of a helioscope experiment  //
-////////////////////////////////////////////////////////////////////////////////
-
+// Functions to calculate the counts in all bins of a helioscope experiment
 std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
   OneDInterpolator spectral_flux;
@@ -295,17 +286,17 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
   }
 
   double gagg_result, gagg_error;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, setup->dataset, &spectral_flux, {support[0], support[1]}, setup->erg_resolution };
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size_file);
+  exp_flux_from_file_integration_parameters p { mass, setup->length, setup->dataset, &spectral_flux, {support[0], support[1]}, setup->erg_resolution };
   gsl_function f;
-  f.function = &erg_integrand_from_file;
+  f.function = &exp_flux_integrand_from_file;
   f.params = &p;
 
   double erg_lo, erg_hi = bin_lo;
   for (int bin = 0; bin < n_bins; ++bin) {
     erg_lo = erg_hi;
     erg_hi += bin_delta;
-    gsl_integration_qag(&f, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w, &gagg_result, &gagg_error);
+    gsl_integration_qag(&f, erg_lo, erg_hi, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w, &gagg_result, &gagg_error);
     double counts = gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gagg_result;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
@@ -315,6 +306,9 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
   return result;
 }
 
+// Integration routines for full experimental counts.
+// CAVE: Can be very slow!
+// TODO check for overlap/outdated?
 std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
@@ -327,10 +321,10 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value, setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size);
+  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
 
@@ -344,7 +338,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
     double gagg_result, gagg_error;
     erg_lo = erg_hi;
     erg_hi += bin_delta;
-    gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size, int_method_1, w3, &gagg_result, &gagg_error);
+    gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w3, &gagg_result, &gagg_error);
     double counts = factor*norm_factor1*norm_factor3*gsl_pow_2(gsl_pow_2(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*gagg_result;
     //std::cout << "integral 3 = " << gagg_result << std::endl;
     printf("gagg | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
@@ -371,10 +365,10 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   double bin_hi = bin_lo + bin_delta*double(n_bins);
 
   double gaee_result, gaee_error;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p { mass, setup->length, setup->dataset, &spectral_flux, setup->erg_resolution };
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc (int_space_size_file);
+  exp_flux_from_file_integration_parameters p { mass, setup->length, setup->dataset, &spectral_flux, setup->erg_resolution };
   gsl_function f;
-  f.function = &erg_integrand_from_file;
+  f.function = &exp_flux_integrand_from_file;
   f.params = &p;
 
   double erg_lo, erg_hi = bin_lo;
@@ -387,7 +381,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
     relevant_peaks.push_back(erg_hi);
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w, &gaee_result, &gaee_error);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &gaee_result, &gaee_error);
     double counts = gsl_pow_2((gaee/1.0e-13)*(gagg/1.0e-10)*(setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor*gaee_result;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
@@ -397,6 +391,9 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   return result;
 }
 
+// Integration routines for full experimental counts.
+// CAVE: Can be very slow!
+// TODO check for overlap/outdated?
 std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
@@ -412,10 +409,10 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_cquad);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size);
+  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
 
@@ -433,8 +430,8 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
     relevant_peaks.push_back(erg_lo);
     for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); } }
     relevant_peaks.push_back(erg_hi);
-    //gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size, gagg_method, w3, &gagg_result, &gagg_error);
-    gsl_integration_qagp(&f3, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec, int_rel_prec, int_space_size, w3, &gaee_result, &gaee_error);
+    //gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size_file, gagg_method, w3, &gagg_result, &gagg_error);
+    gsl_integration_qagp(&f3, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w3, &gaee_result, &gaee_error);
     double counts = factor*norm_factor1*norm_factor3*gsl_pow_2((gagg/1.0e-10)*(gaee/1.0e-13)*(setup->b_field/9.0)*(setup->length/9.26))*gaee_result;
     printf("gaee | % 6.4f [%3.2f, %3.2f] % 4.3e\n", log10(mass), erg_lo, erg_hi, log10(counts));
     result.push_back(counts);
@@ -448,6 +445,9 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   return result;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//  Routines to compute 'reference count files' for the various experiments //
+//////////////////////////////////////////////////////////////////////////////
 
 // Return relative counts at reference values of the coupling.
 std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee, std::string saveas, bool save_convolved_spectra) {
@@ -491,19 +491,19 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   OneDInterpolator spectral_flux_gaee;
   if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
 
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size);
-  exp_flux_params_file p1 { 0, setup->length, setup->dataset, &spectral_flux_gagg, {bin_lo, bin_hi}, setup->erg_resolution };
-  exp_flux_params_file p2 { 0, setup->length, setup->dataset, &spectral_flux_gaee, {bin_lo, bin_hi}, setup->erg_resolution };
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
+  exp_flux_from_file_integration_parameters p1 { 0, setup->length, setup->dataset, &spectral_flux_gagg, {bin_lo, bin_hi}, setup->erg_resolution };
+  exp_flux_from_file_integration_parameters p2 { 0, setup->length, setup->dataset, &spectral_flux_gaee, {bin_lo, bin_hi}, setup->erg_resolution };
   gsl_function f1, f2;
   f1.params = &p1;
   f2.params = &p2;
   if (erg_resolution > 0) {
-    f1.function = &convolved_erg_integrand_from_file;
-    f2.function = &convolved_erg_integrand_from_file;
+    f1.function = &convolved_exp_flux_integrand_from_file;
+    f2.function = &convolved_exp_flux_integrand_from_file;
   } else {
-    f1.function = &erg_integrand_from_file;
-    f2.function = &erg_integrand_from_file;
+    f1.function = &exp_flux_integrand_from_file;
+    f2.function = &exp_flux_integrand_from_file;
   }
 
   std::vector<std::vector<double>> relevant_peaks;
@@ -549,10 +549,10 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
       double erg_hi = erg_lo + bin_delta;
       bin_centres.push_back(0.5*(erg_lo + erg_hi));
       // TODO: Improve results with QAWO adaptive integration for oscillatory functions?! factor out sin^2()?
-      gsl_integration_qag(&f1, erg_lo, erg_hi, ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, ergint_from_file_method, w1, &gagg_result, &gagg_error);
+      gsl_integration_qag(&f1, erg_lo, erg_hi, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w1, &gagg_result, &gagg_error);
       results_gagg.push_back(overall_factor*gagg_result);
       if (spectral_flux_file_gaee != "") {
-        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), ergint_from_file_abs_prec, ergint_from_file_rel_prec, int_space_size, w2, &gaee_result, &gaee_error);
+        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w2, &gaee_result, &gaee_error);
         results_gaee.push_back(overall_factor*gaee_result);
       }
     }
@@ -584,12 +584,6 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   return result;
 }
 
-double safe_log10(double x, double lgx0) {
-  double result = lgx0;
-  if (x > 0) { result = log10(x); }
-  return result;
-}
-
 std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::string reference_counts_file, double gaee) {
   std::vector<double> result;
 
@@ -599,7 +593,7 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
   static int n_bins;
   static int n_masses;
   static double min_m = 1.0e-4;
-  static double lgm0 = -4.0; // Axions with m = 10^-4 eV are as good as massless.
+  static double lgm0 = -4.0; // Axions with m = 10^-4 eV are effectivly massless
   static std::vector<double> log_masses;
   static std::vector<std::vector<double>> ref_counts_gagg;
   static std::vector<OneDInterpolator> interp_ref_counts_gagg;
@@ -614,8 +608,8 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     n_cols = data.getncol();
     int n_rows = data.getnrow();
 
-    // Make sure that the table is processed correctly with any formatting.
-    // Extract unique mass values from the file.
+    // Make sure that the table is processed correctly with any formatting
+    // Extract unique mass values from the file
     std::vector<double> m = data[0];
     sort(m.begin(), m.end());
     m.erase(unique(m.begin(), m.end()), m.end());
@@ -625,7 +619,7 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
     if ((min_m > 0) && (min_m < 1.0e-4)) { lgm0 = log10(min_m); }
     if (n_masses > 1) { if ((min_m = 0) && (m[1] < 1.0e-4)) { lgm0 = log10(m[1]) - 100.0; } }
     for (int k=0; k<n_masses; ++k) { log_masses[k] = safe_log10(m[k],lgm0); }
-    // Extract unique energy bin values from the file.
+    // Extract unique energy bin values from the file
     std::vector<double> bins = data[1];
     sort(bins.begin(), bins.end());
     bins.erase(unique(bins.begin(), bins.end()), bins.end());

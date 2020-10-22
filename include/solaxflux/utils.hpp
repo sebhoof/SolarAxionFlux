@@ -211,4 +211,11 @@ const std::vector<double> opas_radii = { 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0
 // Get the (approximate) locations of the peaks in the axion-electron spectrum to allow for more accurate integration
 std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
 
+
+///////////////////////////////////
+//  Other convenience functions  //
+///////////////////////////////////
+
+double safe_log10(double x, double lgx0);
+
 #endif // defined __utils_hpp__

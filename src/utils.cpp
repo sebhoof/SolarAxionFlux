@@ -357,3 +357,14 @@ std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi) {
 
   return result;
 }
+
+
+///////////////////////////////////
+//  Other convenience functions  //
+///////////////////////////////////
+
+double safe_log10(double x, double lgx0) {
+  double result = lgx0;
+  if (x > 0) { result = log10(x); }
+  return result;
+}

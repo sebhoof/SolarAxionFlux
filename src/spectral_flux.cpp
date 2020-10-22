@@ -301,9 +301,8 @@ std::vector<double> calculate_spectral_flux_opacity_element(std::vector<double> 
   return calculate_spectral_flux_custom(ergs, s, &integrand_opacity_element, saveas, isotope);
 }
 
-// Additional integration routines for integrating the content of a file.
-
-double flux_from_file_integrand(double erg, void * params) {
+// Additional integration routines for integrating the content of a file
+double flux_integrand_from_file(double erg, void * params) {
   OneDInterpolator * interp = (OneDInterpolator *)params;
   return interp->interpolate(erg);
 }
@@ -321,7 +320,7 @@ double integrated_flux_from_file(double erg_min, double erg_max, std::string spe
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_file);
   gsl_function f;
-  f.function = &flux_from_file_integrand;
+  f.function = &flux_integrand_from_file;
   f.params = &spectral_flux_interpolator;
 
   if (includes_electron_interactions) {
