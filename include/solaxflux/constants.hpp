@@ -9,7 +9,7 @@
 #include <gsl/gsl_math.h>
 
 // Library name
-const std::string LIBRARY_NAME = "SolarAxionFlux v0.6b";
+const std::string LIBRARY_NAME = "SolarAxionFlux v0.5b";
 
 // Mathematical constants
 const double pi = M_PI;

@@ -4,6 +4,8 @@
 
 _**This code is currently still under development by [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormaehlen](mailto:l.thormaehlen@thphys.uni-heidelberg.de).**_
 
+This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
+
 ## Example results
 
 Here, we show a number of plots comparing different Solar models and opacity codes. More details and references will be given in a future publication.
@@ -15,10 +17,10 @@ The code is written in C++ and contains Python files for data processing tasks. 
 A quick guide on how to install and test the code (requires CMAKE v3.12 or higher).
 * For Mac OS use e.g. [Homebrew](https://brew.sh) to install the GSL library via `brew install gsl`. For Linux use `sudo apt-get install libgsl-dev` instead. If you do not have admin privileges on either system, you need to [install the GSL library from source](https://www.gnu.org/software/gsl/). We recommend using GSL library v2.4 or higher.
 * Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`, where `[foldername]` can be replaced by a folder name of your choice.
-* Use the `master` branch (no need to do anything) or checkout tag `v0.1b` (`git checkout v0.1b -b [some_branch_name]`).
-* Follow this up by `cd [foldername]`, `mkdir build`, and `cd build/`.
+* Use the latest `master` branch (no need to do anything) or checkout the latest tagged version as a new branch (`git checkout v0.5b -b [some_branch_name]`).
+* Set up a directory via `cd [foldername]`, `mkdir build`, and `cd build/`.
 * In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
-* The `test_library` executable in the `bin` directory runs a simple test program. It needs to be executed from the `[foldername]` directory to find the Solar models located in `data/`, i.e. `./bin/test_library`.
+* The `test_library` executable in the `bin` directory runs a simple test program. It needs to be executed from the `[foldername]` directory to find the Solar models located in `data/`, i.e. `./bin/test_library` (or add `[foldername]` to your `$PATH` variable). If you installed the Python frontend, you can also run this test from Python via `from lib import pyaxionflux as axfl` and `axfl.test_module()` (assuming you are in `[foldername]`).
 
 ## References
 

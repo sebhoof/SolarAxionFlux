@@ -355,8 +355,6 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
 
 std::vector<double> axion_electron_counts(double mass, double gaee, double gagg, exp_setup *setup, std::string spectral_flux_file) {
   std::vector<double> result;
-  const double all_peaks [32] = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
   static OneDInterpolator spectral_flux (spectral_flux_file);
 
   int n_bins = setup->n_bins;
@@ -375,10 +373,7 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
   for (int bin = 0; bin < n_bins; ++bin) {
     erg_lo = erg_hi;
     erg_hi += bin_delta;
-    std::vector<double> relevant_peaks;
-    relevant_peaks.push_back(erg_lo);
-    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); } }
-    relevant_peaks.push_back(erg_hi);
+    std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
     // TODO: Should set abs prec. threshold to ~ 0.001 counts? Would need correct units for energy integrand.
     //       Massive downside: only valid for given gagg... cannot simply rescale results. Computational cost not worth it?!
     gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &gaee_result, &gaee_error);
@@ -398,8 +393,6 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   std::vector<double> result;
   const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
   const double factor = distance_factor*conversion_prob_factor;
-  const double all_peaks [32] = { 0.653029, 0.779074, 0.920547, 0.956836, 1.02042, 1.05343, 1.3497, 1.40807, 1.46949, 1.59487, 1.62314, 1.65075, 1.72461, 1.76286, 1.86037, 2.00007, 2.45281, 2.61233, 3.12669, 3.30616, 3.88237, 4.08163, 5.64394,
-                                  5.76064, 6.14217, 6.19863, 6.58874, 6.63942, 6.66482, 7.68441, 7.74104, 7.76785 };
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
@@ -426,10 +419,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
     double gaee_result, gaee_error;
     erg_lo = erg_hi;
     erg_hi += bin_delta;
-    std::vector<double> relevant_peaks;
-    relevant_peaks.push_back(erg_lo);
-    for (int i = 0; i < 32; i++) { if ( (erg_lo < all_peaks[i]) && (all_peaks[i] < erg_hi) ) { relevant_peaks.push_back(all_peaks[i]); } }
-    relevant_peaks.push_back(erg_hi);
+    std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
     //gsl_integration_qag (&f3, erg_lo, erg_hi, int_abs_prec, int_rel_prec, int_space_size_file, gagg_method, w3, &gagg_result, &gagg_error);
     gsl_integration_qagp(&f3, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w3, &gaee_result, &gaee_error);
     double counts = factor*norm_factor1*norm_factor3*gsl_pow_2((gagg/1.0e-10)*(gaee/1.0e-13)*(setup->b_field/9.0)*(setup->length/9.26))*gaee_result;
