@@ -4,7 +4,7 @@
 #include "python_wrapper.hpp"
 
 PYBIND11_MODULE(pyaxionflux, m) {
-  m.doc() = "Python wrapper for "+LIBRARY_NAME+" library functions";
+  m.doc() = "Python wrapper for " LIBRARY_NAME " library functions";
 
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
@@ -17,7 +17,9 @@ PYBIND11_MODULE(pyaxionflux, m) {
   m.def("save_solar_model", &py11_save_solar_model, "EXPERIMENTAL. Export the relevant information from a solar model.");
 }
 
-void module_info() { std::cout << "This is the " << LIBRARY_NAME << " Python interface." << std::endl; }
+void module_info() {
+  std::cout << "This is the " << LIBRARY_NAME << " Python interface. The source code can be found in " << SOLAXFLUX_DIR << "." << std::endl;
+}
 
 void test_module() {
   run_unit_test();

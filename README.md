@@ -2,7 +2,7 @@
 
 <em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
 
-_**This code is currently still under development by [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormaehlen](mailto:l.thormaehlen@thphys.uni-heidelberg.de).**_
+_**This code is currently under development by [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormaehlen](mailto:l.thormaehlen@thphys.uni-heidelberg.de).**_
 
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
@@ -23,7 +23,7 @@ A complete guide on how to install and test the code (requires CMAKE v3.12 or hi
 * In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
 
 ## Testing
-The `test_library` executable in the `bin` directory runs a simple test program. It needs to be executed from the `[foldername]` directory to find the Solar models located in `data/`, i.e. `./bin/test_library` (or add `[foldername]` to your `$PATH` variable). If you installed the Python frontend, you can also run this test from Python via `from lib import pyaxionflux as axfl` and `axfl.test_module()` (assuming you are in `[foldername]` or added `[foldername]` to your `$PYTHONPATH` variable). In either case, the output can be found in the `results/` folder.
+The `test_library` executable in the `bin/` directory runs a simple test program. If you installed the Python frontend, you can also run this test from your Python 3 terminal or notebook via `from lib import pyaxionflux as afl` (assuming you are in `[foldername]` or added `[foldername]` to your `$PYTHONPATH` variable) and `afl.test_module()`. In either case, the output can be found in the `[foldername]/results/` folder.
 
 ## References
 

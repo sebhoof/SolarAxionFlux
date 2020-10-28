@@ -82,7 +82,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   gsl_integration_workspace_free(w);
 
   std::vector<std::vector<double> > buffer = { ergs, results };
-  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
+  std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return results;
@@ -143,7 +143,7 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double>> buffer = { valid_radii, results, errors };
-  std::string comment = "Total spectral flux for a given radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
+  std::string comment = "Total spectral flux for a given radius by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
@@ -186,7 +186,7 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
-  std::string comment = "Spectral flux over full solar disc at fixed radius by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
+  std::string comment = "Spectral flux over full solar disc at fixed radius by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
@@ -282,7 +282,7 @@ std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, Sol
   gsl_integration_workspace_free(w);
 
   std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar volume by "+LIBRARY_NAME+".\nColumns: energy values [keV] | axion flux [axions / cm^2 s keV] | axion flux error estimate [axions / cm^2 s keV]";
+  std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [axions / cm^2 s keV] | axion flux error estimate [axions / cm^2 s keV]";
   save_to_file(saveas, buffer, comment);
 
   return results;
@@ -708,7 +708,7 @@ void AxionMCGenerator1D::init_inv_cdf_interpolator() {
 }
 
 void AxionMCGenerator1D::save_inv_cdf_to_file(std::string inv_cdf_file) {
-  const std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Random variable | Inverse CDF of energy distribution";
+  const std::string comment = "Inverse CDF obtained by " LIBRARY_NAME ".\nColumns: Random variable | Inverse CDF of energy distribution";
   std::vector<std::vector<double>> buffer;
   buffer.push_back(inv_cdf_data_x);
   buffer.push_back(inv_cdf_data_erg);
@@ -888,7 +888,7 @@ void AxionMCGenerator2D::init_inv_cdf_interpolator() {
 }
 
 void AxionMCGenerator2D::save_inv_cdf_to_file(std::string inv_cdf_file) {
-  std::string comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Radius on solar disc [Rsol] | Random variable | Inverse CDF of energy distribution, given radius.";
+  std::string comment = "Inverse CDF obtained by " LIBRARY_NAME ".\nColumns: Radius on solar disc [Rsol] | Random variable | Inverse CDF of energy distribution, given radius.";
   std::vector<std::vector<double> > buffer (3);
   for (int i=0; i < radii.size(); i++) {
     std::cout << "Loop Printig data... " << i << " / " << radii.size() << std::endl;
@@ -901,7 +901,7 @@ void AxionMCGenerator2D::save_inv_cdf_to_file(std::string inv_cdf_file) {
   }
   //save_to_file(inv_cdf_file, inv_cdf_grid.get_data(), comment);
   save_to_file(inv_cdf_file+".dat", buffer, comment);
-  comment = "Inverse CDF obtained by "+LIBRARY_NAME+".\nColumns: Random variable | Inverse CDF of radius distribution";
+  comment = "Inverse CDF obtained by " LIBRARY_NAME ".\nColumns: Random variable | Inverse CDF of radius distribution";
   save_to_file(inv_cdf_file+"_aux.dat", inv_cdf_rad.get_data(), comment);
 }
 

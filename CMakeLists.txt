@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 11)
 # Must use GNUInstallDirs to install libraries into correct locations on all platforms.
 include(GNUInstallDirs)
 
+# Set preprocessor macros
+add_compile_definitions(SOLAXFLUX_DIR="${PROJECT_SOURCE_DIR}")
+add_compile_definitions(LIBRARY_NAME="SolarAxionFlux v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}b")
+
 # Set some compiler flags for non-release-type builds (okay for a small library)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -19,8 +23,8 @@ set(LIBRARIES ${LIBRARIES} ${GSL_LIBRARIES})
 # Add an option to disable Python support
 option(PYTHON_SUPPORT "Adds a Python module library using the PYBIND11 headers." ON)
 
-if(PYTHON_SUPPORT AND CMAKE_VERSION VERSION_LESS 3.11.4)
-  message("-- Your CMAKE version (< 3.11.4) does not support the 'FetchContent' extension. PYTHON_SUPPORT will be set to OFF.")
+if(PYTHON_SUPPORT AND CMAKE_VERSION VERSION_LESS 3.12)
+  message("-- Your CMAKE version (< 3.12) does not support the 'FetchContent' extension. PYTHON_SUPPORT will be set to OFF.")
   set(PYTHON_SUPPORT OFF)
 endif()
 

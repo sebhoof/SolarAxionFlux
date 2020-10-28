@@ -16,11 +16,11 @@
 // A simple selection of unit tests for the library.
 void run_unit_test() {
   auto t_start = std::chrono::high_resolution_clock::now();
-  std::cout << "\n     ### This is the " << LIBRARY_NAME << " library ###\n" << std::endl;
+  std::cout << "\n     ### This is the " LIBRARY_NAME " library ###\n" << std::endl;
   std::cout << "# Testing the Solar Model routines (this may take 15 mins or longer)..." << std::endl;
 
   auto t1s = std::chrono::high_resolution_clock::now();
-  std::string solar_model_name = "data/solar_models/SolarModel_B16-AGSS09.dat";
+  std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
   SolarModel s (solar_model_name, OP, true);
   auto t1e = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
