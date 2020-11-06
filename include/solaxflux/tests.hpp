@@ -21,7 +21,15 @@ void run_unit_test() {
 
   auto t1s = std::chrono::high_resolution_clock::now();
   std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
-  SolarModel s (solar_model_name, OP, true);
+  SolarModel s;
+  try {
+    s = SolarModel("WRONG_FILENAME");
+  } catch(XFileNotFound& err) {
+    std::cout << "# Oops, the wrong filename was used... This will throw an error like the one below:" << std::endl;
+    std::cout << err.what() << std::endl;
+    std::cout << "# The error was caught and handled by using the correct filename. The test will continue now..." << std::endl;
+    s = SolarModel(solar_model_name, OP, true);
+  }
   auto t1e = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
 

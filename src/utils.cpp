@@ -8,6 +8,32 @@
 /////////////////////////////////////////////////////
 
 // Error handling
+// Credit to https://cpptalk.wordpress.com/2010/03/21/catching-uncaught-exceptions-within-terminate/ and https://badearobert.ro/2018/10/30/using-stdterminate-or-how-to-call-that-last-function-before-the-end-of-everything/
+void my_global_exception_handler() {
+  static bool tried_throw = false;
+  try {
+    if(not(tried_throw)) { tried_throw = true; throw; }
+  }
+  catch(const std::exception& err) {
+    std::cerr << "Uncaught exception. " << err.what() << std::endl; tried_throw = false;
+  }
+  catch(...) {
+    std::cerr << "ERROR! Unknown, uncaught exception occured." << std::endl; tried_throw = false;
+  }
+  std::cerr << "ERROR! Aborting program now..." << std::endl;
+  // abort();
+  exit(EXIT_FAILURE); // End the program with exit instead of the common behaviour with abort()
+}
+
+void my_gsl_handler(const char * reason, const char * file, int line, int gsl_errno) {
+  if (gsl_errno == GSL_EDOM) {
+    // acceptable/expeted error
+  } else {
+    std::string err_string = std::string(reason)+" in "+std::string(file)+", line "+std::to_string(line)+" (error no. "+std::to_string(gsl_errno)+").";
+    terminate_with_error(err_string);
+  }
+}
+
 void terminate_with_error(std::string err_string) {
   std::cerr << err_string << std::endl;
   exit(EXIT_FAILURE);
@@ -15,15 +41,6 @@ void terminate_with_error(std::string err_string) {
 
 void terminate_with_error_if(bool condition, std::string err_string) {
   if (condition) { terminate_with_error(err_string); }
-}
-
-void my_handler(const char * reason, const char * file, int line, int gsl_errno) {
-  if (gsl_errno == GSL_EDOM) {
-    // acceptable/expeted error
-  } else {
-    std::string err_string = std::string(reason)+" in "+std::string(file)+", line "+std::to_string(line)+" (error no. "+std::to_string(gsl_errno)+").";
-    terminate_with_error(err_string);
-  }
 }
 
 // Check if a file exists
@@ -90,8 +107,9 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
   if (in.fail()) {
-    std::string err_string = "ERROR! Failed loading: "+filename+".";
-    terminate_with_error(err_string);
+    //std::string err_string = "ERROR! Failed loading: "+filename+".";
+    //terminate_with_error(err_string);
+    throw XFileNotFound(filename);
   }
   std::string line;
   while(std::getline(in, line)) {

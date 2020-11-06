@@ -4,7 +4,7 @@
 #include "solar_model.hpp"
 
 // Constructors
-SolarModel::SolarModel() : opcode(OP) {}
+SolarModel::SolarModel() : opcode(OP) {} // N.B. We don't need dummy memory allocation for GSL since destructor checks if the vectors containing them are empty
 
 SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
   std::string path_to_data, model_file_name;
@@ -30,7 +30,9 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
     data.setcolnames("mass", "radius", "temperature", "rho", "pressure", "luminosity", "X_H1", "X_He4", "X_He3", "X_C12", "X_N14", "X_O16");
     tracked_isotopes = { {"H",1}, {"He",4}, {"He",3}, {"C",12}, {"N",14}, {"O",16} };
   } else {
-    terminate_with_error("ERROR! Solar model file '"+path_to_model_file+"' not compatible with this code!");
+    //terminate_with_error("ERROR! Solar model file '"+path_to_model_file+"' not compatible with this code (wrong number of columns)!");
+    std::string err_msg = "Solar model file '"+path_to_model_file+"' not compatible with this code (wrong number of columns)!";
+    throw XSanityCheck(err_msg);
   }
 
   // Initialise isotope-index map.
@@ -177,18 +179,18 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
     }
   }
   //  Do we use LEDCOP & ATOMIC (both TOPS) opacitites?
-  std::string name;
+  //std::string name;
   if (opcode == LEDCOP){
       tops_grid = ledcop_grid;
       tops_temperatures = ledcop_temperatures;
       tops_densities = ledcop_densities;
-      name = "LEDCOP";
+      //name = "LEDCOP";
   }
   if (opcode == ATOMIC){
         tops_grid = atomic_grid;
         tops_temperatures = atomic_temperatures;
         tops_densities = atomic_densities;
-        name = "ATOMIC";
+        //name = "ATOMIC";
   }
   if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
     for (int j = 0; j < tops_grid.size(); j++){
@@ -196,13 +198,14 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
       std::stringstream rhostream;
       Tstream << std::fixed << std::setprecision(3) << tops_grid[j][0];
       rhostream << std::fixed << std::setprecision(3) << tops_grid[j][1];
-      std::string tops_filename = path_to_data+"opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+      //std::string tops_filename = path_to_data+"opacity_tables/"+name+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
+      std::string tops_filename = path_to_data+"opacity_tables/"+get_opacitycode_name()+"/T"+Tstream.str()+"Rho"+rhostream.str()+".dat";
       ASCIItableReader tops_data = ASCIItableReader(tops_filename);
       // Determine the number of interpolated energy values.
       int tops_pts = tops_data[0].size();
       auto pr = std::make_pair(tops_grid[j][0], tops_grid[j][1]);
       opacity_acc_tops[pr] = gsl_interp_accel_alloc();
-      opacity_lin_interp_tops[pr] = gsl_spline_alloc (gsl_interp_linear, tops_pts);
+      opacity_lin_interp_tops[pr] = gsl_spline_alloc(gsl_interp_linear, tops_pts);
       const double* omega = &tops_data[0][0];
       const double* s = &tops_data[1][0];
       gsl_spline_init (opacity_lin_interp_tops[pr], omega, s, tops_pts);
@@ -214,13 +217,13 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
     for (int j = 0 ; j < opas_radii.size(); j++) {
       std::stringstream Rstream;
       Rstream << std::fixed << std::setprecision(2) << opas_radii[j];
-      std::string opas_filename = path_to_data+"opacity_tables/OPAS/R" + Rstream.str() + ".dat";
+      std::string opas_filename = path_to_data+"opacity_tables/OPAS/R"+Rstream.str()+".dat";
       ASCIItableReader opas_data = ASCIItableReader(opas_filename);
       // Determine the number of interpolated energy values.
       int opas_pts = opas_data[0].size();
       double rad = opas_radii[j];
       opacity_acc_opas[rad] = gsl_interp_accel_alloc();
-      opacity_lin_interp_opas[rad] = gsl_spline_alloc (gsl_interp_linear, opas_pts);
+      opacity_lin_interp_opas[rad] = gsl_spline_alloc(gsl_interp_linear, opas_pts);
       const double* omega = &opas_data[0][0];
       const double* s = &opas_data[1][0];
       gsl_spline_init (opacity_lin_interp_opas[rad], omega, s, opas_pts);
@@ -366,23 +369,23 @@ double SolarModel::opacity_element(double omega, double r, Isotope isotope) { re
 
 // Opacity for total solar mixture
 double SolarModel::opacity(double omega, double r) {
-    double result = 0.0;
-    static double temp_0 = temperature_in_keV(r_lo);
-    const double r_cz_theo = 0.713;
-    const double temp_cz = temperature_in_keV(r_cz_theo);
-    if (opcode == OP) {
-      for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); }
-    } else if ((opcode == LEDCOP) || (opcode == ATOMIC)){
-      result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
-    } else if (opcode == OPAS) {
-      result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
-    }
-    // Apply opacity correction term and truncate to zero if necessary.
-    if (r < r_cz_theo) {
-      result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
-      result = std::max(result, 0.0);
-    }
-    return result;
+  double result = 0.0;
+  static double temp_0 = temperature_in_keV(r_lo);
+  const double r_cz_theo = 0.713;
+  const double temp_cz = temperature_in_keV(r_cz_theo);
+  if (opcode == OP) {
+    for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); }
+  } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
+    result = opacity_table_interpolator_tops(omega, r)*density(r)*keV2cm;
+  } else if (opcode == OPAS) {
+    result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
+  }
+  // Apply opacity correction term and truncate to zero if necessary.
+  if (r < r_cz_theo) {
+    result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
+    result = std::max(result, 0.0);
+  }
+  return result;
 }
 
 // Auxiliary function required for FF and ee contribution
@@ -422,7 +425,7 @@ double aux_function(double u, double y) {
   return result;
 }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)  for one isotope
+// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
   if (omega == 0) { return 0; }
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -517,7 +520,10 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
   } else if (opcode == OPAS) {
     result = Gamma_P_opacity (erg, r);
   } else {
-    terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
+    //terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
+    std::string err_msg = "Unkown option for 'opcode' attribute. Use ";
+    for (auto it = opacitycode_name.begin(); it != --opacitycode_name.end(); ++it) { err_msg += it->second + ", "; }; err_msg += "or " + (--opacitycode_name.end())->second + ".";
+    throw XUnsupportedOption(err_msg);
   }
   return result;
 }
@@ -549,7 +555,7 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
       std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
     } else {
-      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler);   // error handler modified to avoid boundary error (fill value = 0)
+      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler);   // error handler modified to avoid boundary error (fill value = 0)
       result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
       gsl_set_error_handler (old_handler);    //  reset the error handler
       if (gsl_isnan(result)) { result = 0; }
@@ -562,9 +568,9 @@ double SolarModel::tops_grid_interp_erg(double erg, float t, float rho) {
   double result = 0;
   auto key = std::make_pair(t,rho);
   if (opacity_lin_interp_tops.find(key) == opacity_lin_interp_tops.end()) {
-    std::cout << "WARNING! Grid point {" << t << ", " << rho << "} not found!" << std::endl;
+    std::cout << "WARNING. Grid point {" << t << ", " << rho << "} not found!" << std::endl;
   } else {
-    gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
+    gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
     result = gsl_spline_eval(opacity_lin_interp_tops.at(key), erg, opacity_acc_tops.at(key));
     gsl_set_error_handler(old_handler); // reset the GSL error handler
     if (gsl_isnan(result)) { return 0; }
@@ -574,11 +580,11 @@ double SolarModel::tops_grid_interp_erg(double erg, float t, float rho) {
 
 double SolarModel::opas_grid_interp_erg(double erg, double r) {
   if (opacity_lin_interp_opas.find(r) == opacity_lin_interp_opas.end()) {
-    std::cout << "OPAS data for R = " << r << " not found!"  << std::endl;
+    std::cout << "WARNING. OPAS data for R = " << r << " not found!"  << std::endl;
     return 0;
   }
 
-  gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
+  gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
   double result = gsl_spline_eval(opacity_lin_interp_opas.at(r), erg, opacity_acc_opas.at(r));
   gsl_set_error_handler (old_handler); // reset the GSL error handler
   if (gsl_isnan(result) == true) { return 0; }
@@ -680,7 +686,7 @@ double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   }
   double t1 = (temperature-double(Tlow))/double(Tup-Tlow);
   double t2 = (rho-double(rholow))/double(rhoup-rholow);
-  double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1)*   pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2)*pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
+  double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1) * pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
   if (result < 0) { std::cout << "ERROR! Negative opacity!" << std::endl; }
   return result;
 }
@@ -713,8 +719,10 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
 double SolarModel::opacity_element(double omega, double r, std::string element) {
   const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
 
-  gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
-  terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
+  gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
+  //terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
+  std::string err_msg = "The chosen opacity code ("+get_opacitycode_name()+") does not provide opacities for indivdual elements.";
+  throw XUnsupportedOption(err_msg);
 
   double u = omega/temperature_in_keV(r);
   double result = prefactor4*n_element(r, element)*opacity_table_interpolator_op(omega, r, element)*(-gsl_expm1(-u));
@@ -750,7 +758,7 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
   } else {
     std::string avail_keys = "";
     for (auto& x: map_interaction_name_to_function) { avail_keys += x.first + " "; }
-    std::cout << "NON-FATAL ERROR! The interaction '"+interaction_name+"' is not available. Enter one of the valid options below and fix your code." << std::endl;
+    std::cout << "NON-FATAL ERROR! The interaction '"+interaction_name+"' is not available. Enter one of the valid options below." << std::endl;
     std::cout << avail_keys << std::endl;
     std::string new_interaction_name;
     std::cout << "Enter a valid interaction name here: "; std::cin >> new_interaction_name;
@@ -799,7 +807,7 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
   double rad_min = *it;
   it = std::max_element(radii.begin(), radii.end());
   double rad_max = *it;
-  if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING! Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
+  if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING. Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
   supported_radii.push_back(r_lo);
   for (auto r = radii.begin(); r !=radii.end(); ++r) { if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); } }
   supported_radii.push_back(0.95*r_hi);

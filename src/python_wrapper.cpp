@@ -8,7 +8,7 @@ PYBIND11_MODULE(pyaxionflux, m) {
 
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
-  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_rads, solar_model_file, output_file_root, process = 'Primakoff').");
+  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_radii, solar_model_file, output_file_root, process = 'Primakoff').");
   m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file and varies the opacities with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
   m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
   m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
@@ -18,7 +18,7 @@ PYBIND11_MODULE(pyaxionflux, m) {
 }
 
 void module_info() {
-  std::cout << "This is the " << LIBRARY_NAME << " Python interface. The source code can be found in " << SOLAXFLUX_DIR << "." << std::endl;
+  std::cout << "This is the " << LIBRARY_NAME << " Python interface. The source code was installed in " << SOLAXFLUX_DIR << "." << std::endl;
 }
 
 void test_module() {
@@ -26,44 +26,53 @@ void test_module() {
   std::cout << "Unit test successful!" << std::endl;
 }
 
-void py11_save_spectral_flux_for_different_radii(double erg_min, double erg_max, int n_ergs, double rad_min, double rad_max, int n_rads, std::string solar_model_file, std::string output_file_root, std::string process) {
+void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process) {
   SolarModel s (solar_model_file, OP);
 
-  std::vector<double> ergs;
-  double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
-  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
+  //std::vector<double> ergs;
+  //double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
+  //for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
+
+  int n_radii = radii.size();
+  int n_ergs = ergs.size();
+  double rad_min = *std::min_element(radii.begin(), radii.end());
+  double rad_max = *std::max_element(radii.begin(), radii.end());
+  double erg_min = *std::min_element(ergs.begin(), ergs.end());
+  double erg_max = *std::max_element(ergs.begin(), ergs.end());
 
   if ( (rad_min < s.get_r_lo()) || (rad_max > s.get_r_hi()) ) { std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl; }
   // Check min/max and avoid Python roundoff errors
   rad_min = std::min(std::max(rad_min, 1.000001*s.get_r_lo()), 0.999999*s.get_r_hi());
   rad_max = std::max(std::min(rad_max, 0.999999*s.get_r_hi()), 1.000001*s.get_r_lo());
-  std::cout << "Energies: " <<  n_ergs+1 << " values in [" << erg_min << ", " << erg_max << "] keV, " << n_rads << " radii [" << rad_min << ", " << rad_max << ") R_sol."<< std::endl;
-  double rad_stepsize = (rad_max - rad_min)/double(n_rads);
+  std::cout << "INFO. Performing calculation for " << n_ergs << " energies in [" << erg_min << ", " << erg_max << "] keV and " << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl;
+  //double rad_stepsize = (rad_max - rad_min)/double(n_radii);
 
   // Do the calculation for each radius
-  for (int j = 0; j < n_rads; j++) {
-    double r = rad_min + j*rad_stepsize;
+  for (int i = 0; i < n_radii; i++) {
+    //double r = rad_min + j*rad_stepsize;
     std::string output_file = output_file_root;
-    if (n_rads > 1) { output_file += "_"+std::to_string(j)+".dat"; }
+    if (n_radii > 1) { output_file += "_"+std::to_string(i)+".dat"; }
     if (process == "Primakoff") {
-      calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
+      //calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
+      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file);
     } else if (process == "electron") {
-      calculate_spectral_flux_axionelectron(ergs, s, r, output_file);
+      //calculate_spectral_flux_axionelectron(ergs, s, r, output_file);
+      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file);
     } else {
       terminate_with_error("ERROR! the process '"+process+"' is not a valid option. Choose 'Primakoff' or 'electron'.");
     }
   }
 }
 
-void py11_save_spectral_flux_for_varied_opacities(double erg_min, double erg_max, int n_ergs, double a, double b, std::string solar_model_file, std::string output_file_root) {
+void py11_save_spectral_flux_for_varied_opacities(std::vector<double> ergs, double a, double b, std::string solar_model_file, std::string output_file_root) {
   SolarModel s (solar_model_file, OP);
   s.set_opacity_correction(a, b);
   std::vector<double> check = s.get_opacity_correction();
-  std::cout << "Set up Solar model from file " << solar_model_file << " and parameters (" << check[0] << ", " << check[1] << "), expected (" << a << ", " << b << ")" << std::endl;
+  std::cout << "INFO. Setting up Solar model from file " << solar_model_file << " and opaciy correction parameters (" << check[0] << ", " << check[1] << ")." << std::endl;
 
-  std::vector<double> ergs;
-  double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
-  for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
+  //std::vector<double> ergs;
+  //double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
+  //for (int i = 0; i < n_ergs+1; i++) { ergs.push_back(erg_min + i*erg_stepsize); }
 
   std::string output_file = output_file_root+"_Primakoff.dat";
   calculate_spectral_flux_Primakoff(ergs, s, output_file);
@@ -82,6 +91,37 @@ void py11_save_reference_counts(std::vector<double> masses, std::string dataset,
     setup.dataset = dataset;
   }
   axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name, true);
+}
+
+void py11_save_solar_model(std::string solar_model_file, std::string out_file_root, std::vector<double> ergs, int n_radii) {
+  SolarModel s (solar_model_file, OP);
+  double r_lo = s.get_r_lo();
+  double r_hi = s.get_r_hi();
+  double delta_r = (r_hi - r_lo) / double(n_radii);
+  std::vector<double> radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared;
+  std::vector<double> radii_2, opacities;
+  for (int i = 0; i <= n_radii; i++) {
+    double r = r_lo + i*delta_r;
+    radii_1.push_back(r);
+    temperature.push_back( s.temperature_in_keV(r) );
+    n_e.push_back( s.n_electron(r) );
+    n_bar.push_back( s.z2_n(r) );
+    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
+    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
+    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
+      radii_2.push_back(r);
+      opacities.push_back( s.opacity(*erg, r) );
+    }
+  }
+
+  std::string comment_1 = "Axion quantities from solar model "+s.get_solar_model_name()+" calculated by " LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV] | Screening scale kappa_s [keV]";
+  std::vector<std::vector<double>> buffer_1 = { radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared };
+  save_to_file(out_file_root+"_model.dat", buffer_1, comment_1);
+  std::string comment_2 = "Opacites for solar model "+s.get_solar_model_name()+" and opacity code "+s.get_opacitycode_name()+" calculated by" LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
+  std::vector<std::vector<double>> buffer_2 = { radii_2,  opacities };
+  save_to_file(out_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
 std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee) {
@@ -105,23 +145,4 @@ std::vector<std::vector<double> > py11_draw_mc_samples_from_file(std::string mc_
   std::vector<double> energies = mc.draw_axion_energies_given_radii(radii);
   std::vector<std::vector<double> > result = { radii, energies };
   return result;
-}
-
-void py11_save_solar_model(std::string solar_model_file, std::string out_file) {
-  SolarModel s (solar_model_file, OP);
-  double r_lo = s.get_r_lo();
-  double r_hi = s.get_r_hi();
-  double delta_r = (r_hi - r_lo) / 100.0;
-  std::vector<double> radii, temperature, omega_pl, kappa_squared;
-  for (int i = 0; i <= 100; i++) {
-    double r = r_lo + i*delta_r;
-    radii.push_back(r);
-    temperature.push_back( s.temperature_in_keV(r) );
-    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
-    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-    // TODO: Finish implementing this.
-  }
-
-  std::vector<std::vector<double>> buffer = { radii, temperature, omega_pl, kappa_squared };
-  save_to_file(out_file, buffer);
 }

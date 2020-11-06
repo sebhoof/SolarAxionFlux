@@ -12,6 +12,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <stdexcept>
 
 #include <sys/stat.h> // Needed to check if file exists before we can expect C++14 std
 
@@ -25,10 +26,31 @@
 /////////////////////////////////////////////////////
 //  General functions  (I/O, error handling, ...)  //
 /////////////////////////////////////////////////////
+class XFileNotFound : public std::runtime_error::runtime_error {
+  public:
+    XFileNotFound(): std::runtime_error::runtime_error("ERROR! File not found.") {}
+    XFileNotFound(std::string file_name): std::runtime_error::runtime_error("ERROR! The file '"+file_name+"' was not found.") {}
+};
+
+class XSanityCheck : public std::runtime_error::runtime_error {
+  public:
+    XSanityCheck(): std::runtime_error::runtime_error("ERROR! The code failed a sanity check at runtime.") {}
+    XSanityCheck(std::string err_msg): std::runtime_error::runtime_error("ERROR! "+err_msg) {}
+};
+
+class XUnsupportedOption : public std::runtime_error::runtime_error {
+  public:
+    XUnsupportedOption(): std::runtime_error::runtime_error("ERROR! Illegal option passed to the code.") {}
+    XUnsupportedOption(std::string err_msg): std::runtime_error::runtime_error("ERROR! "+err_msg) {}
+};
+
+void my_global_exception_handler();
+// Globally enforce the custom termination behaviour.
+const auto terminator { std::set_terminate(my_global_exception_handler) };
+void my_gsl_handler(const char * reason, const char * file, int line, int gsl_errno);
 
 void terminate_with_error(std::string err_string);
 void terminate_with_error_if(bool condition, std::string err_string);
-void my_handler(const char * reason, const char * file, int line, int gsl_errno);
 bool file_exists(const std::string& filename);
 void locate_data_folder(std::string path_to_model_file, std::string &path_to_data, std::string &model_file_name);
 void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std::string comment = "", bool overwrite = true);
