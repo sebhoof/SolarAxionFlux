@@ -721,8 +721,10 @@ double SolarModel::opacity_element(double omega, double r, std::string element) 
 
   gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
   //terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
-  std::string err_msg = "The chosen opacity code ("+get_opacitycode_name()+") does not provide opacities for indivdual elements.";
-  throw XUnsupportedOption(err_msg);
+  if (opcode != OP) {
+    std::string err_msg = "The chosen opacity code ("+get_opacitycode_name()+") does not provide opacities for indivdual elements.";
+    throw XUnsupportedOption(err_msg);
+  }
 
   double u = omega/temperature_in_keV(r);
   double result = prefactor4*n_element(r, element)*opacity_table_interpolator_op(omega, r, element)*(-gsl_expm1(-u));

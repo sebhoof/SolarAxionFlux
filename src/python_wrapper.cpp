@@ -8,13 +8,13 @@ PYBIND11_MODULE(pyaxionflux, m) {
 
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
-  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file with signature (erg_min, erg_max, n_ergs, rad_min, rad_max, n_radii, solar_model_file, output_file_root, process = 'Primakoff').");
-  m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file and varies the opacities with signature (erg_min, erg_max, n_ergs, a, b, solar_model_file, output_file_root).");
-  m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature (masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name).");
+  m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model. Arguments: ergs, solar_model_file, output_file_root, n_radii = 1000.");
+  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file. Arguments: ergs, radii, solar_model_file, output_file_root, process = 'Primakoff'.");
+  m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file and varies the opacities with signature. Arguments: ergs, a, b, solar_model_file, output_file_root.");
+  m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature. Arguments: masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name.");
   m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
   m.def("calculate_inverse_cdfs_from_solar_model", &py11_calculate_inverse_cdfs_from_solar_model, "EXPERIMENTAL. Calculate the inverse CDF for the axion spectrum from a solar model with signature (solar_model_file, radii, energies, gaee, save_output_prefix).");
   m.def("draw_mc_samples_from_file", &py11_draw_mc_samples_from_file, "EXPERIMENTAL. Draw MC samples from a tabulated spectrum.");
-  m.def("save_solar_model", &py11_save_solar_model, "EXPERIMENTAL. Export the relevant information from a solar model.");
 }
 
 void module_info() {
@@ -24,6 +24,37 @@ void module_info() {
 void test_module() {
   run_unit_test();
   std::cout << "Unit test successful!" << std::endl;
+}
+
+void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii) {
+  SolarModel s (solar_model_file, OP);
+  double r_lo = s.get_r_lo();
+  double r_hi = s.get_r_hi();
+  double delta_r = (r_hi - r_lo) / double(n_radii);
+  std::vector<double> radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared;
+  std::vector<double> radii_2, opacities;
+  for (int i = 0; i <= n_radii; i++) {
+    double r = r_lo + i*delta_r;
+    radii_1.push_back(r);
+    temperature.push_back( s.temperature_in_keV(r) );
+    n_e.push_back( s.n_electron(r) );
+    n_bar.push_back( s.z2_n(r) );
+    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
+    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
+    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
+      radii_2.push_back(r);
+      opacities.push_back( s.opacity(*erg, r) );
+    }
+  }
+
+  std::string comment_1 = "Axion quantities from solar model "+s.get_solar_model_name()+" calculated by " LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV] | Screening scale kappa_s [keV]";
+  std::vector<std::vector<double>> buffer_1 = { radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared };
+  save_to_file(output_file_root+"_model.dat", buffer_1, comment_1);
+  std::string comment_2 = "Opacites for solar model "+s.get_solar_model_name()+" and opacity code "+s.get_opacitycode_name()+" calculated by" LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
+  std::vector<std::vector<double>> buffer_2 = { radii_2,  opacities };
+  save_to_file(output_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
 void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process) {
@@ -91,37 +122,6 @@ void py11_save_reference_counts(std::vector<double> masses, std::string dataset,
     setup.dataset = dataset;
   }
   axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name, true);
-}
-
-void py11_save_solar_model(std::string solar_model_file, std::string out_file_root, std::vector<double> ergs, int n_radii) {
-  SolarModel s (solar_model_file, OP);
-  double r_lo = s.get_r_lo();
-  double r_hi = s.get_r_hi();
-  double delta_r = (r_hi - r_lo) / double(n_radii);
-  std::vector<double> radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared;
-  std::vector<double> radii_2, opacities;
-  for (int i = 0; i <= n_radii; i++) {
-    double r = r_lo + i*delta_r;
-    radii_1.push_back(r);
-    temperature.push_back( s.temperature_in_keV(r) );
-    n_e.push_back( s.n_electron(r) );
-    n_bar.push_back( s.z2_n(r) );
-    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
-    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
-      radii_2.push_back(r);
-      opacities.push_back( s.opacity(*erg, r) );
-    }
-  }
-
-  std::string comment_1 = "Axion quantities from solar model "+s.get_solar_model_name()+" calculated by " LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV] | Screening scale kappa_s [keV]";
-  std::vector<std::vector<double>> buffer_1 = { radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared };
-  save_to_file(out_file_root+"_model.dat", buffer_1, comment_1);
-  std::string comment_2 = "Opacites for solar model "+s.get_solar_model_name()+" and opacity code "+s.get_opacitycode_name()+" calculated by" LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
-  std::vector<std::vector<double>> buffer_2 = { radii_2,  opacities };
-  save_to_file(out_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
 std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee) {
