@@ -40,11 +40,12 @@ res4 = np.genfromtxt("all_gaee.dat")
 res5 = np.genfromtxt("metals.dat")
 #corr = np.genfromtxt("weighted_compton.dat")
 #weighted_compton = interpolate.interp1d(corr[:,0], corr[:,1], bounds_error=False, fill_value=0)
-ref1 = np.genfromtxt("2013_redondo_primakoff.dat")
-ref2 = np.genfromtxt("2013_redondo_compton.dat")
+common_path = "../data/benchmarks/"
+ref1 = np.genfromtxt(common_path+"2013_redondo_primakoff.dat")
+ref2 = np.genfromtxt(common_path+"2013_redondo_compton.dat")
 compton = interpolate.interp1d(ref2[:,0], ref2[:,1], bounds_error=False, fill_value=0)
-ref3 = np.genfromtxt("2013_redondo_FF.dat")
-ref4 = np.genfromtxt("2013_redondo_all.dat")
+ref3 = np.genfromtxt(common_path+"2013_redondo_FF.dat")
+ref4 = np.genfromtxt(common_path+"2013_redondo_all.dat")
 
 conv_fac = 1.0e-4/(365.0*24.0*60.0*60.0*1.0e10)
 
