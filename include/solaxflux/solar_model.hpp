@@ -26,7 +26,8 @@ class SolarModel {
   public:
     // Constructors, destructors, operators...
     SolarModel();
-    SolarModel(std::string path_to_model_file, opacitycode set_opcode = OP, const bool set_raffelt_approx = false);
+    SolarModel(std::string path_to_model_file, opacitycode opcode_tag = OP, const bool set_raffelt_approx = false);
+    SolarModel(std::string path_to_model_file, std::string opcode_name, const bool set_raffelt_approx = false);
     ~SolarModel();
     SolarModel& operator=(SolarModel&&);
     // Delete copy constructor and assignment operator to avoid shallow copies

@@ -201,6 +201,7 @@ double atomic_weight(Isotope isotope);
 // Map opacity code names to labels; catalogue of available opacity data
 enum opacitycode { OP, OPAS, LEDCOP, ATOMIC };
 const std::map<opacitycode,std::string> opacitycode_name = { {OP,"OP"}, {OPAS,"OPAS"}, {LEDCOP,"LEDCOP"}, {ATOMIC,"ATOMIC"} };
+const std::map<std::string,opacitycode> opacitycode_tag = { {"OP",OP}, {"OPAS",OPAS}, {"LEDCOP",LEDCOP}, {"ATOMIC",ATOMIC} };
 const std::set<std::string> alpha_available = { "data/solar_models/SolarModel_AGS05.dat", "data/solar_models/SolarModel_AGSS09.dat", "data/solar_models/SolarModel_AGSS09ph.dat", "data/solar_models/SolarModel_B16-AGSS09.dat",
                                                 "data/solar_models/SolarModel_B16-GS98.dat","data/solar_models/SolarModel_GS98.dat" };
 const int op_grid_size = 213;

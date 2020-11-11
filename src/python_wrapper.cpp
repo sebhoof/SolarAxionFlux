@@ -57,8 +57,8 @@ void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_fil
   save_to_file(output_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
-void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process) {
-  SolarModel s (solar_model_file, OP);
+void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process, std::string op_code) {
+  SolarModel s (solar_model_file, op_code);
 
   //std::vector<double> ergs;
   //double erg_stepsize = (erg_max - erg_min)/double(n_ergs);
@@ -75,22 +75,26 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
   // Check min/max and avoid Python roundoff errors
   rad_min = std::min(std::max(rad_min, 1.000001*s.get_r_lo()), 0.999999*s.get_r_hi());
   rad_max = std::max(std::min(rad_max, 0.999999*s.get_r_hi()), 1.000001*s.get_r_lo());
-  std::cout << "INFO. Performing calculation for " << n_ergs << " energies in [" << erg_min << ", " << erg_max << "] keV and " << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl;
-  //double rad_stepsize = (rad_max - rad_min)/double(n_radii);
+  std::cout << "INFO. Performing calculation for ";
+  if (n_ergs > 1) { std::cout << n_ergs << " energies in [" << erg_min << ", " << erg_max << "] keV and "; } else { std::cout << "one energy value (" << erg_min << " keV) and "; }
+  if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
 
   // Do the calculation for each radius
   for (int i = 0; i < n_radii; i++) {
     //double r = rad_min + j*rad_stepsize;
     std::string output_file = output_file_root;
-    if (n_radii > 1) { output_file += "_"+std::to_string(i)+".dat"; }
+    if (n_radii > 1) { output_file += "_"+std::to_string(i); }
     if (process == "Primakoff") {
       //calculate_spectral_flux_Primakoff(ergs, s, r, output_file);
-      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file);
+      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file+"_P.dat");
     } else if (process == "electron") {
       //calculate_spectral_flux_axionelectron(ergs, s, r, output_file);
-      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file);
+      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file+"_ABC.dat");
+    } else if (process == "both") {
+      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file+"_P.dat");
+      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file+"_ABC.dat");
     } else {
-      terminate_with_error("ERROR! the process '"+process+"' is not a valid option. Choose 'Primakoff' or 'electron'.");
+      terminate_with_error("ERROR! the process '"+process+"' is not a valid option. Choose 'Primakoff', 'electron', or 'both'.");
     }
   }
 }

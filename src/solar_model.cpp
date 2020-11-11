@@ -6,10 +6,10 @@
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {} // N.B. We don't need dummy memory allocation for GSL since destructor checks if the vectors containing them are empty
 
-SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, bool set_raffelt_approx) : opcode(set_opcode) {
+SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, bool set_raffelt_approx) : opcode(opcode_tag) {
   std::string path_to_data, model_file_name;
   locate_data_folder(path_to_model_file, path_to_data, model_file_name);
-  if ((set_opcode != OP) && (model_file_name != "SolarModel_AGSS09.dat")) {
+  if ((opcode_tag != OP) && (model_file_name != "SolarModel_AGSS09.dat")) {
     std::cout << "WARNING. The chosen opacity code is only compatible with the solar model AGSS09." << std::endl;
     std::cout << "         Results will be inconsistent." << std::endl;
   }
@@ -249,6 +249,8 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode set_opcode, b
   // All done! Set Solar model class to be correctly initialised
   initialisation_status = true;
 }
+
+SolarModel::SolarModel(std::string path_to_model_file, std::string opcode_name, bool set_raffelt_approx) : SolarModel::SolarModel(path_to_model_file, opacitycode_tag.at(opcode_name), set_raffelt_approx) {}
 
 // Class destructor
 SolarModel::~SolarModel() {

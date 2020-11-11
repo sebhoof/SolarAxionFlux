@@ -19,7 +19,7 @@
 void module_info();
 // A simple unit test for the Python wrapper
 void test_module();
-void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff");
+void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff", std::string op_code = "OP");
 void py11_save_spectral_flux_for_varied_opacities(std::vector<double> ergs, double a, double b, std::string solar_model_file, std::string output_file_root);
 void py11_save_reference_counts(std::vector<double> masses, std::string dataset, std::string ref_spectrum_file_gagg, std::string ref_spectrum_file_gaee, std::string output_file_name);
 void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii = 1000);
