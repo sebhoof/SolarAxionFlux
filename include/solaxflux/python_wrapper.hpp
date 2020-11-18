@@ -10,6 +10,7 @@
 #include <pybind11/stl.h>
 
 #include "constants.hpp"
+#include "utils.hpp"
 #include "solar_model.hpp"
 #include "spectral_flux.hpp"
 #include "experimental_flux.hpp"
@@ -19,10 +20,15 @@
 void module_info();
 // A simple unit test for the Python wrapper
 void test_module();
-void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff", std::string op_code = "OP");
-void py11_save_spectral_flux_for_varied_opacities(std::vector<double> ergs, double a, double b, std::string solar_model_file, std::string output_file_root);
-void py11_save_reference_counts(std::vector<double> masses, std::string dataset, std::string ref_spectrum_file_gagg, std::string ref_spectrum_file_gaee, std::string output_file_name);
+// Save the relevant quantities for axion physics as separate text files
 void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii = 1000);
+// Calculate the spectral flux for different energies and radii
+void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff", std::string op_code = "OP");
+// Calculate the spectral flux for different energies (radius = 1) with corrected opacities
+void py11_save_spectral_flux_for_varied_opacities(std::vector<double> ergs, double a, double b, std::string solar_model_file, std::string output_file_root);
+// Calculate reference counts for a named helioscope experiment/dataset
+void py11_save_reference_counts(std::vector<double> masses, std::string dataset, std::string ref_spectrum_file_gagg, std::string ref_spectrum_file_gaee, std::string output_file_name);
+// EXPERIMANTAL
 std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee);
 void py11_calculate_inverse_cdfs_from_solar_model(std::string solar_model_file, std::vector<double> radii, std::vector<double> energies, double gaee, std::string save_output_prefix);
 std::vector<std::vector<double> > py11_draw_mc_samples_from_file(std::string mc_file_prefix, int n);

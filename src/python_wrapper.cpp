@@ -9,7 +9,7 @@ PYBIND11_MODULE(pyaxionflux, m) {
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
   m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model. Arguments: ergs, solar_model_file, output_file_root, n_radii = 1000.");
-  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file. Arguments: ergs, radii, solar_model_file, output_file_root, process = 'Primakoff'.");
+  m.def("calculate_spectrum", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' or 'electron' flux from Solar model file. Arguments: ergs, radii, solar_model_file, output_file_root, process = 'Primakoff', op_code = 'OP'.");
   m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from Solar model file and varies the opacities with signature. Arguments: ergs, a, b, solar_model_file, output_file_root.");
   m.def("calculate_reference_counts", &py11_save_reference_counts, "Calculate reference counts for experiment with signature. Arguments: masses, dataset, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name.");
   m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
@@ -94,6 +94,7 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
       calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file+"_P.dat");
       calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file+"_ABC.dat");
     } else {
+
       terminate_with_error("ERROR! the process '"+process+"' is not a valid option. Choose 'Primakoff', 'electron', or 'both'.");
     }
   }
@@ -119,12 +120,15 @@ void py11_save_reference_counts(std::vector<double> masses, std::string dataset,
   exp_setup setup;
   if (dataset == "CAST2007") {
     setup = cast_2007_setup;
-  } else if (dataset == "IAXO") {
-    setup = iaxo_setup;
-  } else {
+  } else if (dataset.compare(0,9,"CAST2017_") == 0) {
     setup = cast_2017_setup;
     setup.dataset = dataset;
+  } else {
+    std::string err_msg = "Unkown option for 'dataset' variable. Use ";
+    for (auto it = experiment_name.begin(); it != --experiment_name.end(); ++it) { err_msg += it->first + ", "; }; err_msg += "or " + (--experiment_name.end())->first + ".";
+    throw XUnsupportedOption(err_msg);
   }
+
   axion_reference_counts_from_file(&setup, masses, ref_spectrum_file_gagg, ref_spectrum_file_gaee, output_file_name, true);
 }
 
