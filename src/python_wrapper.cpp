@@ -78,21 +78,21 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
   if (n_ergs > 1) { std::cout << n_ergs << " energies in [" << erg_min << ", " << erg_max << "] keV and "; } else { std::cout << "one energy value (" << erg_min << " keV) and "; }
   if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
 
-  // Do the calculation for each radius
-  for (int i = 0; i < n_radii; i++) {
-    std::string output_file = output_file_root;
-    if (n_radii > 1) { output_file += "_"+std::to_string(i); }
-    if (process == "Primakoff") {
-      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file+"_P.dat");
-    } else if (process == "ABC") {
-      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file+"_ABC.dat");
-    } else if (process == "both") {
-      calculate_spectral_flux_Primakoff(ergs, s, radii[i], output_file+"_P.dat");
-      calculate_spectral_flux_axionelectron(ergs, s, radii[i], output_file+"_ABC.dat");
+  if (process == "Primakoff") {
+    if (radii.size() == 1) { calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat"); } else { calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat"); }
+  } else if (process == "ABC") {
+    if (radii.size() == 1) { calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat"); } else { calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat"); }
+  } else if (process == "both") {
+    if (radii.size() == 1) {
+      calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat");
+      calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat");
     } else {
-      std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'Primakoff', 'ABC', or 'both'.";
-      throw XUnsupportedOption(err_msg);
+      calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
+      calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
     }
+  } else {
+    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'Primakoff', 'ABC', or 'both'.";
+    throw XUnsupportedOption(err_msg);
   }
 }
 
