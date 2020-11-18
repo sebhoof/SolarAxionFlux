@@ -28,20 +28,20 @@
 /////////////////////////////////////////////////////
 class XFileNotFound : public std::runtime_error::runtime_error {
   public:
-    XFileNotFound(): std::runtime_error::runtime_error("ERROR! File not found.") {}
-    XFileNotFound(std::string file_name): std::runtime_error::runtime_error("ERROR! The file '"+file_name+"' was not found.") {}
+    XFileNotFound(): std::runtime_error::runtime_error("FileNotFound ERROR! File not found.") {}
+    XFileNotFound(std::string file_name): std::runtime_error::runtime_error("FileNotFound ERROR! The file '"+file_name+"' was not found.") {}
 };
 
 class XSanityCheck : public std::runtime_error::runtime_error {
   public:
-    XSanityCheck(): std::runtime_error::runtime_error("ERROR! The code failed a sanity check at runtime.") {}
-    XSanityCheck(std::string err_msg): std::runtime_error::runtime_error("ERROR! "+err_msg) {}
+    XSanityCheck(): std::runtime_error::runtime_error("SanityCheck ERROR! The code failed a sanity check at runtime.") {}
+    XSanityCheck(std::string err_msg): std::runtime_error::runtime_error("SanityCheck ERROR! "+err_msg) {}
 };
 
 class XUnsupportedOption : public std::runtime_error::runtime_error {
   public:
-    XUnsupportedOption(): std::runtime_error::runtime_error("ERROR! Illegal option passed to the code.") {}
-    XUnsupportedOption(std::string err_msg): std::runtime_error::runtime_error("ERROR! "+err_msg) {}
+    XUnsupportedOption(): std::runtime_error::runtime_error("UnsupportedOption ERROR! Illegal option passed to the code.") {}
+    XUnsupportedOption(std::string err_msg): std::runtime_error::runtime_error("UnsupportedOption ERROR! "+err_msg) {}
 };
 
 void my_global_exception_handler();

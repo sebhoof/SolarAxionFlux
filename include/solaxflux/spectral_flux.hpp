@@ -29,7 +29,7 @@ const int int_method_1d = 5, int_space_size_1d = 1e6;
 const double int_abs_prec_1d = 0.0, int_rel_prec_1d = 1.0e-3;
 // 1D-Integration for files
 const int int_method_file = 5, int_space_size_file = 1e6;
-const double int_abs_prec_file = 0.0, int_rel_prec_file = 1.0e-3;
+const double int_abs_prec_file = 0.0, int_rel_prec_file = 1.0e-4;
 // Integration over the central Solar disc (2D)
 const int int_method_2d = 5, int_space_size_2d = 1e6, int_space_size_2d_cquad = 1e6;
 const double int_abs_prec_2d = 0.0, int_rel_prec_2d = 1.0e-3;

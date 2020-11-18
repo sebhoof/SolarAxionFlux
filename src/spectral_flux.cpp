@@ -325,7 +325,7 @@ double integrated_flux_from_file(double erg_min, double erg_max, std::string spe
 
   if (includes_electron_interactions) {
     std::vector<double> relevant_peaks = get_relevant_peaks(erg_min, erg_max);
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w, &result, &error);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 10.0*int_abs_prec_file, 10.0*int_rel_prec_file, int_space_size_file, w, &result, &error);
   } else {
     gsl_integration_qag(&f, erg_min, erg_max, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w, &result, &error);
   }

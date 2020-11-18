@@ -19,67 +19,67 @@ double conversion_prob_correction(double mass, double erg, double length) {
 
 // Effective exposures (in seconds x cm^2) for various experiments.
 double eff_exposure_cast2007(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2007_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2007_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_a(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_A_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_A_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_b(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_B_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_B_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_c(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_C_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_C_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_d(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_D_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_D_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_e(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_E_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_E_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_f(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_F_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_F_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_g(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_G_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_G_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_h(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_H_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_H_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_i(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_I_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_I_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_j(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_J_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_J_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_k(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_K_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_K_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
 double eff_exposure_cast2017_l(double erg) {
-  static OneDInterpolator eff_exp ("data/exposures/CAST2017_L_EffectiveExposure.dat");
+  static OneDInterpolator eff_exp (SOLAXFLUX_DIR "/data/exposures/CAST2017_L_EffectiveExposure.dat");
   return 24.0*60.0*60.0*eff_exp.interpolate(erg);
 }
 
@@ -210,29 +210,9 @@ double convolved_exp_flux_integrand_from_file(double erg, void * params) {
   return result;
 }
 
-// TODO OUTDATED! Basically the alternative to 'from file integration'?
-double erg_integrand(double erg, void * params) {
-  struct erg_integration_params * p3 = (struct erg_integration_params *)params;
-  SolarModel *s = p3->s;
-  double r_min = s->get_r_lo(), r_max = std::min(p3->r_max, s->get_r_hi());
-
-  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(eff_exposure(ref_erg_value, p3->dataset))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
-
-  double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
-  double exposure = eff_exposure(erg, p3->dataset);
-
-  gsl_function f2;
-  f2.function = &rad_integrand_2d;
-  struct solar_model_integration_parameters_2d p2 { erg, 0.0, 0.0, 0.0, s, p3->integrand, &f2, p3->w1, &f2, p3->w1 };
-
-  f2.params = &p2;
-
-  double spectral_flux, spectral_flux_error;
-  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec_file , 0.1*int_rel_prec_file , int_space_size_file, int_method_file, p3->w2, &spectral_flux, &spectral_flux_error);
-
-  return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
-}
-
+//////////////////////////////////////////////////////////////////////////////
+//  Routines to compute 'reference count files' for the various experiments //
+//////////////////////////////////////////////////////////////////////////////
 
 // TODO: Here actual integration routines from file
 std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, double support[2], double resolution, std::string filename) {
@@ -260,6 +240,166 @@ std::vector<double> convolved_spectrum_from_file(std::vector<double> ergs, doubl
   gsl_integration_workspace_free(w);
 
   return result;
+}
+
+// Return relative counts at reference values of the coupling.
+std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee, std::string saveas, bool save_convolved_spectra) {
+  std::vector<std::vector<double>> result;
+
+  int n_bins = setup->n_bins;
+  double bin_lo = setup->bin_lo;
+  double bin_delta = setup->bin_delta;
+  double bin_hi = bin_lo + bin_delta*double(n_bins);
+  double overall_factor = gsl_pow_2((setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor;
+  double erg_resolution = setup->erg_resolution;
+
+  /*
+  OneDInterpolator spectral_flux_gagg, spectral_flux_gaee;
+  // TODO: Do convolution if necessary -> Actually, this should be done only later!
+  if (erg_resolution > 0) {
+
+    ASCIItableReader temp (spectral_flux_file_gagg);
+    std::vector<double> ergs = temp[0];
+    std::vector<double> flux_gagg = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gagg);
+    spectral_flux_gagg = OneDInterpolator(ergs, flux_gagg);
+    save_to_file(spectral_flux_file_gagg+"_conv", {ergs, flux_gagg}, "");
+
+    if (spectral_flux_file_gaee != "") {
+      temp = ASCIItableReader (spectral_flux_file_gaee);
+      ergs = temp[0];
+      std::vector<double> flux_gaee = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gaee);
+      spectral_flux_gaee = OneDInterpolator(ergs, flux_gaee);
+      save_to_file(spectral_flux_file_gaee+"_conv", {ergs, flux_gaee}, "");
+    }
+
+  } else {
+    spectral_flux_gagg = OneDInterpolator(spectral_flux_file_gagg);
+    if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
+  }
+  */
+
+  double gagg_result, gagg_error, gaee_result, gaee_error;
+  OneDInterpolator spectral_flux_gagg (spectral_flux_file_gagg);
+  OneDInterpolator spectral_flux_gaee;
+  if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
+
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
+  exp_flux_from_file_integration_parameters p1 { 0, setup->length, setup->dataset, &spectral_flux_gagg, {bin_lo, bin_hi}, setup->erg_resolution };
+  exp_flux_from_file_integration_parameters p2 { 0, setup->length, setup->dataset, &spectral_flux_gaee, {bin_lo, bin_hi}, setup->erg_resolution };
+  gsl_function f1, f2;
+  f1.params = &p1;
+  f2.params = &p2;
+  if (erg_resolution > 0) {
+    f1.function = &convolved_exp_flux_integrand_from_file;
+    f2.function = &convolved_exp_flux_integrand_from_file;
+  } else {
+    f1.function = &exp_flux_integrand_from_file;
+    f2.function = &exp_flux_integrand_from_file;
+  }
+
+  std::vector<std::vector<double>> relevant_peaks;
+  if (spectral_flux_file_gaee != "") {
+    for (int bin = 0; bin < n_bins; ++bin) {
+      double erg_lo = bin_lo + bin*bin_delta;
+      relevant_peaks.push_back(get_relevant_peaks(erg_lo, erg_lo+bin_delta));
+    }
+  }
+
+  std::vector<double> gagg_ergs, gaee_ergs;
+  if ((erg_resolution > 0) && save_convolved_spectra) {
+    ASCIItableReader temp1 (spectral_flux_file_gagg);
+    gagg_ergs = temp1[0];
+    if (spectral_flux_file_gaee != "") {
+      ASCIItableReader temp2 (spectral_flux_file_gaee);
+      gaee_ergs = temp1[0];
+    }
+  }
+
+  std::vector<double> expanded_masses, bin_centres, results_gagg, results_gaee;
+  std::vector<double> convolved_spectra_masses_gagg, convolved_spectra_masses_gaee, convolved_spectra_energies_gagg, convolved_spectra_energies_gaee, convolved_spectra_results_gagg, convolved_spectra_results_gaee;
+  for (auto mass = masses.begin(); mass != masses.end(); mass++) {
+    p1.mass = *mass;
+    p2.mass = *mass;
+    if (erg_resolution > 0) {
+      for (auto erg = gagg_ergs.begin(); erg != gagg_ergs.end(); ++erg) {
+        convolved_spectra_masses_gagg.push_back(*mass);
+        convolved_spectra_energies_gagg.push_back(*erg);
+        convolved_spectra_results_gagg.push_back(GSL_FN_EVAL(&f1,*erg));
+      }
+      if (spectral_flux_file_gaee != "") {
+        for (auto erg = gaee_ergs.begin(); erg != gaee_ergs.end(); ++erg) {
+          convolved_spectra_masses_gaee.push_back(*mass);
+          convolved_spectra_energies_gaee.push_back(*erg);
+          convolved_spectra_results_gaee.push_back(GSL_FN_EVAL(&f2,*erg));
+        }
+      }
+    }
+
+    for (int bin = 0; bin < n_bins; ++bin) {
+      expanded_masses.push_back(*mass);
+      double erg_lo = bin_lo + bin*bin_delta;
+      double erg_hi = erg_lo + bin_delta;
+      bin_centres.push_back(0.5*(erg_lo + erg_hi));
+      // TODO: Improve results with QAWO adaptive integration for oscillatory functions?! factor out sin^2()?
+      gsl_integration_qag(&f1, erg_lo, erg_hi, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w1, &gagg_result, &gagg_error);
+      results_gagg.push_back(overall_factor*gagg_result);
+      if (spectral_flux_file_gaee != "") {
+        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), 10.0*int_abs_prec_file, 10.0*int_rel_prec_file, int_space_size_file, w2, &gaee_result, &gaee_error);
+        results_gaee.push_back(overall_factor*gaee_result);
+      }
+    }
+  }
+
+  std::string header = "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff";
+  result.push_back(expanded_masses);
+  result.push_back(bin_centres);
+  result.push_back(results_gagg);
+  if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); header += " | Counts from axion-electron"; }
+  save_to_file(saveas, result, header);
+
+  if ((erg_resolution > 0) && save_convolved_spectra) {
+    header = "Reference flux (convolved) for g_agamma = 10^-10 1/GeV\nColumns: Axion mass [eV] | Energy [keV] | Primakoff flux [s^-1 cm^-1 keV^-1]";
+    std::vector<std::vector<double>> convolved_spectra_gagg = {convolved_spectra_masses_gagg, convolved_spectra_energies_gagg, convolved_spectra_results_gagg};
+    save_to_file(spectral_flux_file_gagg+"_convolved", convolved_spectra_gagg, header);
+    if (spectral_flux_file_gaee != "") {
+      std::vector<std::vector<double>> convolved_spectra_gaee = {convolved_spectra_masses_gaee, convolved_spectra_energies_gaee, convolved_spectra_results_gaee};
+      save_to_file(spectral_flux_file_gaee+"_convolved", convolved_spectra_gaee, header);
+    }
+  }
+
+  gsl_integration_workspace_free (w1);
+  gsl_integration_workspace_free (w2);
+
+  return result;
+}
+
+
+////////////////////////////
+//  EXPERIMENTAL ROUTINES //
+////////////////////////////
+
+// TODO OUTDATED! Basically the alternative to 'from file integration'?
+double erg_integrand(double erg, void * params) {
+  struct erg_integration_params * p3 = (struct erg_integration_params *)params;
+  SolarModel *s = p3->s;
+  double r_min = s->get_r_lo(), r_max = std::min(p3->r_max, s->get_r_hi());
+
+  double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*(eff_exposure(ref_erg_value, p3->dataset))*conversion_prob_correction(p3->mass, ref_erg_value, p3->length);
+
+  double sincsq = conversion_prob_correction(p3->mass, erg, p3->length);
+  double exposure = eff_exposure(erg, p3->dataset);
+
+  gsl_function f2;
+  f2.function = &rad_integrand_2d;
+  struct solar_model_integration_parameters_2d p2 { erg, 0.0, 0.0, 0.0, s, p3->integrand, &f2, p3->w1, &f2, p3->w1 };
+
+  f2.params = &p2;
+
+  double spectral_flux, spectral_flux_error;
+  gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec_file , 0.1*int_rel_prec_file , int_space_size_file, int_method_file, p3->w2, &spectral_flux, &spectral_flux_error);
+
+  return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
 }
 
 // Functions to calculate the counts in all bins of a helioscope experiment
@@ -431,145 +571,6 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
-
-  return result;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//  Routines to compute 'reference count files' for the various experiments //
-//////////////////////////////////////////////////////////////////////////////
-
-// Return relative counts at reference values of the coupling.
-std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *setup, std::vector<double> masses, std::string spectral_flux_file_gagg, std::string spectral_flux_file_gaee, std::string saveas, bool save_convolved_spectra) {
-  std::vector<std::vector<double>> result;
-  std::vector<std::vector<double>> convolved_spectra_gagg, convolved_spectra_gaee;
-
-  int n_bins = setup->n_bins;
-  double bin_lo = setup->bin_lo;
-  double bin_delta = setup->bin_delta;
-  double bin_hi = bin_lo + bin_delta*double(n_bins);
-  double overall_factor = gsl_pow_2((setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor;
-  double erg_resolution = setup->erg_resolution;
-
-  /*
-  OneDInterpolator spectral_flux_gagg, spectral_flux_gaee;
-  // TODO: Do convolution if necessary -> Actually, this should be done only later!
-  if (erg_resolution > 0) {
-
-    ASCIItableReader temp (spectral_flux_file_gagg);
-    std::vector<double> ergs = temp[0];
-    std::vector<double> flux_gagg = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gagg);
-    spectral_flux_gagg = OneDInterpolator(ergs, flux_gagg);
-    save_to_file(spectral_flux_file_gagg+"_conv", {ergs, flux_gagg}, "");
-
-    if (spectral_flux_file_gaee != "") {
-      temp = ASCIItableReader (spectral_flux_file_gaee);
-      ergs = temp[0];
-      std::vector<double> flux_gaee = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gaee);
-      spectral_flux_gaee = OneDInterpolator(ergs, flux_gaee);
-      save_to_file(spectral_flux_file_gaee+"_conv", {ergs, flux_gaee}, "");
-    }
-
-  } else {
-    spectral_flux_gagg = OneDInterpolator(spectral_flux_file_gagg);
-    if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
-  }
-  */
-
-  double gagg_result, gagg_error, gaee_result, gaee_error;
-  OneDInterpolator spectral_flux_gagg (spectral_flux_file_gagg);
-  OneDInterpolator spectral_flux_gaee;
-  if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
-
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
-  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
-  exp_flux_from_file_integration_parameters p1 { 0, setup->length, setup->dataset, &spectral_flux_gagg, {bin_lo, bin_hi}, setup->erg_resolution };
-  exp_flux_from_file_integration_parameters p2 { 0, setup->length, setup->dataset, &spectral_flux_gaee, {bin_lo, bin_hi}, setup->erg_resolution };
-  gsl_function f1, f2;
-  f1.params = &p1;
-  f2.params = &p2;
-  if (erg_resolution > 0) {
-    f1.function = &convolved_exp_flux_integrand_from_file;
-    f2.function = &convolved_exp_flux_integrand_from_file;
-  } else {
-    f1.function = &exp_flux_integrand_from_file;
-    f2.function = &exp_flux_integrand_from_file;
-  }
-
-  std::vector<std::vector<double>> relevant_peaks;
-  if (spectral_flux_file_gaee != "") {
-    for (int bin = 0; bin < n_bins; ++bin) {
-      double erg_lo = bin_lo + bin*bin_delta;
-      relevant_peaks.push_back(get_relevant_peaks(erg_lo, erg_lo+bin_delta));
-    }
-  }
-
-  std::vector<double> gagg_ergs, gaee_ergs;
-  if ((erg_resolution > 0) && save_convolved_spectra) {
-    ASCIItableReader temp1 (spectral_flux_file_gagg);
-    gagg_ergs = temp1[0];
-    if (spectral_flux_file_gaee != "") {
-      ASCIItableReader temp2 (spectral_flux_file_gaee);
-      gaee_ergs = temp1[0];
-    }
-  }
-
-  std::vector<double> expanded_masses, bin_centres, results_gagg, results_gaee;
-  std::vector<double> convolved_spectra_masses_gagg, convolved_spectra_masses_gaee, convolved_spectra_energies_gagg, convolved_spectra_energies_gaee, convolved_spectra_results_gagg, convolved_spectra_results_gaee;
-  for (auto mass = masses.begin(); mass != masses.end(); mass++) {
-    p1.mass = *mass;
-    p2.mass = *mass;
-    if ((erg_resolution > 0) && save_convolved_spectra) {
-      for (auto erg = gagg_ergs.begin(); erg != gagg_ergs.end(); ++erg) {
-        convolved_spectra_masses_gagg.push_back(*mass);
-        convolved_spectra_energies_gagg.push_back(*erg);
-        convolved_spectra_results_gagg.push_back(GSL_FN_EVAL(&f1,*erg));
-      }
-      if (spectral_flux_file_gaee != "") {
-        for (auto erg = gaee_ergs.begin(); erg != gaee_ergs.end(); ++erg) {
-          convolved_spectra_masses_gaee.push_back(*mass);
-          convolved_spectra_energies_gaee.push_back(*erg);
-          convolved_spectra_results_gaee.push_back(GSL_FN_EVAL(&f2,*erg));
-        }
-      }
-    }
-    for (int bin = 0; bin < n_bins; ++bin) {
-      expanded_masses.push_back(*mass);
-      double erg_lo = bin_lo + bin*bin_delta;
-      double erg_hi = erg_lo + bin_delta;
-      bin_centres.push_back(0.5*(erg_lo + erg_hi));
-      // TODO: Improve results with QAWO adaptive integration for oscillatory functions?! factor out sin^2()?
-      gsl_integration_qag(&f1, erg_lo, erg_hi, int_abs_prec_file, int_rel_prec_file, int_space_size_file, int_method_file, w1, &gagg_result, &gagg_error);
-      results_gagg.push_back(overall_factor*gagg_result);
-      if (spectral_flux_file_gaee != "") {
-        gsl_integration_qagp(&f2, &relevant_peaks[bin][0], relevant_peaks[bin].size(), int_abs_prec_file, int_rel_prec_file, int_space_size_file, w2, &gaee_result, &gaee_error);
-        results_gaee.push_back(overall_factor*gaee_result);
-      }
-    }
-  }
-
-  std::string header = "Reference counts for g_agamma = 10^-10 1/GeV and g_ae = 10^-13\nColumns: Axion mass [eV] | Energy bin centre [keV] | Counts from Primakoff";
-  result.push_back(expanded_masses);
-  result.push_back(bin_centres);
-  result.push_back(results_gagg);
-  if (spectral_flux_file_gaee != "") { result.push_back(results_gaee); header += " | Counts from axion-electron"; }
-  save_to_file(saveas, result, header);
-
-  header = "Reference flux (convolved) for g_agamma = 10^-10 1/GeV\nColumns: Axion mass [eV] | Energy [keV] | Primakoff flux [s^-1 cm^-1 keV^-1]";
-  convolved_spectra_gagg.push_back(convolved_spectra_masses_gagg);
-  convolved_spectra_gagg.push_back(convolved_spectra_energies_gagg);
-  convolved_spectra_gagg.push_back(convolved_spectra_results_gagg);
-  save_to_file(spectral_flux_file_gagg+"_convolved", convolved_spectra_gagg, header);
-
-  if (spectral_flux_file_gaee != "") {
-    convolved_spectra_gaee.push_back(convolved_spectra_masses_gaee);
-    convolved_spectra_gaee.push_back(convolved_spectra_energies_gaee);
-    convolved_spectra_gaee.push_back(convolved_spectra_results_gaee);
-    save_to_file(spectral_flux_file_gaee+"_convolved", convolved_spectra_gaee, header);
-  }
-
-  gsl_integration_workspace_free (w1);
-  gsl_integration_workspace_free (w2);
 
   return result;
 }

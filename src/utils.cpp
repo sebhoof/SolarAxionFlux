@@ -161,7 +161,9 @@ void OneDInterpolator::init(const std::vector<double> &x, const std::vector<doub
   } else if (type == "linear") {
     spline = gsl_spline_alloc(gsl_interp_linear, pts);
   } else {
-    terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
+    std::string err_msg = "ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator. Available types: 'linear' and 'cspline'.";
+    throw XUnsupportedOption(err_msg);
+    // terminate_with_error("ERROR! Interpolation type '"+type+"' not known to class OneDInterpolator.\n       Available types: 'linear' and 'cspline'.");
   }
   gsl_spline_init(spline, x_ptr, y_ptr, pts);
   lo = x.front();
@@ -171,9 +173,15 @@ void OneDInterpolator::init(const std::vector<double> &x, const std::vector<doub
 void OneDInterpolator::init(std::string type) { init(data[0], data[1], type); }
 
 OneDInterpolator::OneDInterpolator(std::string file, std::string type) {
-  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
-  ASCIItableReader tab (file);
-  data = tab.get_data();
+  // if(not(file_exists(file)) { throw XFileNotFound(file); }
+  // terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
+  try {
+    ASCIItableReader tab (file);
+    data = tab.get_data();
+  }
+  catch (const std::exception& err) {
+    throw;
+  }
   init(type);
 }
 
@@ -274,9 +282,14 @@ void TwoDInterpolator::init(std::string type) {
 TwoDInterpolator::TwoDInterpolator(std::vector<std::vector<double>> table, std::string type) { data = table; init(type); }
 
 TwoDInterpolator::TwoDInterpolator(std::string file, std::string type) {
-  terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
-  ASCIItableReader table (file);
-  data = table.get_data();
+  // terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
+  try {
+    ASCIItableReader table (file);
+    data = table.get_data();
+  }
+  catch (const std::exception& err) {
+    throw;
+  }
   init(type);
 }
 
