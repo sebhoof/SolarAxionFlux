@@ -423,12 +423,12 @@ double SolarModel::bfield(double r) {
   double result = 0.0;
   if (r < radius_cz+size_tach) {
     double x = gsl_pow_2(r/radius_cz);
-    if (x < 1.0) { result += b_rad*lambda_factor*x*pow(1.0-x, lambda); }
+    if (x < 1.0) { result += b_rad*(1.0+bfield_correction_rad)*lambda_factor*x*pow(1.0-x, lambda); }
     double y = gsl_pow_2((r - radius_cz)/size_tach);
-    if (y < 1.0) { result += b_tach*(1.0 - y); }
+    if (y < 1.0) { result += b_tach*(1.0+bfield_correction_tach)*(1.0-y); }
   } else {
     double z = gsl_pow_2((r - radius_outer)/size_outer);
-    if (z < 1.0) { result += b_outer*(1.0 - z); }
+    if (z < 1.0) { result += b_outer*(1.0+bfield_correction_outer)*(1.0 - z); }
   }
 
   return result;
