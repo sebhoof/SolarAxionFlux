@@ -14,7 +14,11 @@ const double pi = M_PI;
 // Physical constants
 const double hbar = 6.582119514e-25; // in [GeV s]
 const double radius_sol = 6.957e8; // [m]; nominal value of the Solar radius, as recommend by https://www.iau.org/static/resolutions/IAU2015_English.pdf
-const double distance_sol = 1.49597870700e11; // [m]; taken to be 1 au (with the value of 1 au as recommnded by https://www.iau.org/static/resolutions/IAU2012_English.pdf)
+const double distance_sol = 1.49597870700e11; // [m]; taken to be 1 au (with the value of 1 au as recommended by https://www.iau.org/static/resolutions/IAU2012_English.pdf)
+const double radius_cz = 0.712; // ~ start of convective zone = end of radiative zone
+const double size_tach = 0.035; // ~ size of convective/radiative transistion region
+const double radius_outer = 0.96; // ~ upper layers of the Sun
+const double size_outer = 0.035; // ~ size of upper layers of the Sun
 const double alpha_EM = 7.2973525664e-3; // fine structure constant
 const double atomic_mass_unit = 0.931494028; // [GeV]
 const double gev2cm = 197.327053e-16; // [cm / GeV^-1]

@@ -61,6 +61,9 @@ class SolarModel {
     // Plasma frequency squared (in keV^2)
     double omega_pl_squared(double r);
 
+    // Solar B-field
+    double bfield(double r);
+
     // Production rates for the various axion production channels
     double Gamma_P_ff(double omega, double r, int isotope_index);
     double Gamma_P_ff(double omega, double r, Isotope isotope);
@@ -70,8 +73,11 @@ class SolarModel {
     double Gamma_P_opacity(double omega, double r, std::string element);
     double Gamma_P_opacity(double omega, double r, Isotope isotope); // overloaded for convenience; opacity only depends on chemical element, not on isotope
     double Gamma_P_opacity(double omega, double r); // sum over all elements
-    double Gamma_P_Primakoff(double omega, double r);
     double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
+    double Gamma_P_Primakoff(double omega, double r);
+    double Gamma_P_LP(double omega, double r);
+    double Gamma_P_TP(double omega, double r);
+    double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
 
     // Interpolation routines for the opacity data
     double op_grid_interp_erg(double u, int ite, int jne, std::string element);
@@ -90,6 +96,9 @@ class SolarModel {
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
+    // B-field correction
+    void set_bfield_correction(double c_rad, double c_tach, double c_outer);
+    std::vector<double> get_bfield_correction();
     // Set the opacity correction of the Opacity Project values according to opacity*(1 + delta), with
     // delta = a + b * log10(T(0)/T(r)) / log10(T(0)/T(r_CZ)), where r_CZ = location of convective zone
     void set_opacity_correction(double a, double b);
@@ -116,6 +125,10 @@ class SolarModel {
     std::string solar_model_name;
     // Min., max. radius of the solar model file (distance r from the centre of the Sun; in units of the Solar radius)
     double r_lo, r_hi;
+    // B-field correction
+    double bfield_correction_rad = 0.0;
+    double bfield_correction_tach = 0.0;
+    double bfield_correction_outer = 0.0;
     // Opacity corrections; default value = 0
     double opacity_correction_a = 0.0;
     double opacity_correction_b = 0.0;

@@ -368,7 +368,7 @@ double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electro
 // Opacity correction factor
 double SolarModel::apply_opacity_correction_factor(double r) {
   static double temp_0 = temperature_in_keV(r_lo);
-  const double r_cz_theo = 0.713;
+  const double r_cz_theo = radius_cz;
   const double temp_cz = temperature_in_keV(r_cz_theo);
   double result = 1.0;
   if (r < r_cz_theo) {
@@ -411,6 +411,27 @@ double SolarModel::opacity(double omega, double r) {
   }
 
   return result*apply_opacity_correction_factor(r);
+}
+
+double SolarModel::bfield(double r) {
+  const double b_rad = 2.0e3/eV2T;
+  const double b_tach = 40.0/eV2T;
+  const double b_outer = 2.5/eV2T;
+  const double lambda = 10.0*radius_cz + 1.0;
+  const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1/lambda, lambda);
+
+  double result = 0.0;
+  if (r < radius_cz+size_tach) {
+    double x = gsl_pow_2(r/radius_cz);
+    if (x < 1.0) { result += b_rad*lambda_factor*x*pow(1.0-x, lambda); }
+    double y = gsl_pow_2((r - radius_cz)/size_tach);
+    if (y < 1.0) { result += b_tach*(1.0 - y); }
+  } else {
+    double z = gsl_pow_2((r - radius_outer)/size_outer);
+    if (z < 1.0) { result += b_outer*(1.0 - z); }
+  }
+
+  return result;
 }
 
 // Auxiliary function required for FF and ee contribution
@@ -567,6 +588,20 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   } else {
     return 0;
   }
+}
+
+double SolarModel::Gamma_P_LP(double erg, double r) {
+  const double prefactor8 = g_agg*g_agg;
+  return 0.0;
+}
+
+double SolarModel::Gamma_P_TP(double erg, double r) {
+  const double prefactor9 = g_agg*g_agg;
+  return 0.0;
+}
+
+double SolarModel::Gamma_P_all_photon(double erg, double r) {
+  return Gamma_P_Primakoff(erg, r);
 }
 
 // Read off interpolated elements for op, tops and opas
@@ -798,6 +833,15 @@ double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
+void SolarModel::set_bfield_correction(double c_rad, double c_tach, double c_outer) {
+  bfield_correction_rad = c_rad;
+  bfield_correction_tach = c_tach;
+  bfield_correction_outer = c_outer;
+}
+std::vector<double> SolarModel::get_bfield_correction() {
+  std::vector<double> result = { bfield_correction_rad, bfield_correction_tach, bfield_correction_outer };
+  return result;
+}
 void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
 std::vector<double> SolarModel::get_opacity_correction() {
   std::vector<double> result = { opacity_correction_a, opacity_correction_b };
