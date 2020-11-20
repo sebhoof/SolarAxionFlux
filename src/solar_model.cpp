@@ -365,16 +365,43 @@ double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - m
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
 
+// Opacity correction factor
+double SolarModel::apply_opacity_correction_factor(double r) {
+  static double temp_0 = temperature_in_keV(r_lo);
+  const double r_cz_theo = 0.713;
+  const double temp_cz = temperature_in_keV(r_cz_theo);
+  double result = 1.0;
+  if (r < r_cz_theo) {
+    result *= ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
+    result = std::max(result, 0.0);
+  }
+  return result;
+}
+
+// Opacity for individual isotope (only possible for OP)
+double SolarModel::opacity_element(double omega, double r, std::string element) {
+  const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
+
+  gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
+  //terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
+  if (opcode != OP) {
+    std::string err_msg = "The chosen opacity code ("+get_opacitycode_name()+") does not provide opacities for indivdual elements.";
+    throw XUnsupportedOption(err_msg);
+  }
+
+  double u = omega/temperature_in_keV(r);
+  double result = prefactor4*n_element(r, element)*opacity_table_interpolator_op(omega, r, element)*(-gsl_expm1(-u));
+  gsl_set_error_handler(old_handler); // reset the GSL error handler
+
+  return result*apply_opacity_correction_factor(r);
+}
 // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
-// TODO However, maybe we care about opacity from isotope, i.e. not time n_element but times n_isotope...
 double SolarModel::opacity_element(double omega, double r, Isotope isotope) { return opacity_element(omega, r, isotope.get_element_name()); }
 
 // Opacity for total solar mixture
 double SolarModel::opacity(double omega, double r) {
   double result = 0.0;
-  static double temp_0 = temperature_in_keV(r_lo);
-  const double r_cz_theo = 0.713;
-  const double temp_cz = temperature_in_keV(r_cz_theo);
+
   if (opcode == OP) {
     for (int k = 0; k < num_op_elements; k++) { result += opacity_element(omega, r, op_element_names[k]); }
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
@@ -382,12 +409,8 @@ double SolarModel::opacity(double omega, double r) {
   } else if (opcode == OPAS) {
     result = opacity_table_interpolator_opas(omega, r)*density(r)*keV2cm;
   }
-  // Apply opacity correction term and truncate to zero if necessary.
-  if (r < r_cz_theo) {
-    result = result * ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
-    result = std::max(result, 0.0);
-  }
-  return result;
+
+  return result*apply_opacity_correction_factor(r);
 }
 
 // Auxiliary function required for FF and ee contribution
@@ -520,10 +543,10 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
     double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
     result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
   } else if (opcode == OPAS) {
-    result = Gamma_P_opacity (erg, r);
+    result = Gamma_P_opacity(erg, r);
   } else {
-    //terminate_with_error("ERROR! Unkown option for 'opcode' attribute. Use OP, LEDCOP, ATOMIC, or OPAS.");
-    std::string err_msg = "Unkown option for 'opcode' attribute. Use ";
+    //terminate_with_error("ERROR! Unkown option for 'opcode' argument. Use OP, LEDCOP, ATOMIC, or OPAS.");
+    std::string err_msg = "Unkown option for 'opcode' argument. Use ";
     for (auto it = opacitycode_name.begin(); it != --opacitycode_name.end(); ++it) { err_msg += it->second + ", "; }; err_msg += "or " + (--opacitycode_name.end())->second + ".";
     throw XUnsupportedOption(err_msg);
   }
@@ -717,24 +740,6 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
   }
 }
 
-// Opacity for individual isotope (only possible for OP)
-double SolarModel::opacity_element(double omega, double r, std::string element) {
-  const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
-
-  gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
-  //terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
-  if (opcode != OP) {
-    std::string err_msg = "The chosen opacity code ("+get_opacitycode_name()+") does not provide opacities for indivdual elements.";
-    throw XUnsupportedOption(err_msg);
-  }
-
-  double u = omega/temperature_in_keV(r);
-  double result = prefactor4*n_element(r, element)*opacity_table_interpolator_op(omega, r, element)*(-gsl_expm1(-u));
-  gsl_set_error_handler(old_handler); // reset the GSL error handler
-
-  return result;
-}
-
 
 // Read off ionisation states
 double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
@@ -770,36 +775,6 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
   }
   return integrand;
 }
-
-// Calculate the solar axion spectrum for axion-photon and axion-electron interactions
-// std::vector<double> SolarModel::calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max) {
-//   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
-//   if (r_max < r_hi) {
-//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
-//   } else {
-//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-//     return calculate_spectral_flux(ergs, *this, integrand);
-//   }
-// }
-//
-// std::vector<double> SolarModel::calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max) {
-//   double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
-//   if (r_max < r_hi) {
-//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, integrand);
-//   } else {
-//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-//     return calculate_spectral_flux(ergs, *this, integrand);
-//   }
-// }
-//
-// std::vector<double> SolarModel::calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double, double), double r_max) {
-//   if (r_max < r_hi) {
-//     return calculate_spectral_flux_solar_disc(ergs, r_max, *this, process);
-//   } else {
-//     std::cout << "INFO. The selected max. integration radius is larger than the biggest radius available in the Solar model. Integrating over the whole Sun..." << std::endl;
-//     return calculate_spectral_flux(ergs, *this, process);
-//   }
-// }
 
 // Metadata and information
 double SolarModel::get_r_lo() { return r_lo; }

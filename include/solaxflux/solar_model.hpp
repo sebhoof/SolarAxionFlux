@@ -73,11 +73,6 @@ class SolarModel {
     double Gamma_P_Primakoff(double omega, double r);
     double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
 
-    // Calculate the solar axion spectrum for axion-photon and axion-electron interactions
-    // std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, double r_max=1);
-    // std::vector<double> calculate_spectral_flux_all_electron(std::vector<double> ergs, double r_max=1);
-    // std::vector<double> calculate_spectral_flux_any(std::vector<double> ergs, double (SolarModel::*process)(double,double), double r_max=1);
-
     // Interpolation routines for the opacity data
     double op_grid_interp_erg(double u, int ite, int jne, std::string element);
     double tops_grid_interp_erg(double erg, float t, float rho);
@@ -99,6 +94,7 @@ class SolarModel {
     // delta = a + b * log10(T(0)/T(r)) / log10(T(0)/T(r_CZ)), where r_CZ = location of convective zone
     void set_opacity_correction(double a, double b);
     std::vector<double> get_opacity_correction();
+    double apply_opacity_correction_factor(double r);
 
     // Metadata and information from the Solar model
     double get_r_lo();
@@ -153,8 +149,6 @@ class SolarModel {
     void init_numbered_interp(const int index, const double* x, const double* y);
 };
 
-// TODO: Finish implementing!
-// Define available interaction types
 // Typedef of SolarModel member function as 'SolarModelMemberFn'
 typedef double (SolarModel::*SolarModelMemberFn)(double,double);
 const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function { {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
