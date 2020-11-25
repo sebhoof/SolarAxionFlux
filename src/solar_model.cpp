@@ -413,6 +413,8 @@ double SolarModel::opacity(double omega, double r) {
   return result*apply_opacity_correction_factor(r);
 }
 
+
+
 double SolarModel::bfield(double r) {
   const double b_rad = 2.0e3/eV2T;
   const double b_tach = 40.0/eV2T;
@@ -470,6 +472,30 @@ double aux_function(double u, double y) {
   gsl_integration_workspace_free (w);
   return result;
 }
+
+struct integrand_params_rosseland { SolarModel* s; double r;};
+double rosseland_integrand(double u, void * params){
+    struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
+    SolarModel* s = (p->s);
+    double r = (p->r);
+    double opac = s->opacity(u * s->temperature_in_keV(r),r);
+    if (opac == 0) {
+        return 0;
+    }
+    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(gsl_expm1(u));
+    return R / opac ;
+}
+double SolarModel::rosseland_opacity(double r){
+    integrand_params_rosseland p = { this, r };
+    double result, error;
+    size_t neval;
+    gsl_function f;
+    f.function = &rosseland_integrand;
+    f.params = &p;
+    gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
+    return 1.0/result;
+}
+
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
@@ -609,7 +635,7 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
 //Full version
 double SolarModel::Gamma_P_TP(double omega, double r) {
   double u = omega/temperature_in_keV(r);
-  double gamma = - opacity(omega,r) * gsl_expm1(-u);
+  double gamma = - rosseland_opacity(r) * gsl_expm1(-u);
   double DeltaPsq = gsl_pow_2( omega_pl_squared(r) / (2.0 * omega) );
   double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^4
   double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;

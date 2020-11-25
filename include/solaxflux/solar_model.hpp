@@ -96,6 +96,8 @@ class SolarModel {
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
+    double rosseland_opacity(double r);
+
     // B-field correction
     void set_bfield_correction(double c_rad, double c_tach, double c_outer);
     std::vector<double> get_bfield_correction();
