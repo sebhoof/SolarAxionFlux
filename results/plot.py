@@ -38,6 +38,7 @@ res2 = np.genfromtxt("compton.dat")
 res3 = np.genfromtxt("all_ff.dat")
 res4 = np.genfromtxt("all_gaee.dat")
 res5 = np.genfromtxt("metals.dat")
+res6 = np.genfromtxt("TP.dat")
 #corr = np.genfromtxt("weighted_compton.dat")
 #weighted_compton = interpolate.interp1d(corr[:,0], corr[:,1], bounds_error=False, fill_value=0)
 common_path = "../data/benchmarks/"
@@ -59,17 +60,20 @@ plot_setup()
 plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),':', color=col_agss09, label=r'Primakoff approx. (BP04)')
 plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, label=r'Primakoff (Redondo)')
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
+plt.plot(res6[:,0], res6[:,1]/1.0e10, 'k--', label=r'TP (AGSS09)')
 
 plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$, OP opacities')
 plt.xlabel(r'Energy $\omega$ [keV]')
 plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e10}{\per\cm\squared\per\keV\per\s}]')
 plt.xlim([0,10])
+plt.yscale('log')
+
 #plt.ylim([0,8])
 
 plt.legend(frameon=False)
 
 plt.savefig("validation_gagg.pdf", bbox_inches='tight')
-#plt.show()
+plt.show()
 plt.close()
 
 fig, ax = plt.subplots()

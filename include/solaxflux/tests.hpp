@@ -46,6 +46,9 @@ void run_unit_test() {
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, "results/primakoff.dat");
 
+  std::cout << "\n# Calculating non-resonant transversal plasmon spectrum..." << std::endl;
+  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_P_TP, "results/TP.dat");
+
   auto t11s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Primakoff spectrum for " << n_rad_values << " different radii..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, test_rads, s, "results/primakoff_different_radii.dat");

@@ -599,7 +599,7 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   const double prefactor9 = g_agg*g_agg ;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   double u = omega/temperature_in_keV(r);
-  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-6 /3.0;  // in keV^2
+  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^2
   double result = geom_factor * prefactor9 * average_b_field_sq * opacity(omega,r) * exp(-u) * gsl_pow_2(omega) / omega_pl_squared(r);
   return result;
 }

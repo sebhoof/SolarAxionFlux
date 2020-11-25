@@ -214,6 +214,9 @@ std::vector<std::vector<double> > calculate_spectral_flux_Primakoff(std::vector<
 std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
   return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_P_Primakoff, saveas);
 }
+std::vector<double> calculate_spectral_flux_Plasmon(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_TP, saveas);
+}
 
 std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs, SolarModel &s, std::string saveas) {
   return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_P_all_photon, saveas);
