@@ -76,7 +76,7 @@ class SolarModel {
     double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
     double Gamma_P_Primakoff(double omega, double r);
     double Gamma_P_LP(double omega, double r);
-    double Gamma_P_TP(double omega, double r);
+    double Gamma_P_TP(double omega, double r); //only non-resonant part (m_a = 0)
     double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
 
     // Interpolation routines for the opacity data
