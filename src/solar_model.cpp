@@ -594,13 +594,27 @@ double SolarModel::Gamma_P_LP(double erg, double r) {
   const double prefactor8 = g_agg*g_agg;
   return 0.0;
 }
-
+//simplified version
+/*
 double SolarModel::Gamma_P_TP(double omega, double r) {
   const double prefactor9 = g_agg*g_agg ;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   double u = omega/temperature_in_keV(r);
-  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^2
-  double result = geom_factor * prefactor9 * average_b_field_sq * opacity(omega,r) * exp(-u) * gsl_pow_2(omega) / omega_pl_squared(r);
+  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^4
+  double result = geom_factor * prefactor9 * average_b_field_sq * opacity(omega,r) * exp(-u) * gsl_pow_2(omega) / gsl_pow_2(omega_pl_squared(r));
+  return result;
+}
+*/
+
+//Full version
+double SolarModel::Gamma_P_TP(double omega, double r) {
+  double u = omega/temperature_in_keV(r);
+  double gamma = - opacity(omega,r) * gsl_expm1(-u);
+  double DeltaPsq = gsl_pow_2( omega_pl_squared(r) / (2.0 * omega) );
+  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^4
+  double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
+  double result = geom_factor * gamma * DeltaTsq / ((DeltaPsq + gsl_pow_2(gamma)/4.0) * gsl_expm1(u)) ;
   return result;
 }
 
