@@ -416,11 +416,11 @@ double SolarModel::opacity(double omega, double r) {
 
 
 double SolarModel::bfield(double r) {
-  const double b_rad = 2.0e3/eV2T;
-  const double b_tach = 40.0/eV2T;
-  const double b_outer = 2.5/eV2T;
+  const double b_rad = 3.0e3/(1.0e6*eV2T); // in keV^2
+  const double b_tach = 40.0/(1.0e6*eV2T); // in keV^2
+  const double b_outer = 3.5/(1.0e6*eV2T); // in keV^2
   const double lambda = 10.0*radius_cz + 1.0;
-  const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1/lambda, lambda);
+  const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1.0/lambda, lambda);
 
   double result = 0.0;
   if (r < radius_cz+size_tach) {
@@ -652,12 +652,16 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
 //Full version
 double SolarModel::Gamma_P_TP(double omega, double r) {
   double u = omega/temperature_in_keV(r);
-  double gamma = - rosseland_opacity(r) * gsl_expm1(-u);
-  double DeltaPsq = gsl_pow_2( omega_pl_squared(r) / (2.0 * omega) );
-  double average_b_field_sq = gsl_pow_2(bfield(r)) * 1.0e-12 /3.0;  // in keV^4
+  //static OneDInterpolator ross_op (SOLAXFLUX_DIR "/data/opacity_tables/arXiv_1601_01930v2_fig10_opacity.txt");
+  //double gamma = -gsl_expm1(-u)*ross_op.interpolate(r);
+  //double gamma = - rosseland_opacity(r) * gsl_expm1(-u);
+  double gamma = -gsl_expm1(-u)*opacity(omega, r);
+  double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0*2.0*pi);
   double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  double result = geom_factor * gamma * DeltaTsq / ((DeltaPsq + gsl_pow_2(gamma)/4.0) * gsl_expm1(u)) ;
+  const double photon_polarization = 2.0;
+  double result = geom_factor * photon_polarization * gamma * DeltaTsq / ( (DeltaPsq+gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
@@ -891,7 +895,7 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
   if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING. Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
   supported_radii.push_back(r_lo);
   for (auto r = radii.begin(); r !=radii.end(); ++r) { if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); } }
-  supported_radii.push_back(0.95*r_hi);
+  //supported_radii.push_back(0.95*r_hi);
   return supported_radii;
 }
 

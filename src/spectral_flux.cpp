@@ -198,8 +198,9 @@ std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs,
     return calculate_spectral_flux(ergs, s, integrand, saveas, isotope);
   } else {
     std::vector<double> radii = { r_max };
-    std::vector<std::vector<double> > result = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, integrand, saveas, isotope);
-    return result[0];
+    std::vector<std::vector<double> > all_results = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, integrand, saveas, isotope);
+    std::vector<double> result (all_results[2].begin()+ergs.size(), all_results[2].end());
+    return result;
   }
 }
 
