@@ -474,32 +474,36 @@ double aux_function(double u, double y) {
 }
 
 struct integrand_params_rosseland { SolarModel* s; double r;};
-double rosseland_integrand(double u, void * params){
+double rosseland_integrand(double omega, void * params){
     struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
-    SolarModel* s = (p->s);
     double r = (p->r);
-    double opac = s->opacity(u * s->temperature_in_keV(r),r);
+    // double opac = p->s->opacity(u * p->s->temperature_in_keV(r), r);
+    double opac = p->s->opacity(omega, r);
+    double u = omega/(p->s->temperature_in_keV(r));
+    //double opac = 1.0;
     if (opac == 0) {
         return 0;
     }
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(gsl_expm1(u));
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(exp(u) - 1.0);
-//    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
-    double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
+    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
+    // double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_3(u)/((1.0 - gsl_sf_exp(-u))*gsl_sf_exprel(u));
+    // double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
     return R / opac ;
 }
 double SolarModel::rosseland_opacity(double r) {
     integrand_params_rosseland p = { this, r };
-//    std::cout << r << std::endl;
     double result, error;
     size_t neval;
     gsl_function f;
     f.function = &rosseland_integrand;
     f.params = &p;
     gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
+    std::vector<double> relevant_peaks = get_relevant_peaks(0.1, 19.0);
     //gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
-    gsl_integration_qag(&f, 0.1, 19.0, 0, 0.0001, int_space_size_aux_fun, 5, w, &result, &error);
-    //gsl_integration_qags(&F, rad, rmax, 1e-1*abs_prec, 1e-1*rel_prec, 1E6, w, &result, &error);
+    //gsl_integration_qag(&f, 3.0, 5.0, 0, 1.0e-4, int_space_size_aux_fun, 5, w, &result, &error);
+    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 0.0, 1.0e-2, int_space_size_aux_fun, w, &result, &error);
+    //gsl_integration_qags(&f, 0.1, 19.0, 0, 1.0e-4, int_space_size_aux_fun, w, &result, &error);
     gsl_integration_workspace_free (w);
     //gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
     return 1.0/result;
@@ -664,7 +668,9 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
 
   if (unavailable_OP.find(grid_position) == unavailable_OP.end()) {
     if (opacity_lin_interp_op.find(element) == opacity_lin_interp_op.end()) {
-      terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
+      std::string err_msg = "OP data for element "+element+" does not exist.";
+      throw XUnsupportedOption(err_msg);
+      //terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
       std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
     } else {
@@ -705,31 +711,31 @@ double SolarModel::opas_grid_interp_erg(double erg, double r) {
 }
 
 //  double linear interpolation on solar grid (currently not used)
-double SolarModel::opacity_table_interpolator_op2(double omega, double r, std::string element) {
-  // Need temperature in Kelvin
-  double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
-  double ne = n_electron(r);
-  double ite = 40.0*log10(temperature);
-  double jne = 4.0*log10(ne);
-  int ite2 = int(ceil(20.0*log10(temperature))*2);
-  int ite1 = ite2 - 2;
-  // Need omega in Kelvin
-  double u1 = omega/(1.0e-3*K2eV*pow(10,double(ite1)/40.0));
-  double u2 = omega/(1.0e-3*K2eV*pow(10,double(ite2)/40.0));
-  int jne2 = int(ceil(log10(ne)*2)*2);
-  int jne1 = jne2 - 2;
-  double t1 = (ite-double(ite1))/2.0;
-  double t2 = (jne-double(jne1))/2.0;
-  double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,element) + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,element)
-                + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,element) + t1*t2*op_grid_interp_erg(u2,ite2,jne2,element);
-
-  if (result < 0) {
-    std::cout << "ERROR! Negative opacity!" << std::endl;
-    std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
-    std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,element) << " " << op_grid_interp_erg(u1,ite2,jne2,element) << " | " << result << std::endl;
-  }
-  return result;
-}
+// double SolarModel::opacity_table_interpolator_op2(double omega, double r, std::string element) {
+//   // Need temperature in Kelvin
+//   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
+//   double ne = n_electron(r);
+//   double ite = 40.0*log10(temperature);
+//   double jne = 4.0*log10(ne);
+//   int ite2 = int(ceil(20.0*log10(temperature))*2);
+//   int ite1 = ite2 - 2;
+//   // Need omega in Kelvin
+//   double u1 = omega/(1.0e-3*K2eV*pow(10,double(ite1)/40.0));
+//   double u2 = omega/(1.0e-3*K2eV*pow(10,double(ite2)/40.0));
+//   int jne2 = int(ceil(log10(ne)*2)*2);
+//   int jne1 = jne2 - 2;
+//   double t1 = (ite-double(ite1))/2.0;
+//   double t2 = (jne-double(jne1))/2.0;
+//   double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,element) + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,element)
+//                 + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,element) + t1*t2*op_grid_interp_erg(u2,ite2,jne2,element);
+//
+//   if (result < 0) {
+//     std::cout << "ERROR! Negative opacity!" << std::endl;
+//     std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
+//     std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,element) << " " << op_grid_interp_erg(u1,ite2,jne2,element) << " | " << result << std::endl;
+//   }
+//   return result;
+// }
 
 //  double logarithmic interpolation on solar grid (used for all codes)
 double SolarModel::opacity_table_interpolator_op(double omega, double r, std::string element) {
@@ -749,7 +755,9 @@ double SolarModel::opacity_table_interpolator_op(double omega, double r, std::st
   double t2 = (jne-double(jne1))/2.0;
   double result = pow(pow(op_grid_interp_erg(u1,ite1,jne1,element),1.0-t2)*pow(op_grid_interp_erg(u1,ite1,jne2,element),t2),1.0-t1)*  pow(pow(op_grid_interp_erg(u2,ite2,jne1,element),1.0-t2)*pow(op_grid_interp_erg(u2,ite2,jne2,element),t2),t1);
   if (result < 0) {
-    std::cout << "ERROR! Negative opacity!" << std::endl;
+    std::string err_msg = "Negative opacity from SolarModel::opacity_table_interpolator_op.";
+    throw XSanityCheck(err_msg);
+    //std::cout << "ERROR! Negative opacity!" << std::endl;
   }
   return result;
 }
@@ -769,7 +777,9 @@ double SolarModel::ionisationsqr_element(double r, std::string element) {
   double t2 = (jne-double(jne1))/2.0;
   double result = pow(pow(ionisationsqr_grid(ite1,jne1,element),1.0-t2)*pow(ionisationsqr_grid(ite1,jne2,element),t2),1.0-t1)*  pow(pow(ionisationsqr_grid(ite2,jne1,element),1.0-t2)*pow(ionisationsqr_grid(ite2,jne2,element),t2),t1);
   if (result < 0) {
-    std::cout << "ERROR! Negative ionisation!" << std::endl;
+    std::string err_msg = "Negative ionisation.";
+    throw XSanityCheck(err_msg);
+    //std::cout << "ERROR! Negative ionisation!" << std::endl;
   }
   return result;
 }

@@ -85,7 +85,7 @@ class SolarModel {
     double tops_grid_interp_erg(double erg, float t, float rho);
     double opas_grid_interp_erg(double erg, double r);
     double opacity_table_interpolator_op(double omega, double r, std::string element);
-    double opacity_table_interpolator_op2(double omega, double r, std::string element);
+    //double opacity_table_interpolator_op2(double omega, double r, std::string element);
     double opacity_table_interpolator_tops(double omega, double r);
     double opacity_table_interpolator_opas(double omega, double r);
     double opacity_element(double omega, double r, std::string element);

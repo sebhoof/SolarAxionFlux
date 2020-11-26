@@ -29,8 +29,9 @@ void my_gsl_handler(const char * reason, const char * file, int line, int gsl_er
   if (gsl_errno == GSL_EDOM) {
     // acceptable/expeted error
   } else {
-    std::string err_string = std::string(reason)+" in "+std::string(file)+", line "+std::to_string(line)+" (error no. "+std::to_string(gsl_errno)+").";
-    terminate_with_error(err_string);
+    std::string err_string = "GSL error "+std::string(reason)+" in "+std::string(file)+", line "+std::to_string(line)+" (error no. "+std::to_string(gsl_errno)+").";
+    throw std::runtime_error(err_string);
+    //terminate_with_error(err_string);
   }
 }
 
