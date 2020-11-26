@@ -484,11 +484,13 @@ double rosseland_integrand(double u, void * params){
     }
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(gsl_expm1(u));
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(exp(u) - 1.0);
-    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
+//    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
+    double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
     return R / opac ;
 }
 double SolarModel::rosseland_opacity(double r) {
     integrand_params_rosseland p = { this, r };
+//    std::cout << r << std::endl;
     double result, error;
     size_t neval;
     gsl_function f;
@@ -496,7 +498,7 @@ double SolarModel::rosseland_opacity(double r) {
     f.params = &p;
     gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
     //gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
-    gsl_integration_qag(&f, 4.0, 5.0, abs_prec_aux_fun, 0.01, int_space_size_aux_fun, 5, w, &result, &error);
+    gsl_integration_qag(&f, 0.1, 19.0, 0, 0.0001, int_space_size_aux_fun, 5, w, &result, &error);
     //gsl_integration_qags(&F, rad, rmax, 1e-1*abs_prec, 1e-1*rel_prec, 1E6, w, &result, &error);
     gsl_integration_workspace_free (w);
     //gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
