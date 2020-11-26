@@ -475,6 +475,7 @@ double aux_function(double u, double y) {
 
 struct integrand_params_rosseland { SolarModel* s; double r;};
 double rosseland_integrand(double omega, void * params){
+    const double prefactor = 15.0/(4.0*gsl_pow_4(pi));
     struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
     double r = (p->r);
     // double opac = p->s->opacity(u * p->s->temperature_in_keV(r), r);
@@ -486,7 +487,7 @@ double rosseland_integrand(double omega, void * params){
     }
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(gsl_expm1(u));
     //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(exp(u) - 1.0);
-    double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
+    double R = prefactor * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
     // double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_3(u)/((1.0 - gsl_sf_exp(-u))*gsl_sf_exprel(u));
     // double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
     return R / opac ;
@@ -498,15 +499,18 @@ double SolarModel::rosseland_opacity(double r) {
     gsl_function f;
     f.function = &rosseland_integrand;
     f.params = &p;
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
+    //gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
+    gsl_integration_cquad_workspace * v = gsl_integration_cquad_workspace_alloc(int_space_size_aux_fun);
     std::vector<double> relevant_peaks = get_relevant_peaks(0.1, 19.0);
     //gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
     //gsl_integration_qag(&f, 3.0, 5.0, 0, 1.0e-4, int_space_size_aux_fun, 5, w, &result, &error);
-    gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 0.0, 1.0e-2, int_space_size_aux_fun, w, &result, &error);
+    //gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 0.0, 1.0e-3, int_space_size_aux_fun, w, &result, &error);
     //gsl_integration_qags(&f, 0.1, 19.0, 0, 1.0e-4, int_space_size_aux_fun, w, &result, &error);
-    gsl_integration_workspace_free (w);
+    gsl_integration_cquad(&f, 0.1, 19.0, 0.0, 1.0e-4, v, &result, &error, &neval);
+    //gsl_integration_workspace_free (w);
+    gsl_integration_cquad_workspace_free(v);
     //gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
-    return 1.0/result;
+    return temperature_in_keV(r)/result;
 }
 
 
