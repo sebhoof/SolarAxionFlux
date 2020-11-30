@@ -5,8 +5,8 @@ import pexpect
 
 path1="/Users/lennertthormaehlen/Documents/Uni/Heidelberg/Master/Astro-approach/OP/OPCD_3.3/mono/"
 path2="/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/data/opacity_tables/OP/"
-ite=168 #184
-jne=76 #82
+ite=182 
+jne=82
 Z=[1,2,6,7,8,10,11,12,13,14,16,18,20,24,25,26,28]
 element_name = ["H","He","C","N","O","Ne","Na","Mg","Al","Si","S","Ar","Ca","Cr","Mn","Fe","Ni"]
 for iz in range(0,17):

@@ -39,6 +39,8 @@ res3 = np.genfromtxt("all_ff.dat")
 res4 = np.genfromtxt("all_gaee.dat")
 res5 = np.genfromtxt("metals.dat")
 res6 = np.genfromtxt("TP.dat")
+res7 = np.genfromtxt("LP.dat")
+
 #corr = np.genfromtxt("weighted_compton.dat")
 #weighted_compton = interpolate.interp1d(corr[:,0], corr[:,1], bounds_error=False, fill_value=0)
 common_path = "../data/benchmarks/"
@@ -48,6 +50,8 @@ compton = interpolate.interp1d(ref2[:,0], ref2[:,1], bounds_error=False, fill_va
 ref3 = np.genfromtxt(common_path+"2013_redondo_ff.dat")
 ref4 = np.genfromtxt(common_path+"2013_redondo_all.dat")
 ref5 = np.genfromtxt(common_path+"2020_giannotti_TP.dat")
+ref6 = np.genfromtxt(common_path+"2020_giannotti_LP.dat")
+
 conv_fac = 1.0e-4/(365.0*24.0*60.0*60.0*1.0e10)
 
 ## Validation plots for axion-photon interactions
@@ -93,7 +97,30 @@ plt.xscale('log')
 
 plt.legend(frameon=False)
 
-plt.savefig("validation_plasmon.pdf", bbox_inches='tight')
+plt.savefig("validation_Tplasmon.pdf", bbox_inches='tight')
+#plt.show()
+plt.close()
+
+
+fig, ax = plt.subplots()
+plot_setup()
+plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),':', color=col_agss09, label=r'Primakoff approx. (BP04)')
+plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, label=r'Primakoff (Redondo)')
+plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
+plt.plot(res7[:,0], res7[:,1]/1.0e10, 'k-', label=r'LP (AGSS09)')
+plt.plot(ref6[:,0], ref6[:,1], '--', color='green', label=r'LP (Giannotti)')
+
+plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$, OP opacities')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{e10}{\per\cm\squared\per\keV\per\s}]')
+plt.xlim([0.01,0.4])
+#plt.yscale('log')
+#plt.xscale('log')
+plt.ylim([0.0,9])
+
+plt.legend(frameon=False)
+
+plt.savefig("validation_Lplasmon.pdf", bbox_inches='tight')
 plt.show()
 plt.close()
 

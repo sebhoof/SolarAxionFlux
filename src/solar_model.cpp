@@ -633,9 +633,15 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   }
 }
 
-double SolarModel::Gamma_P_LP(double erg, double r) {
-  const double prefactor8 = g_agg*g_agg;
-  return 0.0;
+double SolarModel::Gamma_P_LP(double omega, double r) {
+  if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
+  double u = omega/temperature_in_keV(r);
+  double gamma = -gsl_expm1(-u)*opacity(omega, r);
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(2.0 *3.0);  //fudge factor 1 / (2) not explained
+  double DeltaLsq = g_agg*g_agg * average_b_field_sq /4.0;
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
+  double result = geom_factor * gamma * DeltaLsq / ( (gsl_pow_2(sqrt(omega_pl_squared(r))-omega)  + gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
+  return result;
 }
 //simplified version
 /*
@@ -659,7 +665,7 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
   double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
 //  double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);   //transfered momentum squared
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0*2.0*pi);
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0*2.0*pi);  //fudge factor 1 / (2*pi) not explained
   double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   const double photon_polarization = 2.0;
@@ -668,7 +674,7 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
 }
 
 double SolarModel::Gamma_P_all_photon(double erg, double r) {
-  return Gamma_P_Primakoff(erg, r) + Gamma_P_TP(erg, r);
+  return Gamma_P_Primakoff(erg, r) + Gamma_P_TP(erg, r) + Gamma_P_LP(erg, r);
 }
 
 // Read off interpolated elements for op, tops and opas
