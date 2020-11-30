@@ -637,7 +637,7 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(2.0 *3.0);  //fudge factor 1 / (2) not explained
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(2.0 *cd 3.0);  //fudge factor 1 / (2) not explained
   double DeltaLsq = g_agg*g_agg * average_b_field_sq /4.0;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   double result = geom_factor * gamma * DeltaLsq / ( (gsl_pow_2(sqrt(omega_pl_squared(r))-omega)  + gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
