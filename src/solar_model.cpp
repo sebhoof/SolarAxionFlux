@@ -635,6 +635,7 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
 
 double SolarModel::Gamma_P_LP(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
+  if ((omega*omega) / omega_pl_squared(r) > 10) {return 0;}  //result does not apply far from resonance
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
   double average_b_field_sq = gsl_pow_2(bfield(r))/(2.0 * 3.0);  //fudge factor 1 / (2) not explained

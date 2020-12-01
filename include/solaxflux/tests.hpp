@@ -34,10 +34,13 @@ void run_unit_test() {
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
 
   const int n_erg_values = 500;
+  const int n_erg_values_LP = 1000;
   std:: vector<double> test_ergs;
   for (int k=0; k<n_erg_values; k++) { test_ergs.push_back(0.1+k*11.9/n_erg_values); }
   std:: vector<double> test_ergs_LP;
-  for (int k=0; k<n_erg_values; k++) { test_ergs_LP.push_back(0.01+k*0.39/n_erg_values); }
+  for (int k=0; k<n_erg_values_LP; k++) {
+      test_ergs_LP.push_back((0.001*gsl_pow_int(1.006,k)));
+  }
   const int n_rad_values = 6;
   std:: vector<double> test_rads;
   for (int k=0; k<n_rad_values; k++) { test_rads.push_back(k*1.0/(n_rad_values-1)); }
