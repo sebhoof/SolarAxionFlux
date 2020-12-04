@@ -51,6 +51,7 @@ ref3 = np.genfromtxt(common_path+"2013_redondo_ff.dat")
 ref4 = np.genfromtxt(common_path+"2013_redondo_all.dat")
 ref5 = np.genfromtxt(common_path+"2020_giannotti_TP.dat")
 ref6 = np.genfromtxt(common_path+"2020_giannotti_LP.dat")
+ref7 = np.genfromtxt(common_path+"2020-o'hare.dat")
 
 conv_fac = 1.0e-4/(365.0*24.0*60.0*60.0*1.0e10)
 
@@ -109,6 +110,7 @@ plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, l
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
 plt.plot(res7[:,0], res7[:,1]/1.0e10, 'k-', label=r'LP (AGSS09)')
 plt.plot(ref6[:,0], ref6[:,1]*4.0, '--', color='green', label=r'LP (Giannotti)')
+plt.plot(ref7[:,0], ref7[:,1]/1.0e10*4.0*(3.0/5.0)^2.0, '--', color='orange', label=r'LP (Giannotti)')
 
 plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$, OP opacities')
 plt.xlabel(r'Energy $\omega$ [keV]')
