@@ -689,7 +689,9 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
       throw XUnsupportedOption(err_msg);
       //terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
-      std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
+      // std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
+      std::string err_msg = "OP data for "+element+" at position ite = "+std::to_string(ite)+" and jne = "+std::to_string(jne)+" does not exist.";
+      throw XSanityCheck(err_msg);
     } else {
       gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler);   // error handler modified to avoid boundary error (fill value = 0)
       result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
@@ -704,7 +706,9 @@ double SolarModel::tops_grid_interp_erg(double erg, float t, float rho) {
   double result = 0;
   auto key = std::make_pair(t,rho);
   if (opacity_lin_interp_tops.find(key) == opacity_lin_interp_tops.end()) {
-    std::cout << "WARNING. Grid point {" << t << ", " << rho << "} not found!" << std::endl;
+    //std::cout << "WARNING. Grid point {" << t << ", " << rho << "} not found!" << std::endl;
+    std::string err_msg = "TOPS grid data at position t = "+std::to_string(t)+" and rho = "+std::to_string(rho)+" does not exist.";
+    throw XSanityCheck(err_msg);
   } else {
     gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
     result = gsl_spline_eval(opacity_lin_interp_tops.at(key), erg, opacity_acc_tops.at(key));
@@ -716,8 +720,9 @@ double SolarModel::tops_grid_interp_erg(double erg, float t, float rho) {
 
 double SolarModel::opas_grid_interp_erg(double erg, double r) {
   if (opacity_lin_interp_opas.find(r) == opacity_lin_interp_opas.end()) {
-    std::cout << "WARNING. OPAS data for R = " << r << " not found!"  << std::endl;
-    return 0;
+    //std::cout << "WARNING. OPAS data for R = " << r << " not found!"  << std::endl;
+    std::string err_msg = "OPAS data at position R = "+std::to_string(r)+" does not exist.";
+    throw XSanityCheck(err_msg);
   }
 
   gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
@@ -827,7 +832,11 @@ double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   double t1 = (temperature-double(Tlow))/double(Tup-Tlow);
   double t2 = (rho-double(rholow))/double(rhoup-rholow);
   double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1) * pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
-  if (result < 0) { std::cout << "ERROR! Negative opacity!" << std::endl; }
+  if (result < 0) {
+    // std::cout << "ERROR! Negative opacity!" << std::endl;
+    std::string err_msg = "Negative opacity from SolarModel::opacity_table_interpolator_tops.";
+    throw XSanityCheck(err_msg);
+  }
   return result;
 }
 
@@ -864,7 +873,9 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
     if (element_ionisationsqr.find(grid_position) == element_ionisationsqr.end()) {
         std::cout << "WARNING. OP Ionisation data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
     } else if (element_ionisationsqr.at(grid_position).find(element) == element_ionisationsqr.at(grid_position).end()) {
-        terminate_with_error("ERROR! OP  Ionisation data for element "+element+" does not exist.");
+      std::string err_msg = "OP ionisation data for element "+element+" does not exist.";
+      throw XUnsupportedOption(err_msg);
+      // terminate_with_error("ERROR! OP  Ionisation data for element "+element+" does not exist.");
     } else  {
       result = element_ionisationsqr.at(grid_position).at(element);
       if (gsl_isnan(result) == true) { return 0; }
