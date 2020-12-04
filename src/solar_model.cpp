@@ -672,10 +672,10 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
 double SolarModel::Gamma_P_TP(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
-  //static OneDInterpolator ross_op (SOLAXFLUX_DIR "/data/opacity_tables/arXiv_1601_01930v2_fig10_opacity.txt");
-  //double gamma = -gsl_expm1(-u)*ross_op.interpolate(r);
+  static OneDInterpolator ross_op (SOLAXFLUX_DIR "/data/opacity_tables/arXiv_1601_01930v2_fig10_opacity.txt");
+  double gamma = -gsl_expm1(-u)*ross_op.interpolate(r);
   //double gamma = - rosseland_opacity(r) * gsl_expm1(-u);
-  double gamma = -gsl_expm1(-u)*opacity(omega, r);
+  //double gamma = -gsl_expm1(-u)*opacity(omega, r);
   double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
 //  double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);   //transfered momentum squared
   double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
