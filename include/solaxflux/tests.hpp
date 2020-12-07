@@ -48,29 +48,41 @@ void run_unit_test() {
   std::cout << "\n# Test isotope- and element-specific functions..." << std::endl;
   std::cout << "Ratio of 3He and total He (3He + 4He) number densities at 0.5 Rsol: " << s.n_iz(0.5, {"He", 3}) / s.n_element(0.5, "He") << " (should be approx. 0.000251)." << std::endl;
 
+  auto t11s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, "results/primakoff.dat");
-
-  std::cout << "\n# Calculating non-resonant transversal plasmon spectrum..." << std::endl;
-  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_P_TP, "results/TP.dat");
-
-  std::cout << "\n# Calculating resonant longitudinal plasmon spectrum..." << std::endl;
-  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP, "results/LP.dat");
-    
-  auto t11s = std::chrono::high_resolution_clock::now();
-  std::cout << "\n# Calculating Primakoff spectrum for " << n_rad_values << " different radii..." << std::endl;
-  calculate_spectral_flux_Primakoff(test_ergs, test_rads, s, "results/primakoff_different_radii.dat");
   auto t11e = std::chrono::high_resolution_clock::now();
-  std::cout << "# Calculating the Primakoff spectrum (" << n_erg_values << " energy values) for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t11e-t11s).count() << " seconds." << std::endl;
+  std::cout << "# Calculating the full Primakoff spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::milliseconds>(t11e-t11s).count()/1000.0 << " seconds." << std::endl;
 
   auto t12s = std::chrono::high_resolution_clock::now();
+  std::cout << "\n# Calculating non-resonant transversal plasmon spectrum..." << std::endl;
+  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_P_TP, "results/TP.dat");
+  auto t12e = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the full TP spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t12e-t12s).count() << " seconds." << std::endl;
+
+  auto t13s = std::chrono::high_resolution_clock::now();
+  std::cout << "\n# Calculating resonant longitudinal plasmon spectrum..." << std::endl;
+  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP, "results/LP.dat");
+  auto t13e = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the LP spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t13e-t13s).count() << " seconds." << std::endl;
+
+  auto t14s = std::chrono::high_resolution_clock::now();
+  std::cout << "\n# Calculating Primakoff spectrum for " << n_rad_values << " different radii..." << std::endl;
+  calculate_spectral_flux_Primakoff(test_ergs, test_rads, s, "results/primakoff_different_radii.dat");
+  auto t14e = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the Primakoff spectrum (" << n_erg_values << " energy values) for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t14e-t14s).count() << " seconds." << std::endl;
+
+  auto t15s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating integrated Primakoff flux between [0,50] keV for " << n_rad_values << " different radii..." << std::endl;
   calculate_total_flux_solar_disc_at_fixed_radii(0.0, 50.0, test_rads, s, &SolarModel::Gamma_P_Primakoff, "results/primakoff_integrated_fluxes.dat");
-  auto t12e = std::chrono::high_resolution_clock::now();
-  std::cout << "# alculating integrated Primakoff flux for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t12e-t12s).count() << " seconds." << std::endl;
+  auto t15e = std::chrono::high_resolution_clock::now();
+  std::cout << "# alculating integrated Primakoff flux for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t15e-t15s).count() << " seconds." << std::endl;
 
+  auto t16s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Compton spectrum..." << std::endl;
   calculate_spectral_flux_Compton(test_ergs, s, "results/compton.dat");
+  auto t16e = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the Compton spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::milliseconds>(t16e-t16s).count()/1000.0 << " seconds." << std::endl;
 
   auto t2s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating total ff spectrum..." << std::endl;

@@ -439,22 +439,23 @@ double SolarModel::bfield(double r) {
 // Auxiliary function required for FF and ee contribution
 const double abs_prec_aux_fun = 0;
 const double rel_prec_aux_fun = 1.0e-4;
-//const int int_method_aux_fun = 5;
+// const int int_method_aux_fun = 5;
 const int int_space_size_aux_fun = 1e6;
-struct integrand_params_aux_fun { double u; double y; };
+struct integrand_params_aux_fun { double u; double v; };
 
-double integrand(double x, void * params) {
+double aux_integrand(double x, void * params) {
   // Retrieve parameters and other integration variables.
   struct integrand_params_aux_fun * p = (struct integrand_params_aux_fun *)params;
   double u = (p->u);
-  double y = (p->y);
+  double y = (p->v);
+  double x2 = x*x;
   double y2 = y*y;
-  double a2 = sqrt(x*x + u) + x;
+  double a2 = sqrt(x2 + u) + x;
   a2 = a2*a2;
-  double b2 = sqrt(x*x + u) - x;
+  double b2 = sqrt(x2 + u) - x;
   b2 = b2*b2;
   double analytical_integral = 0.5 * ( 1.0/(1.0 + y2/b2) - 1.0/(1.0 + y2/a2) + log((a2 + y2) / (b2 + y2)) );
-  return x * exp(-x*x) * analytical_integral;
+  return x * exp(-x2) * analytical_integral;
 }
 
 double aux_function(double u, double y) {
@@ -462,18 +463,15 @@ double aux_function(double u, double y) {
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
   double result, error;
   gsl_function f;
-  f.function = &integrand;
+  f.function = &aux_integrand;
   f.params = &p;
-  //gsl_set_error_handler_off();
-  //gsl_integration_qag (&f, sqrt(x*x + u) - x, sqrt(x*x + u) - x, 0.1*abs_prec, 0.1*rel_prec, 1e6, method, w, &result, &error);
   gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
-  //printf ("GSL status: %s\n", gsl_strerror (status));
-  //gsl_integration_qags(&F, rad, rmax, 1e-1*abs_prec, 1e-1*rel_prec, 1E6, w, &result, &error);
   gsl_integration_workspace_free (w);
   return result;
 }
 
-struct integrand_params_rosseland { SolarModel* s; double r;};
+struct integrand_params_rosseland { SolarModel* s; double r; };
+
 double rosseland_integrand(double omega, void * params){
     const double prefactor = 15.0/(4.0*gsl_pow_4(pi));
     struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
@@ -492,6 +490,7 @@ double rosseland_integrand(double omega, void * params){
     // double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
     return R / opac ;
 }
+
 double SolarModel::rosseland_opacity(double r) {
     integrand_params_rosseland p = { this, r };
     double result, error;
@@ -619,19 +618,72 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
 
 double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   const double prefactor6 = g_agg*g_agg/(32.0*pi);
-  if (erg > 0) {
-    double w_pl_sq = omega_pl_squared(r);
-    if (w_pl_sq/(erg*erg) > 1.0) { return 0; }
-    double ks_sq = kappa_squared(r);
-    double T_in_keV = temperature_in_keV(r);
-    double x = 4.0*(erg*erg)/ks_sq;
-    double phase_factor = 2.0*sqrt(1.0 - w_pl_sq/(erg*erg))/gsl_expm1(erg/T_in_keV);
-    double rate = (ks_sq*T_in_keV)*((1.0 + 1.0/x)*gsl_log1p(x) - 1.0);
-    return prefactor6*phase_factor*rate;
+  double w_pl_sq = omega_pl_squared(r);
+  double ks_sq = kappa_squared(r);
+  double T_in_keV = temperature_in_keV(r);
+
+  double e2 = erg*erg;
+  double x = e2/w_pl_sq;
+  if (x <= 1.0) { return 0; }
+  double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
+  double rate = ks_sq*T_in_keV;
+  if (erg > 1.0) {
+    double y = 4.0*e2/ks_sq;
+    double approximated_integral = (1.0 + 1.0/y)*gsl_log1p(y) - 1.0;
+    rate *= approximated_integral;
   } else {
-    return 0;
+    double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
+    double u = (2.0*e2 - w_pl_sq)/dk2;
+    double v = u + ks_sq/dk2;
+    double analytical_integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
+    rate *= fmax(analytical_integral,0.0);
   }
+
+  return prefactor6*phase_factor*rate;
 }
+//
+// double primakoff_LP_correction_integrand(double cos, void * params) {
+//   // Retrieve parameters and other integration variables.
+//   struct integrand_params_aux_fun * p = (struct integrand_params_aux_fun *)params;
+//   double x = 0.5 * (1.0 - cos*cos) / ( (p->u - cos)*(p->v - cos) );
+//   std::cout << p->u << " " << p->v << " " << x << std::endl;
+//   return x;
+// }
+
+// double SolarModel::Gamma_P_Primakoff(double erg, double r) {
+//   const double prefactor6 = g_agg*g_agg/(32.0*pi);
+//   if (erg < 1.0) {
+//     double w_pl_sq = omega_pl_squared(r);
+//     double e2 = erg*erg;
+//     double x = e2/w_pl_sq;
+//     if (x <= 1.0) { return 0; }
+//     double ks_sq = kappa_squared(r);
+//     double T_in_keV = temperature_in_keV(r);
+//     double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
+//     double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
+//     double u = (2.0*e2 - w_pl_sq)/dk2;
+//     double v = u + ks_sq/dk2;
+//     //gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
+//     //integrand_params_aux_fun p = { u, v };
+//     //double rate, error;
+//     //gsl_function f;
+//     //f.function = &primakoff_LP_correction_integrand;
+//     //f.params = &p;
+//     //gsl_integration_qag(&f, -0.5, 0.5, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, int_method_aux_fun , w, &rate, &error);
+//     //gsl_integration_qags(&f, -1, 1, abs_prec_aux_fun, 0.00001*rel_prec_aux_fun, int_space_size_aux_fun, w, &rate, &error);
+//     //gsl_integration_workspace_free(w);
+//     //rate *= ks_sq*T_in_keV;
+//
+//     double integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
+//     //double xx = prefactor6*phase_factor*(ks_sq*T_in_keV)*fmax(integral,0.0);
+//     //std::cout << xx << " " << integral << std::endl;
+//     return prefactor6*phase_factor*(ks_sq*T_in_keV)*fmax(integral,0.0);
+//
+//   } else {
+//     return Gamma_P_Primakoff_simple(erg, r);
+//   }
+// }
+
 /*
 double SolarModel::Gamma_P_LP(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
@@ -686,8 +738,12 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   return result;
 }
 
+double SolarModel::Gamma_P_plasmon(double erg, double r) {
+  return Gamma_P_TP(erg, r) + Gamma_P_LP(erg, r);
+}
+
 double SolarModel::Gamma_P_all_photon(double erg, double r) {
-  return Gamma_P_Primakoff(erg, r) + Gamma_P_TP(erg, r) + Gamma_P_LP(erg, r);
+  return Gamma_P_Primakoff(erg, r) + Gamma_P_plasmon(erg, r);
 }
 
 // Read off interpolated elements for op, tops and opas

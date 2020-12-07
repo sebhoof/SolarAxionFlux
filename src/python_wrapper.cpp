@@ -12,7 +12,8 @@ PYBIND11_MODULE(pyaxionflux, m) {
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
   m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
-  m.def("calculate_spectra_with_varied_opacities", &py11_save_spectral_flux_for_varied_opacities, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0);
+  const std::vector<double> cc = { 0, 0, 0 };
+  m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=cc);
   m.def("calculate_reference_counts", &py11_calculate_reference_counts, "Calculate reference counts for each bin of a known experiment.", "masses"_a, "dataset"_a, "spectrum_file_P"_a, "spectrum_file_ABC"_a="", "output_file_name"_a="");
   // EXPERIMENTAL
   m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
@@ -82,30 +83,39 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
     if (radii.size() == 1) { calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat"); } else { calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat"); }
   } else if (process == "ABC") {
     if (radii.size() == 1) { calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat"); } else { calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat"); }
-  } else if (process == "both") {
+  } else if (process == "Plasmon") {
+    if (radii.size() == 1) { calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat"); } else { calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat"); }
+  } else if (process == "all") {
     if (radii.size() == 1) {
       calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat");
       calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat");
+      calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat");
     } else {
       calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
       calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
+      calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
     }
   } else {
-    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'Primakoff', 'ABC', or 'both'.";
+    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'Plasmon', 'Primakoff', or 'all'.";
     throw XUnsupportedOption(err_msg);
   }
 }
 
-void py11_save_spectral_flux_for_varied_opacities(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a, double b) {
+void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a, double b, std::vector<double> c) {
   SolarModel s (solar_model_file, OP);
   s.set_opacity_correction(a, b);
-  std::vector<double> check = s.get_opacity_correction();
-  std::cout << "INFO. Setting up Solar model from file " << solar_model_file << " and opacity correction parameters (" << check[0] << ", " << check[1] << ")." << std::endl;
+  s.set_bfield_correction(c[0], c[1], c[2]);
+  std::vector<double> check_1 = s.get_opacity_correction();
+  std::vector<double> check_2 = s.get_bfield_correction();
+  std::cout << "INFO. Setting up Solar model from file " << solar_model_file << " and opacity correction parameters (" << check_1[0] << ", " << check_1[1] << ") "\
+                "and B-field correction factors (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
 
   std::string output_file = output_file_root+"_Primakoff.dat";
   calculate_spectral_flux_Primakoff(ergs, s, output_file);
-  output_file = output_file_root+"_electron.dat";
+  output_file = output_file_root+"_ABC.dat";
   calculate_spectral_flux_axionelectron(ergs, s, output_file);
+  output_file = output_file_root+"_plasmon.dat";
+  calculate_spectral_flux_plasmon(ergs, s, output_file);
 }
 
 std::vector<std::vector<double> > py11_calculate_reference_counts(std::vector<double> masses, std::string dataset, std::string spectrum_file_P, std::string spectrum_file_ABC, std::string output_file_name) {
