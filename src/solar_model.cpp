@@ -635,7 +635,7 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
     double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
     double u = (2.0*e2 - w_pl_sq)/dk2;
     double v = u + ks_sq/dk2;
-    double analytical_integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
+    double analytical_integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (ks_sq/dk2) - 1.0;
     rate *= fmax(analytical_integral,0.0);
   }
 
