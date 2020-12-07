@@ -627,17 +627,17 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
   if (x <= 1.0) { return 0; }
   double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
   double rate = ks_sq*T_in_keV;
-  if (erg > 1.0) {
-    double y = 4.0*e2/ks_sq;
-    double approximated_integral = (1.0 + 1.0/y)*gsl_log1p(y) - 1.0;
-    rate *= approximated_integral;
-  } else {
-    double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
-    double u = (2.0*e2 - w_pl_sq)/dk2;
-    double v = u + ks_sq/dk2;
-    double analytical_integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
-    rate *= fmax(analytical_integral,0.0);
-  }
+//  if (erg > 1.0) {
+//    double y = 4.0*e2/ks_sq;
+//    double approximated_integral = (1.0 + 1.0/y)*gsl_log1p(y) - 1.0;
+//    rate *= approximated_integral;
+//  } else {
+  double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
+  double u = (2.0*e2 - w_pl_sq)/dk2;
+  double v = u + ks_sq/dk2;
+  double analytical_integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
+  rate *= fmax(analytical_integral,0.0);
+//  }
 
   return prefactor6*phase_factor*rate;
 }
