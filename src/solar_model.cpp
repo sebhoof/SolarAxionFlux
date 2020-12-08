@@ -186,7 +186,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
       tops_densities = ledcop_densities;
       //name = "LEDCOP";
   }
-  if (opcode == ATOMIC){
+  if (opcode == ATOMIC) {
         tops_grid = atomic_grid;
         tops_temperatures = atomic_temperatures;
         tops_densities = atomic_densities;
@@ -244,7 +244,21 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   accel[6] = gsl_interp_accel_alloc ();
   linear_interp[6] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
   const double* alpha_vals = &alpha[0];
-  gsl_spline_init (linear_interp[6], radius_alpha, alpha_vals, pts_alpha);
+  gsl_spline_init(linear_interp[6], radius_alpha, alpha_vals, pts_alpha);
+
+  std::string solar_model_name_stripped = solar_model_name.substr(solar_model_name.find("_"));
+  //solar_model_name_stripped = solar_model_name_stripped.substr(0,solar_model_name_stripped.find(".")));
+  try {
+    data_rosseland_opacity = ASCIItableReader(path_to_data+"opacity_tables/Rosseland_mean/Rosseland"+solar_model_name_stripped);
+  } catch (std::runtime_error& e) {
+    throw;
+  }
+  int pts_ross_op = data_rosseland_opacity.getnrow();
+  const double* radius_ross_op = &data_rosseland_opacity[0][0];
+  const double* log10_ross_op = &data_rosseland_opacity[1][0];
+  accel[6] = gsl_interp_accel_alloc();
+  linear_interp[6] = gsl_spline_alloc(gsl_interp_linear, pts_ross_op);
+  gsl_spline_init(linear_interp[6], radius_ross_op, log10_ross_op, pts_ross_op);
 
   // All done! Set Solar model class to be correctly initialised
   initialisation_status = true;
@@ -510,6 +524,11 @@ double SolarModel::rosseland_opacity(double r) {
     gsl_integration_cquad_workspace_free(v);
     //gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
     return temperature_in_keV(r)/result;
+}
+
+double SolarModel::interpolate_rosseland_opacity(double r) {
+  double log10op = gsl_spline_eval(linear_interp[6], r, accel[6]);
+  return pow(10, log10op);
 }
 
 

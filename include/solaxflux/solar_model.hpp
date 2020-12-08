@@ -100,6 +100,7 @@ class SolarModel {
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
+    double interpolate_rosseland_opacity(double r);
     double rosseland_opacity(double r);
 
     // B-field correction
@@ -140,6 +141,7 @@ class SolarModel {
     double opacity_correction_b = 0.0;
     ASCIItableReader data;
     ASCIItableReader data_alpha;
+    ASCIItableReader data_rosseland_opacity;
     std::map<Isotope,int> isotope_index_map;
     int num_tracked_isotopes;
     int num_interp_pts;
