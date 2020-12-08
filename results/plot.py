@@ -81,7 +81,7 @@ plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),':', color=col_agss09, la
 plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, label=r'Primakoff (Redondo)')
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
 plt.plot(res6[:,0], res6[:,1]/1.0e10, 'k-', label=r'TP (AGSS09)')
-plt.plot(ref5[:,0], ref5[:,1]*4.0, '-', color='green', label=r'TP (Giannotti)')
+plt.plot(ref5[:,0], ref5[:,1]*4.0*1.4995, '-', color='green', label=r'TP (Giannotti)')#correct B conversion in giannotti result and adjust coupling constant
 
 plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$, OP opacities')
 plt.xlabel(r'Energy $\omega$ [keV]')
