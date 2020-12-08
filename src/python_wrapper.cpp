@@ -104,11 +104,11 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
 void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a, double b, std::vector<double> c) {
   SolarModel s (solar_model_file, OP);
   s.set_opacity_correction(a, b);
-  s.set_bfield_correction(c[0], c[1], c[2]);
+  s.set_bfields(c[0], c[1], c[2]);
   std::vector<double> check_1 = s.get_opacity_correction();
-  std::vector<double> check_2 = s.get_bfield_correction();
+  std::vector<double> check_2 = s.get_bfields();
   std::cout << "INFO. Setting up Solar model from file " << solar_model_file << " and opacity correction parameters (" << check_1[0] << ", " << check_1[1] << ") "\
-                "and B-field correction factors (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
+                "and B-fields (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
 
   std::string output_file = output_file_root+"_Primakoff.dat";
   calculate_spectral_flux_Primakoff(ergs, s, output_file);

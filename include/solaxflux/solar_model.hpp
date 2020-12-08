@@ -104,8 +104,8 @@ class SolarModel {
     double rosseland_opacity(double r);
 
     // B-field correction
-    void set_bfield_correction(double c_rad, double c_tach, double c_outer);
-    std::vector<double> get_bfield_correction();
+    void set_bfields(double b_rad, double b_tach, double b_outer); // Set B-fields in tesla
+    std::vector<double> get_bfields();
     // Set the opacity correction of the Opacity Project values according to opacity*(1 + delta), with
     // delta = a + b * log10(T(0)/T(r)) / log10(T(0)/T(r_CZ)), where r_CZ = location of convective zone
     void set_opacity_correction(double a, double b);
@@ -124,21 +124,24 @@ class SolarModel {
     bool is_initialised();
 
   private:
+    // INFO
     const opacitycode opcode;
     bool initialisation_status = false;
     // Use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is false
     bool raffelt_approx;
     // Solar model file name (derived from path)
     std::string solar_model_name;
+    // PROPERTIES
     // Min., max. radius of the solar model file (distance r from the centre of the Sun; in units of the Solar radius)
     double r_lo, r_hi;
-    // B-field correction
-    double bfield_correction_rad = 0.0;
-    double bfield_correction_tach = 0.0;
-    double bfield_correction_outer = 0.0;
     // Opacity corrections; default value = 0
     double opacity_correction_a = 0.0;
     double opacity_correction_b = 0.0;
+    // B-field reference values
+    double bfield_rad_T = 3.0e3;
+    double bfield_tach_T = 50.0;
+    double bfield_outer_T = 4.0;
+    // DATA AND INTERPOLATION
     ASCIItableReader data;
     ASCIItableReader data_rosseland_opacity;
     std::map<Isotope,int> isotope_index_map;
@@ -147,7 +150,6 @@ class SolarModel {
     std::vector<Isotope> tracked_isotopes;
     std::vector<gsl_interp_accel*> accel;
     std::vector<gsl_spline*> linear_interp;
-    // TODO. Maybe convert n_isotope and z2_n_isotope into maps like n_element with std::map<Isotope, ...> etc.
     std::vector<gsl_interp_accel*> n_isotope_acc;
     std::vector<gsl_spline*> n_isotope_lin_interp;
     std::vector<gsl_interp_accel*> z2_n_isotope_acc;

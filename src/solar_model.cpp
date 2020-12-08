@@ -275,14 +275,16 @@ SolarModel::~SolarModel() {
 // Move assignment operator
 SolarModel& SolarModel::operator=(SolarModel &&src) {
   if (this != &src) {
+    // Settings
+    std::swap(raffelt_approx, src.raffelt_approx);
+    // Info
     std::swap(initialisation_status,src.initialisation_status);
-    std::swap(raffelt_approx,src.raffelt_approx);
     std::swap(solar_model_name,src.solar_model_name);
-    std::swap(data,src.data);
     std::swap(tracked_isotopes,src.tracked_isotopes);
+    // Data and interpolation
+    std::swap(data,src.data);
+    std::swap(data_rosseland_opacity,src.data_rosseland_opacity);
     std::swap(num_interp_pts,src.num_interp_pts);
-    std::swap(r_lo,src.r_lo);
-    std::swap(r_hi,src.r_hi);
     std::swap(num_tracked_isotopes,src.num_tracked_isotopes);
     std::swap(isotope_index_map,src.isotope_index_map);
     std::swap(tracked_isotopes,src.tracked_isotopes);
@@ -304,6 +306,14 @@ SolarModel& SolarModel::operator=(SolarModel &&src) {
     std::swap(n_element_acc,src.n_element_acc);
     std::swap(n_element_lin_interp,src.n_element_lin_interp);
     std::swap(element_ionisationsqr,src.element_ionisationsqr);
+    // Properties
+    std::swap(r_lo, src.r_lo);
+    std::swap(r_hi, src.r_hi);
+    std::swap(opacity_correction_a, src.opacity_correction_a);
+    std::swap(opacity_correction_b, src.opacity_correction_b);
+    std::swap(bfield_rad_T, src.bfield_rad_T);
+    std::swap(bfield_tach_T, src.bfield_tach_T);
+    std::swap(bfield_outer_T, src.bfield_outer_T);
   }
   return *this;
 }
@@ -409,24 +419,21 @@ double SolarModel::opacity(double omega, double r) {
 
 
 double SolarModel::bfield(double r) {
-  const double b_rad = 3.0e3/(1.0e6*eV2T); // in keV^2
-  const double b_tach = 40.0/(1.0e6*eV2T); // in keV^2
-  const double b_outer = 3.5/(1.0e6*eV2T); // in keV^2
   const double lambda = 10.0*radius_cz + 1.0;
   const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1.0/lambda, lambda);
 
   double result = 0.0;
   if (r < radius_cz+size_tach) {
     double x = gsl_pow_2(r/radius_cz);
-    if (x < 1.0) { result += b_rad*(1.0+bfield_correction_rad)*lambda_factor*x*pow(1.0-x, lambda); }
+    if (x < 1.0) { result += bfield_rad_T*lambda_factor*x*pow(1.0-x, lambda); }
     double y = gsl_pow_2((r - radius_cz)/size_tach);
-    if (y < 1.0) { result += b_tach*(1.0+bfield_correction_tach)*(1.0-y); }
+    if (y < 1.0) { result += bfield_tach_T*(1.0-y); }
   } else {
     double z = gsl_pow_2((r - radius_outer)/size_outer);
-    if (z < 1.0) { result += b_outer*(1.0+bfield_correction_outer)*(1.0 - z); }
+    if (z < 1.0) { result += bfield_outer_T*(1.0 - z); }
   }
 
-  return result;
+  return result/(1.0e6*eV2T); // in keV^2
 }
 
 // Auxiliary function required for FF and ee contribution
@@ -994,13 +1001,13 @@ double SolarModel::get_gaee_ref_value() { return g_aee; }
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
-void SolarModel::set_bfield_correction(double c_rad, double c_tach, double c_outer) {
-  bfield_correction_rad = c_rad;
-  bfield_correction_tach = c_tach;
-  bfield_correction_outer = c_outer;
+void SolarModel::set_bfields(double b_rad, double b_tach, double b_outer) {
+  bfield_rad_T = b_rad;
+  bfield_tach_T = b_tach;
+  bfield_outer_T = b_outer;
 }
-std::vector<double> SolarModel::get_bfield_correction() {
-  std::vector<double> result = { bfield_correction_rad, bfield_correction_tach, bfield_correction_outer };
+std::vector<double> SolarModel::get_bfields() {
+  std::vector<double> result = { bfield_rad_T, bfield_tach_T, bfield_outer_T };
   return result;
 }
 void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
