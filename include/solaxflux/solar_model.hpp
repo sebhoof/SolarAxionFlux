@@ -77,7 +77,9 @@ class SolarModel {
     double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
     double Gamma_P_Primakoff(double omega, double r); // The usual Primakoff rate, but incl. corrections for lower energies < 1 keV
     double Gamma_P_LP(double omega, double r);
+    double Gamma_P_LP_Rosseland(double omega, double r); // using Rosseland opacities
     double Gamma_P_TP(double omega, double r); // only non-resonant part (m_a = 0)
+    double Gamma_P_TP_Rosseland(double omega, double r); // using Rosseland opacities; only non-resonant part (m_a = 0)
     double Gamma_P_plasmon(double omega, double r); // all plasmon interactions
     double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
 

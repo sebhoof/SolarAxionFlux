@@ -593,20 +593,20 @@ double SolarModel::Gamma_P_opacity(double omega, double r) {
   return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
 }
 
-double SolarModel::Gamma_P_all_electron(double erg, double r) {
+double SolarModel::Gamma_P_all_electron(double omega, double r) {
   double result = 0;
   if (opcode == OP) {
     double element_contrib = 0.0;
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
-    element_contrib += Gamma_P_ff(erg, r, iso_ind_1) + Gamma_P_ff(erg, r, iso_ind_2) + Gamma_P_ff(erg, r, iso_ind_3);
-    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(erg, r, op_element_names[k]); }
-    result = element_contrib + Gamma_P_Compton(erg, r) + Gamma_P_ee(erg, r);
+    element_contrib += Gamma_P_ff(omega, r, iso_ind_1) + Gamma_P_ff(omega, r, iso_ind_2) + Gamma_P_ff(omega, r, iso_ind_3);
+    for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_P_opacity(omega, r, op_element_names[k]); }
+    result = element_contrib + Gamma_P_Compton(omega, r) + Gamma_P_ee(omega, r);
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {
-    double u = erg/temperature_in_keV(r);
-    double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(erg, r);
-    result = Gamma_P_opacity(erg, r) + reducedCompton + Gamma_P_ee(erg, r);
+    double u = omega/temperature_in_keV(r);
+    double reducedCompton = 0.5*(1.0 - 1.0/gsl_expm1(u)) * Gamma_P_Compton(omega, r);
+    result = Gamma_P_opacity(omega, r) + reducedCompton + Gamma_P_ee(omega, r);
   } else if (opcode == OPAS) {
-    result = Gamma_P_opacity(erg, r);
+    result = Gamma_P_opacity(omega, r);
   } else {
     //terminate_with_error("ERROR! Unkown option for 'opcode' argument. Use OP, LEDCOP, ATOMIC, or OPAS.");
     std::string err_msg = "Unkown option for 'opcode' argument. Use ";
@@ -616,21 +616,21 @@ double SolarModel::Gamma_P_all_electron(double erg, double r) {
   return result;
 }
 
-double SolarModel::Gamma_P_Primakoff(double erg, double r) {
+double SolarModel::Gamma_P_Primakoff(double omega, double r) {
   const double prefactor6 = g_agg*g_agg/(32.0*pi);
   double w_pl_sq = omega_pl_squared(r);
   double ks_sq = kappa_squared(r);
   double T_in_keV = temperature_in_keV(r);
 
-  double e2 = erg*erg;
-  double x = e2/w_pl_sq;
+  double om2 = omega*omega;
+  double x = om2/w_pl_sq;
   if (x > 1.0) {
-    double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
+    double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(omega/T_in_keV);
     double rate = ks_sq*T_in_keV;
-    double s = 2.0*erg*sqrt(e2 - w_pl_sq);
+    double s = 2.0*omega*sqrt(om2 - w_pl_sq);
     double t = ks_sq/s;
     double analytical_integral = 0;
-    double u = (2.0*e2 - w_pl_sq)/s;
+    double u = (2.0*om2 - w_pl_sq)/s;
     if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
     double v = u + t;
     if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
@@ -680,7 +680,7 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
 //     return prefactor6*phase_factor*(ks_sq*T_in_keV)*fmax(integral,0.0);
 //
 //   } else {
-//     return Gamma_P_Primakoff_simple(erg, r);
+//     return Gamma_P_Primakoff_simple(omega, r);
 //   }
 // }
 
@@ -708,6 +708,8 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
   double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
+
+double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) { return 0; }
 
 //simplified version
 /*
@@ -738,12 +740,14 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   return result;
 }
 
-double SolarModel::Gamma_P_plasmon(double erg, double r) {
-  return Gamma_P_TP(erg, r) + Gamma_P_LP(erg, r);
+double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) { return 0; }
+
+double SolarModel::Gamma_P_plasmon(double omega, double r) {
+  return Gamma_P_TP(omega, r) + Gamma_P_LP(omega, r);
 }
 
-double SolarModel::Gamma_P_all_photon(double erg, double r) {
-  return Gamma_P_Primakoff(erg, r) + Gamma_P_plasmon(erg, r);
+double SolarModel::Gamma_P_all_photon(double omega, double r) {
+  return Gamma_P_Primakoff(omega, r) + Gamma_P_plasmon(omega, r);
 }
 
 // Read off interpolated elements for op, tops and opas
