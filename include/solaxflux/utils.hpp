@@ -202,7 +202,7 @@ double atomic_weight(Isotope isotope);
 enum opacitycode { OP, OPAS, LEDCOP, ATOMIC };
 const std::map<opacitycode,std::string> opacitycode_name = { {OP,"OP"}, {OPAS,"OPAS"}, {LEDCOP,"LEDCOP"}, {ATOMIC,"ATOMIC"} };
 const std::map<std::string,opacitycode> opacitycode_tag = { {"OP",OP}, {"OPAS",OPAS}, {"LEDCOP",LEDCOP}, {"ATOMIC",ATOMIC} };
-const std::set<std::string> alpha_available = { "data/solar_models/SolarModel_AGS05.dat", "data/solar_models/SolarModel_AGSS09.dat", "data/solar_models/SolarModel_AGSS09ph.dat", "data/solar_models/SolarModel_B16-AGSS09.dat",
+const std::set<std::string> heavyions_available = { "data/solar_models/SolarModel_AGS05.dat", "data/solar_models/SolarModel_AGSS09.dat", "data/solar_models/SolarModel_AGSS09ph.dat", "data/solar_models/SolarModel_B16-AGSS09.dat",
                                                 "data/solar_models/SolarModel_B16-GS98.dat","data/solar_models/SolarModel_GS98.dat" };
 const int op_grid_size = 216;
 const int op_grid [op_grid_size][2] = { {150,54}, {150,56}, {152,54}, {152,56}, {156,68}, {158,68}, {158,70}, {160,64}, {160,66}, {160,68}, {160,70}, {162,64}, {162,66}, {162,68}, {162,70}, {162,72}, {164,66}, {164,68}, {164,70}, {164,72}, {166,66}, {166,68},

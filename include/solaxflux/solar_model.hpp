@@ -140,7 +140,6 @@ class SolarModel {
     double opacity_correction_a = 0.0;
     double opacity_correction_b = 0.0;
     ASCIItableReader data;
-    ASCIItableReader data_alpha;
     ASCIItableReader data_rosseland_opacity;
     std::map<Isotope,int> isotope_index_map;
     int num_tracked_isotopes;

@@ -44,7 +44,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
 
   // Extract the temperature (has to be converted into keV), density, electron density, and ion density * charge^2  from the files.
   // Initialise necessary variables for the screening scale calculation.
-  std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total, alpha;
+    std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> n_op_element (num_op_elements);
@@ -230,22 +230,6 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     }
   }
 
-  // Calculate alpha values from tables
-  if (alpha_available.find(solar_model_name) != alpha_available.end()) {
-     data_alpha = ASCIItableReader(path_to_data+"alpha_tables/alpha"+model_file_name.substr(model_file_name.find("_")));
-  } else {
-     data_alpha = ASCIItableReader(path_to_data+"alpha_tables/alpha_B16-AGSS09.dat");
-  }
-  int n_cols_alpha = data_alpha.getncol();
-  data_alpha.setcolnames("radius", "alpha");
-  int pts_alpha = data_alpha.getnrow();
-  const double* radius_alpha = &data_alpha["radius"][0];
-  for (int i = 0; i < pts_alpha; i++) {alpha.push_back(data_alpha["alpha"][i]);}
-  accel[6] = gsl_interp_accel_alloc ();
-  linear_interp[6] = gsl_spline_alloc (gsl_interp_linear, pts_alpha);
-  const double* alpha_vals = &alpha[0];
-  gsl_spline_init(linear_interp[6], radius_alpha, alpha_vals, pts_alpha);
-
   std::string solar_model_name_stripped = solar_model_name.substr(solar_model_name.find("_"));
   //solar_model_name_stripped = solar_model_name_stripped.substr(0,solar_model_name_stripped.find(".")));
   try {
@@ -295,7 +279,6 @@ SolarModel& SolarModel::operator=(SolarModel &&src) {
     std::swap(raffelt_approx,src.raffelt_approx);
     std::swap(solar_model_name,src.solar_model_name);
     std::swap(data,src.data);
-    std::swap(data_alpha,src.data_alpha);
     std::swap(tracked_isotopes,src.tracked_isotopes);
     std::swap(num_interp_pts,src.num_interp_pts);
     std::swap(r_lo,src.r_lo);
@@ -341,25 +324,21 @@ int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map
 double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_interp[0], r, accel[0]); }
 double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
 double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
+double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
+double SolarModel::mass_fraction(double r, std::string element){ return n_element(r,element)*atomic_weight({element,0})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
+double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
+// N.B. Convenience function below (may be slow for many calls!)
+double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
 double SolarModel::alpha(double r) {
-  if (alpha_available.find(solar_model_name) != alpha_available.end()) {
-    return gsl_spline_eval(linear_interp[6], r, accel[6]);
-  } else {
     double result = 0;
     for (int k = 2; k < num_op_elements; k++) {
       std::string element = op_element_names[k];
       result += mass_fraction(r, element) / metallicity(r) * ionisationsqr_element(r, element) / atomic_weight({element,0});
     }
     return result;
-  }
 }
-double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
-double SolarModel::mass_fraction(double r, std::string element){ return n_element(r,element)*atomic_weight({element,0})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
-double SolarModel::z2_n_iz(double r, int isotope_index) { return gsl_spline_eval(z2_n_isotope_lin_interp[isotope_index], r, z2_n_isotope_acc[isotope_index]); }
-// N.B. Convenience function below (may be slow for many calls!)
-double SolarModel::z2_n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return z2_n_iz(r, isotope_index); }
 double SolarModel::z2_n(double r) {
-  if (alpha_available.find(solar_model_name) != alpha_available.end()) {
+  if (heavyions_available.find(solar_model_name) != heavyions_available.end()) {
     return (mass_fraction(r,"H") + mass_fraction(r,"He") + alpha(r)*metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
   } else {
     return gsl_spline_eval(linear_interp[5], r, accel[5]);  // full ionisation
@@ -556,7 +535,7 @@ double SolarModel::Gamma_P_ff(double omega, double r) {
       static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
       result = Gamma_P_ff(omega, r, iso_ind_1) + Gamma_P_ff(omega, r, iso_ind_2) + Gamma_P_ff(omega, r, iso_ind_3);
     } else {
-      // Contributions from all elements, no full ionisation assumed when alpha available
+      // Contributions from all elements, no full ionisation
       double u = omega/temperature_in_keV(r);
       double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
       result = prefactor1 * n_electron(r)*z2_n(r)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
