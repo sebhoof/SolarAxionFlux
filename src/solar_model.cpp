@@ -624,29 +624,22 @@ double SolarModel::Gamma_P_Primakoff(double erg, double r) {
 
   double e2 = erg*erg;
   double x = e2/w_pl_sq;
-  if (x <= 1.0) { return 0; }
-  double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
-  double rate = ks_sq*T_in_keV;
-  //if (erg > 5.0) {
-  //  double y = 4.0*e2/ks_sq;
-  //  double approximated_integral = (1.0 + 1.0/y)*gsl_log1p(y) - 1.0;
-  //  rate *= approximated_integral;
-  //} else {
-  double s = 2.0*erg*sqrt(e2 - w_pl_sq);
-  double t = s / ks_sq;
-  double analytical_integral = 0;
-  if (s > 0) {
+  if (x > 1.0) {
+    double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
+    double rate = ks_sq*T_in_keV;
+    double s = 2.0*erg*sqrt(e2 - w_pl_sq);
+    double t = ks_sq/s;
+    double analytical_integral = 0;
     double u = (2.0*e2 - w_pl_sq)/s;
     if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
-    double v = u + 1.0/t;
+    double v = u + t;
     if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
-    analytical_integral *= 0.5*t;
+    analytical_integral *= 0.5/t;
     analytical_integral -= 1.0;
+    return prefactor6*phase_factor*rate*analytical_integral;
+  } else {
+    return 0;
   }
-  rate *= analytical_integral;
-  //}
-
-  return prefactor6*phase_factor*rate;
 }
 //
 // double primakoff_LP_correction_integrand(double cos, void * params) {
