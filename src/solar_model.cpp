@@ -646,48 +646,6 @@ double SolarModel::Gamma_P_Primakoff(double omega, double r) {
     return 0;
   }
 }
-//
-// double primakoff_LP_correction_integrand(double cos, void * params) {
-//   // Retrieve parameters and other integration variables.
-//   struct integrand_params_aux_fun * p = (struct integrand_params_aux_fun *)params;
-//   double x = 0.5 * (1.0 - cos*cos) / ( (p->u - cos)*(p->v - cos) );
-//   std::cout << p->u << " " << p->v << " " << x << std::endl;
-//   return x;
-// }
-
-// double SolarModel::Gamma_P_Primakoff(double erg, double r) {
-//   const double prefactor6 = g_agg*g_agg/(32.0*pi);
-//   if (erg < 1.0) {
-//     double w_pl_sq = omega_pl_squared(r);
-//     double e2 = erg*erg;
-//     double x = e2/w_pl_sq;
-//     if (x <= 1.0) { return 0; }
-//     double ks_sq = kappa_squared(r);
-//     double T_in_keV = temperature_in_keV(r);
-//     double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(erg/T_in_keV);
-//     double dk2 = 2.0*erg*sqrt(e2 - w_pl_sq);
-//     double u = (2.0*e2 - w_pl_sq)/dk2;
-//     double v = u + ks_sq/dk2;
-//     //gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
-//     //integrand_params_aux_fun p = { u, v };
-//     //double rate, error;
-//     //gsl_function f;
-//     //f.function = &primakoff_LP_correction_integrand;
-//     //f.params = &p;
-//     //gsl_integration_qag(&f, -0.5, 0.5, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, int_method_aux_fun , w, &rate, &error);
-//     //gsl_integration_qags(&f, -1, 1, abs_prec_aux_fun, 0.00001*rel_prec_aux_fun, int_space_size_aux_fun, w, &rate, &error);
-//     //gsl_integration_workspace_free(w);
-//     //rate *= ks_sq*T_in_keV;
-//
-//     double integral = 0.5*( (u*u-1.0)*log((u-1.0)/(u+1.0)) - (v*v-1.0)*log((v-1.0)/(v+1.0)) ) / (v-u) - 1.0;
-//     //double xx = prefactor6*phase_factor*(ks_sq*T_in_keV)*fmax(integral,0.0);
-//     //std::cout << xx << " " << integral << std::endl;
-//     return prefactor6*phase_factor*(ks_sq*T_in_keV)*fmax(integral,0.0);
-//
-//   } else {
-//     return Gamma_P_Primakoff_simple(omega, r);
-//   }
-// }
 
 /*
 double SolarModel::Gamma_P_LP(double omega, double r) {
@@ -702,19 +660,20 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
   return result;
 }
  */
+
 //O'hare version (applies also far from resonance?)
 double SolarModel::Gamma_P_LP(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
+  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
-    double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
   double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
-double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) { return 0; }
+double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) { return Gamma_P_LP(omega, r); }
 
 //simplified version
 /*
@@ -727,16 +686,13 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   return result;
 }
 */
-//Full version
+
 double SolarModel::Gamma_P_TP(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
+  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
-  static OneDInterpolator ross_op (SOLAXFLUX_DIR "/data/opacity_tables/arXiv_1601_01930v2_fig10_opacity.txt");
-  double gamma = -gsl_expm1(-u)*ross_op.interpolate(r);
-  //double gamma = - rosseland_opacity(r) * gsl_expm1(-u);
-  //double gamma = -gsl_expm1(-u)*opacity(omega, r);
+  double gamma = -gsl_expm1(-u)*opacity(omega, r);
   double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
-//  double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);   //transfered momentum squared
+  // double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);   //transfered momentum squared
   double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
   double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
@@ -745,7 +701,18 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   return result;
 }
 
-double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) { return 0; }
+double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) {
+  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
+  double u = omega/temperature_in_keV(r);
+  double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
+  double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
+  double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
+  const double photon_polarization = 2.0;
+  double result = geom_factor * photon_polarization * gamma * DeltaTsq / ( (DeltaPsq+gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
+  return result;
+}
 
 double SolarModel::Gamma_P_plasmon(double omega, double r) {
   return Gamma_P_TP(omega, r) + Gamma_P_LP(omega, r);
@@ -992,7 +959,7 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
   if ((r_lo > rad_min) || (r_hi < rad_max)) { std::cout << "WARNING. Radii do not agree with min/max radius values available in Solar model! Unsupported radii will be ignored." << std::endl; }
   supported_radii.push_back(r_lo);
   for (auto r = radii.begin(); r !=radii.end(); ++r) { if ((r_lo < *r) && (*r < r_hi)) { supported_radii.push_back(*r); } }
-  //supported_radii.push_back(0.95*r_hi);
+  // if (r_hi < rad_max) { supported_radii.push_back(r_hi); }
   return supported_radii;
 }
 
