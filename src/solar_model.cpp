@@ -673,7 +673,16 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
   return result;
 }
 
-double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) { return Gamma_P_LP(omega, r); }
+double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
+  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
+  double u = omega/temperature_in_keV(r);
+  double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
+  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
+  double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
+  double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
+  return result;
+}
 
 //simplified version
 /*
