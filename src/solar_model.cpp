@@ -630,7 +630,7 @@ double SolarModel::Gamma_P_Primakoff(double omega, double r) {
   double om2 = omega*omega;
   double x = om2/w_pl_sq;
   if (x > 1.0) {
-    double phase_factor = 2.0*sqrt(1.0 - 1.0/x) / gsl_expm1(omega/T_in_keV);
+    double phase_factor = 2.0/(sqrt(1.0 - 1.0/x) * gsl_expm1(omega/T_in_keV));
     double rate = ks_sq*T_in_keV;
     double s = 2.0*omega*sqrt(om2 - w_pl_sq);
     double t = ks_sq/s;
