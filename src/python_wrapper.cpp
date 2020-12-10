@@ -12,7 +12,7 @@ PYBIND11_MODULE(pyaxionflux, m) {
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
   m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
-  const std::vector<double> cc = { 0, 0, 0 };
+  const std::vector<double> cc = { 3.0e3, 50.0, 4.0 };
   m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=cc);
   m.def("calculate_reference_counts", &py11_calculate_reference_counts, "Calculate reference counts for each bin of a known experiment.", "masses"_a, "dataset"_a, "spectrum_file_P"_a, "spectrum_file_ABC"_a="", "output_file_name"_a="");
   // EXPERIMENTAL
@@ -105,10 +105,11 @@ void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_
   SolarModel s (solar_model_file, OP);
   s.set_opacity_correction(a, b);
   s.set_bfields(c[0], c[1], c[2]);
+
   std::vector<double> check_1 = s.get_opacity_correction();
   std::vector<double> check_2 = s.get_bfields();
   std::cout << "INFO. Setting up Solar model from file " << solar_model_file << " and opacity correction parameters (" << check_1[0] << ", " << check_1[1] << ") "\
-                "and B-fields (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
+               "and B-fields (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
 
   std::string output_file = output_file_root+"_Primakoff.dat";
   calculate_spectral_flux_Primakoff(ergs, s, output_file);

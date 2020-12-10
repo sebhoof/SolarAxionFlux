@@ -25,6 +25,9 @@ double erg_integrand_1d(double erg, void * params) {
   p2->erg = erg;
 
   gsl_integration_qag(p2->f, p2->s->get_r_lo(), p2->s->get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, p2->w, &result, &error);
+  //static std::vector<double> radii = { p2->s->get_r_lo(), p2->s->r_from_omega_pl(erg), p2->s->get_r_hi() };
+  //gsl_integration_qagp(p2->f, &radii[0], radii.size(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);
+  //gsl_integration_qags(p2->f, p2->s->get_r_lo(), 0.9, int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);
 
   return result;
 }
@@ -123,7 +126,7 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
     p.r_2 = valid_radii[i];
     if (p.r_2 > p.r_1) {
       //gsl_integration_qagiu(&f, 0.0, 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error); // Alternative integration from 0 -> infinity; too slow.
-      gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(),10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
+      gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
     } else {
       integral = 0;
       error = 0;
