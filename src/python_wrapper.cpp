@@ -115,8 +115,10 @@ void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_
   calculate_spectral_flux_Primakoff(ergs, s, output_file);
   output_file = output_file_root+"_ABC.dat";
   calculate_spectral_flux_axionelectron(ergs, s, output_file);
-  output_file = output_file_root+"_plasmon.dat";
-  calculate_spectral_flux_plasmon(ergs, s, output_file);
+  if (c[0]+c[1]+c[2] > 0) {
+    output_file = output_file_root+"_plasmon.dat";
+    calculate_spectral_flux_plasmon(ergs, s, output_file);
+  }
 }
 
 std::vector<std::vector<double> > py11_calculate_reference_counts(std::vector<double> masses, std::string dataset, std::string spectrum_file_P, std::string spectrum_file_ABC, std::string output_file_name) {
