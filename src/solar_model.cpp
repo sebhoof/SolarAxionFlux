@@ -44,7 +44,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
 
   // Extract the temperature (has to be converted into keV), density, electron density, and ion density * charge^2  from the files.
   // Initialise necessary variables for the screening scale calculation.
-    std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
+  std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> n_op_element (num_op_elements);
@@ -88,6 +88,8 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     }
     n_e.push_back(ne*rhorel);
 
+    //omega_pl.push_back(sqrt(4.0*pi*alpha_EM/m_electron*(ne*rhorel)*gsl_pow_3(keV2cm)));
+
     // Ion number density and ion number density weighted by charge^2 from summing over all elements (full ionisation) and individual element densities
     double n_total_val = 0.0, z2_n_total_val = 0.0;
     for (int j = 0; j < num_tracked_isotopes; j++) {
@@ -123,6 +125,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   init_numbered_interp(3, radius, &density[0]); // Density
   init_numbered_interp(4, radius, &n_total[0]); // Number density of all ions (currently not used)
   init_numbered_interp(5, radius, &z2_n_total[0]); // Z^2 x number density (full ionisation)
+  //init_numbered_interp(7, &omega_pl[0], radius); // Inverse of the plasma frequency
 
   // Quantities depending on specfific isotope or element
   n_isotope_acc.resize(num_tracked_isotopes);
@@ -367,6 +370,8 @@ double SolarModel::n_electron(double r) {
 double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - mass_fraction(r, "He"); }
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
+
+//double SolarModel::r_from_omega_pl(double omega_pl) { return  gsl_spline_eval(linear_interp[7], omega_pl, accel[7]); }
 
 // Opacity correction factor
 double SolarModel::apply_opacity_correction_factor(double r) {
@@ -725,7 +730,7 @@ double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) {
 }
 
 double SolarModel::Gamma_P_plasmon(double omega, double r) {
-  return Gamma_P_TP(omega, r) + Gamma_P_LP(omega, r);
+  return Gamma_P_TP_Rosseland(omega, r) + Gamma_P_LP_Rosseland(omega, r);
 }
 
 double SolarModel::Gamma_P_all_photon(double omega, double r) {
