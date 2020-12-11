@@ -162,8 +162,8 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     for (int k = 0; k < num_op_elements; k++) {
       std::string element = op_element_names[k];
       // Initialise grid values
-      std::map<std::pair<int,int>, gsl_interp_accel*> temp_acc;
-      std::map<std::pair<int,int>, gsl_spline*> temp_interp;
+      // std::map<std::pair<int,int>, gsl_interp_accel*> temp_acc;
+      // std::map<std::pair<int,int>, gsl_spline*> temp_interp;
       for (int j = 0; j < op_grid_size; j++) {
         std::string op_filename = path_to_data+"opacity_tables/OP/opacity_table_"+element+"_"+std::to_string(op_grid[j][0])+"_"+std::to_string(op_grid[j][1])+".dat";
         ASCIItableReader op_data = ASCIItableReader(op_filename);
@@ -171,14 +171,18 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
         // Determine the number of interpolated mass values.
         int op_pts = op_data[0].size();
         auto pr = std::make_pair(op_grid[j][0], op_grid[j][1]);
-        temp_acc[pr] = gsl_interp_accel_alloc();
-        temp_interp[pr] = gsl_spline_alloc (gsl_interp_linear, op_pts);
+        //temp_acc[pr] = gsl_interp_accel_alloc();
+        //temp_interp[pr] = gsl_spline_alloc(gsl_interp_linear, op_pts);
+        opacity_acc_op[element].insert( std::pair<std::pair<int,int>, gsl_interp_accel*>(pr, gsl_interp_accel_alloc()) );
+        opacity_lin_interp_op[element].insert( std::pair<std::pair<int,int>, gsl_spline*>(pr, gsl_spline_alloc(gsl_interp_linear, op_pts)) );
         const double* omega = &op_data[0][0];
         const double* s = &op_data[1][0];
-        gsl_spline_init (temp_interp[pr], omega, s, op_pts);
+        gsl_spline_init(opacity_lin_interp_op[element].find(pr)->second, omega, s, op_pts);
       }
-      opacity_acc_op[element] = temp_acc;
-      opacity_lin_interp_op[element] = temp_interp;
+      //opacity_acc_op[element] = temp_acc;
+      //opacity_lin_interp_op[element] = temp_interp;
+      //for (auto map : temp_interp) { gsl_spline_free(map.second); }
+      //for (auto map : temp_acc) { gsl_interp_accel_free(map.second); }
     }
   }
   //  Do we use LEDCOP & ATOMIC (both TOPS) opacitites?
@@ -471,7 +475,7 @@ double aux_function(double u, double y) {
   f.function = &aux_integrand;
   f.params = &p;
   gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
-  gsl_integration_workspace_free (w);
+  gsl_integration_workspace_free(w);
   return result;
 }
 
