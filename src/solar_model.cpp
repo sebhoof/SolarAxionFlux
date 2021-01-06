@@ -523,7 +523,9 @@ double SolarModel::rosseland_opacity(double r) {
 
 double SolarModel::interpolate_rosseland_opacity(double r) {
   double log10op = gsl_spline_eval(linear_interp[6], r, accel[6]);
-  return pow(10, log10op);
+  double result = pow(10, log10op);
+  if ((isnan(result) == true) or (isinf(result)==true)) {result = 0;}
+  return result;
 }
 
 
@@ -687,7 +689,6 @@ double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
-  if ((isnan(gamma) == true) or (isinf(gamma)==true)) {return 0;}
   double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
   double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
   const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
@@ -725,7 +726,6 @@ double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) {
   if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
-  if ((isnan(gamma) == true) or (isinf(gamma)==true)) {return 0;}
   double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
   double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
   double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
