@@ -34,6 +34,9 @@ res4 = np.genfromtxt("all_gaee.dat")
 res5 = np.genfromtxt("metals.dat")
 res6 = np.genfromtxt("TP.dat")
 res7 = np.genfromtxt("LP.dat")
+res8 = np.genfromtxt("TP_Rosseland.dat")
+res9 = np.genfromtxt("LP_Rosseland.dat")
+
 
 #corr = np.genfromtxt("weighted_compton.dat")
 #weighted_compton = interpolate.interp1d(corr[:,0], corr[:,1], bounds_error=False, fill_value=0)
@@ -81,6 +84,7 @@ plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),':', color=col_agss09, la
 plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, label=r'Primakoff (Redondo)')
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
 plt.plot(res6[:,0], res6[:,1]/1.0e10, 'k-', label=r'TP (AGSS09)')
+plt.plot(res8[:,0], res8[:,1]/1.0e10, 'k--', label=r'TP Rosseland (AGSS09)')
 plt.plot(ref5[:,0], ref5[:,1]*4.0*1.4995, '-', color='green', label=r'TP (Giannotti)')#correct B conversion in giannotti result and adjust coupling constant
 
 plt.title(r'Axion-photon interactions, $g_{a\gamma\gamma} = \SI{e-10}{\GeV^{-1}}$, OP opacities')
@@ -104,6 +108,7 @@ plt.plot(omega, 6.02*omega**2.481*np.exp(-omega/1.205),':', color=col_agss09, la
 plt.plot(ref1[:,0], conv_fac*(1.0e4/50.0)*ref1[:,1], '-', color=col_b16agss09, label=r'Primakoff (Redondo)')
 plt.plot(res1[:,0], res1[:,1]/1.0e10, 'k--', label=r'Primakoff (AGSS09)')
 plt.plot(res7[:,0], res7[:,1]/1.0e10*2.0, 'k-', label=r'LP (AGSS09)')
+plt.plot(res9[:,0], res9[:,1]/1.0e10*2.0, 'k--', label=r'LP Rosseland (AGSS09)')
 plt.plot(ref6[:,0], ref6[:,1]*4.0, '--', color='green', label=r'LP (Giannotti)') # correct coupling
 plt.plot(ref7[:,0], ref7[:,1]/1.0e10*4.0/1.8, '--', color='orange', label=r'LP (O´Hare)') # correct coupling and angular average
 plt.plot(ref8[:,0], ref8[:,1]/1.0e10*(3.0/5.0)**2, '--', color='gold', label=r'LP (Caputo)') #correct  field values

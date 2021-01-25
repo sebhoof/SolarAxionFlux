@@ -523,7 +523,9 @@ double SolarModel::rosseland_opacity(double r) {
 
 double SolarModel::interpolate_rosseland_opacity(double r) {
   double log10op = gsl_spline_eval(linear_interp[6], r, accel[6]);
-  return pow(10, log10op);
+  double result = pow(10, log10op);
+  if ((isnan(result) == true) or (isinf(result)==true)) {result = 0;}
+  return result;
 }
 
 
