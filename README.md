@@ -7,8 +7,19 @@ Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormae
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
+We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
 
-Here, we show a number of plots comparing different Solar models and opacity codes. More details and references will be given in a future publication.
+<p>
+<p align="center">
+  <img width="600" src="results/comp_solar_models_all.png">
+</p>
+The plot above shows the solar axion fluxes from ABC, longitudinal plasmon&nbsp;(LP), Primakoff&nbsp;(P), and transverse plasmon&nbsp;(TP) interactions as a function of energy, using Opacity Project data and the various solar models available in the code.
+</p>
+
+<p align="center">
+  <img width="700" src="results/mc_sample_spectra_relative.png">
+</p>
+We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two representative solar models; the AGSS09 and GS98 models as representative choices for photospheric and helioseismological solar models, respectively. The plot above shows the (normalised) mean values and standard deviations for ABC&nbsp;(right) and Primakoff&nbsp;(P; left) interactions. The grey bands illustrate the MC noise from 100 randomly chosen MC spectra.
 
 ## Installation
 
@@ -27,11 +38,11 @@ The `test_library` executable in the `bin/` directory runs a simple test program
 
 ## References
 
-We re-distribute (in adjusted form) Solar models and opacity tables, which should be acknowledged appropriately using the references stated below.
+We re-distribute (in adjusted form) solar models and opacity tables, which should be acknowledged appropriately using the references stated below.
 
 ### The code
 
-We currently do not have a DOI or reference to go with this code. Please contact us if you wish to acknowledge this code in your work.
+Please cite our accompanying study on the solar axion flux and obervability of axion models if you you make use of the code [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
 
 ### Solar models
 * BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
