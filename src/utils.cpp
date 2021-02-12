@@ -74,8 +74,14 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
       }
     }
 
+    // Open file and check if it was successful.
     std::ofstream output;
     output.open(path);
+    if (!output.is_open()) {
+      std::string err_msg = "The file '"+path+"' could not be created/opened. Check if the folder exists and if you have permissions to access it.";
+      throw XSanityCheck(err_msg);
+    }
+
     if (comment != "") {
       size_t pos = 0;
       const std::string newline = "\n";
