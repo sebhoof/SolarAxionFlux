@@ -74,6 +74,7 @@ std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, Sol
 // Convienience functions for integrating specific custom processes
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<double> calculate_spectral_flux_ee(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
 std::vector<double> calculate_spectral_flux_opacity_element(std::vector<double> ergs, SolarModel &s, std::string element, std::string saveas = "");
 
 // Function to perform simple integrations from a text file
