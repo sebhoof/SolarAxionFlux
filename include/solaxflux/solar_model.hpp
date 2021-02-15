@@ -16,7 +16,10 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
+#include <gsl/gsl_roots.h>
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_monte.h>
+#include <gsl/gsl_monte_miser.h>
 #include <gsl/gsl_errno.h>
 
 #include "constants.hpp"
@@ -103,6 +106,10 @@ class SolarModel {
     double opacity(double omega, double r);
     double interpolate_rosseland_opacity(double r);
     double rosseland_opacity(double r);
+
+    // Electron degeneracy-related functions
+    double electron_chemical_potential(double r);
+    std::vector<std::vector<double> > electron_degeneracy(std::vector<double> radii);
 
     // B-field correction
     void set_bfields(double b_rad, double b_tach, double b_outer); // Set B-fields in tesla
