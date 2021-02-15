@@ -108,6 +108,10 @@ class SolarModel {
     double rosseland_opacity(double r);
 
     // Electron degeneracy-related functions
+    double kappa_squared_mod(double r);
+    double omega_pl_squared_mod(double r);
+    //double r_from_omega_pl(double omega_pl);
+    double calc_electron_chemical_potential(double r);
     double electron_chemical_potential(double r);
     std::vector<std::vector<double> > electron_degeneracy(std::vector<double> radii);
 

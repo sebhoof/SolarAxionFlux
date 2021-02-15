@@ -4,6 +4,7 @@
 #ifndef __utils_hpp__
 #define __utils_hpp__
 
+#include <ctime>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -240,5 +241,6 @@ std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
 ///////////////////////////////////
 
 double safe_log10(double x, double lgx0);
+void print_current_time();
 
 #endif // defined __utils_hpp__
