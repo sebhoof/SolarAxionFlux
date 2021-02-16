@@ -656,8 +656,7 @@ double SolarModel::electron_chemical_potential(double r) { return gsl_spline_eva
 
 // x[0] = E_2, x[1] = c12,
 double my_f (double x[], size_t dim, void * p) {
-  //const double prefactor1 = gsl_pow_2(alpha_EM*g_aee/(4.0*pi*pi))/pi;
-  const double prefactor1 = 1.0;
+  const double prefactor1 = gsl_pow_2(alpha_EM/(2.0*pi))/pi;
   const double me2 = m_electron*m_electron;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
