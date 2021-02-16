@@ -32,7 +32,7 @@ double n_e_from_chemical_potential(double mu, void * p) {
   struct solar_model_params * fp = (struct solar_model_params *)p;
   double kBT = fp->kBT, n_e = fp->n_e;
   double lambda32 = sqrt(gsl_pow_3(2.0*pi/(kBT*m_electron)));
-  return gsl_sf_fermi_dirac_half(mu/kBT) - 0.5*n_e*lambda32;
+  return gsl_sf_fermi_dirac_half(mu/kBT) - 0.5*n_e*lambda32;   //double check factor 0.5
 }
 
 // Constructors
@@ -211,7 +211,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   init_numbered_interp(5, radius, &z2_n_total[0]); // Z^2 x number density (full ionisation)
   //init_numbered_interp(7, &omega_pl[0], radius); // Inverse of the plasma frequency
   init_numbered_interp(7, radius, &chemical_potential[0]); // Chem. pot.
-  init_numbered_interp(8, radius, &omega_pl_corr[0]); // Correction for kappa_squared
+  init_numbered_interp(8, radius, &omega_pl_corr[0]); // Correction for omega_pl_squared
   init_numbered_interp(9, radius, &kappa_squared_corr[0]); // Correction for kappa_squared
 
   // Quantities depending on specfific isotope or element
@@ -431,7 +431,7 @@ double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_
 double SolarModel::kappa_squared_mod(double r) {
   double z_contrib = z2_n(r)*gsl_pow_3(keV2cm)/temperature_in_keV(r);
   double e_contrib = gsl_spline_eval(linear_interp[9], r, accel[9])/(pi*pi);
-  double total = sqrt(z_contrib*z_contrib + e_contrib*e_contrib);
+  double total = z_contrib + e_contrib;
   return 4.0*pi*alpha_EM*total;
 }
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
