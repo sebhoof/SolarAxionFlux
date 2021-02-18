@@ -128,6 +128,7 @@ class SolarModel {
     double get_r_lo();
     double get_r_hi();
     std::vector<double> get_supported_radii(std::vector<double> radii);
+    std::vector<double> get_all_radii();
     double get_gagg_ref_value_in_inverse_GeV();
     double get_gaee_ref_value();
     std::string get_solaxlib_name_and_version();

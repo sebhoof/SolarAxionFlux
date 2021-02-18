@@ -410,7 +410,7 @@ double safe_log10(double x, double lgx0) {
 void print_current_time() {
   auto t = std::time(0);
   auto now = std::localtime(&t);
-  std::cout << "Timetamp: " << (now->tm_year + 1900) << '-'
+  std::cout << "Timestamp: " << (now->tm_year + 1900) << '-'
             << (now->tm_mon + 1) << '-' <<  now->tm_mday
             << " | " << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << std::endl;
 }
