@@ -718,19 +718,47 @@ double my_f (double x[], size_t dim, void * p) {
 
   // std::cout << mu_total << " (" << e1 << ", " << e2 << ")" << f1 << " " << cf2 << " " << xsec << std::endl;
 
-  return prefactor*f1*cf2*xsec/ea;
+  return prefactor*f1*cf2*xsec;
+}
+
+double my_f2 (double x[], size_t dim, void * p) {
+  const double prefactor = 0.5/pi;
+  const double me2 = m_electron*m_electron;
+
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double ea = fp->ea, p1 = x[0], cth = x[1], phi = x[2], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
+  double mu_total = fp->mu + m_electron;
+  double ea_sq = ea*ea;
+
+  // Energies and momenta
+  double e1 = sqrt(p1*p1 + me2);
+  if (ea_sq < wpl2) { return 0; }
+  double y = wpl2/ea_sq;
+  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
+
+  // dsigma / dOmega
+  double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
+
+  // Chemical potentials and f factors
+  double z1 = (e1-mu_total)/kBT;
+  double f1 = 1.0/(1.0 + exp(z1));
+
+  return prefactor*f1*xsec;
 }
 
 std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<double> ergs) {
   // const double efermi_factor = pow(3*pi*pi, 2./3.)*keV2cm*keV2cm/m_electron;
-  gsl_monte_function f;
+  gsl_monte_function f, g;
   struct solar_model_params params;
 
   f.f = &my_f;
   f.dim = 3;
   f.params = &params;
+  g.f = &my_f2;
+  g.dim = 3;
+  g.params = &params;
 
-  double res, err;
+  double num, num_err, denom, denom_err;
   double xl[3] = { 0.0, -1.0, 0.0 };
   double xu[3] = { 100.0, 1.0, 2.0*pi };
 
@@ -749,7 +777,9 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
     for(auto r = radii.begin(); r != radii.end(); ++r) {
       t_e.push_back(*e);
       t_r.push_back(*r);
-      if (*e < 2.0) { calls = 1e6; } else { calls = 1e5; }
+      // if (*e < 2.0) { calls = 1e6; } else { calls = 1e5; }
+      calls = 1e5;
+      if (*e > 10.0) { xu[0] = 500.0; } else { xu[0] = 100.0; }
       // params.efermi = efermi_factor*pow(n_electron(*r), 2./3.);
       // params.efermi = m_electron + electron_chemical_potential(*r);
       params.mu = electron_chemical_potential(*r);
@@ -757,11 +787,16 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
       params.ks2 = kappa_squared_mod(*r);
       params.kBT = temperature_in_keV(*r);
       params.wpl2 = omega_pl_squared_mod(*r);
-      gsl_monte_miser_state *s = gsl_monte_miser_alloc(3);
-      gsl_monte_miser_integrate(&f, xl, xu, 3, calls, rng, s, &res, &err);
+      gsl_monte_miser_state *s1 = gsl_monte_miser_alloc(3);
+      gsl_monte_miser_state *s2 = gsl_monte_miser_alloc(3);
+      gsl_monte_miser_integrate(&f, xl, xu, 3, calls, rng, s1, &num, &num_err);
+      gsl_monte_miser_integrate(&g, xl, xu, 3, calls, rng, s2, &denom, &denom_err);
+      double res = num/denom;
+      double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
       integrals.push_back(res);
       errors.push_back(err);
-      gsl_monte_miser_free(s);
+      gsl_monte_miser_free(s1);
+      gsl_monte_miser_free(s2);
     }
   }
 
