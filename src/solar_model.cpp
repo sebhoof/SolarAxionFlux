@@ -9,7 +9,7 @@ const double rel_prec_aux_fun = 1.0e-4;
 const int int_space_size_aux_fun = 1e6;
 const int max_iter = 1e4;
 // TODO To replace with pointer to SolarModel and radius
-struct solar_model_params { double ea; double ks2; double wpl2; double kBT; double n_e; double mu; };
+struct solar_model_params { double ea; double ks2; double wpl2; double kBT; double n_e; double mu; double norm; };
 
 double omega_pl_correction_integrand(double k, void * params) {
     struct solar_model_params * p = (struct solar_model_params *)params;
@@ -632,7 +632,6 @@ double SolarModel::calc_electron_chemical_potential(double r) {
   // Set counters and initialise equation solver.
   int status;
   int iter = 0, max_iter = 1e4;
-  std::cout << "Test 1.1" << std::endl;
   gsl_root_fsolver *s;
   s = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
   // Initial guess = 0, upper ~ zeta(3/2) (exponent = 1), lower ~ -14 (exponent = -1000)
@@ -653,6 +652,23 @@ double SolarModel::calc_electron_chemical_potential(double r) {
 }
 
 double SolarModel::electron_chemical_potential(double r) { return gsl_spline_eval(linear_interp[7], r, accel[7]); }
+
+double primakoff_bracket(double t, double u) {
+  double analytical_integral = 0;
+  if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
+  double v = u + t;
+  if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
+  analytical_integral *= 0.5/t;
+  analytical_integral -= 1.0;
+  return analytical_integral;
+}
+
+double diff_primakoff_bracket(double cth, double t, double u) {
+  double num = 1.0 - cth*cth;
+  double v = u + t;
+  double denom = (u - cth)*(v - cth);
+  return num/denom;
+}
 
 // x[0] = E_2, x[1] = c12,
 double my_f (double x[], size_t dim, void * p) {
@@ -701,15 +717,21 @@ double my_f (double x[], size_t dim, void * p) {
 
   // Energies and momenta
   double e1 = sqrt(p1*p1 + me2);
-  if (ea_sq < wpl2) { return 0; }
+  double r2 = ea_sq - wpl2;
+  if (r2 <= 0) { return 0; }
   double y = wpl2/ea_sq;
   double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
   double p2 = sqrt(p1*p1 + 2.0*p1*q*cos(phi) + q*q);
   double e2 = sqrt(p2*p2 + me2);
   if (e2 < m_electron) { return 0; }
 
+  double s = 2.0*ea*sqrt(r2);
+  double t = fp->ks2/s;
+  double u = (ea_sq + r2)/s;
+  double xsec = diff_primakoff_bracket(cth, t, u);
+
   // dsigma / dOmega
-  double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
+  // double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
 
   // Chemical potentials and f factors
   double z1 = (e1-mu_total)/kBT, z2 = (e2-mu_total)/kBT;
@@ -732,12 +754,17 @@ double my_f2 (double x[], size_t dim, void * p) {
 
   // Energies and momenta
   double e1 = sqrt(p1*p1 + me2);
-  if (ea_sq < wpl2) { return 0; }
+  double r2 = ea_sq - wpl2;
+  if (r2 <= 0) { return 0; }
   double y = wpl2/ea_sq;
   double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
 
   // dsigma / dOmega
-  double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
+  // double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
+  double s = 2.0*ea*sqrt(r2);
+  double t = fp->ks2/s;
+  double u = (ea_sq + r2)/s;
+  double xsec = diff_primakoff_bracket(cth, t, u);
 
   // Chemical potentials and f factors
   double z1 = (e1-mu_total)/kBT;
@@ -746,16 +773,119 @@ double my_f2 (double x[], size_t dim, void * p) {
   return prefactor*f1*xsec;
 }
 
+double my_f3 (double x[], size_t dim, void * p) {
+  const double prefactor = 0.5;
+  const double me2 = m_electron*m_electron;
+
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double ea = x[0], p1 = x[1], cth = x[2], cth12 = x[3], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
+  double mu_total = fp->mu + m_electron;
+  double ea_sq = ea*ea;
+
+  // Energies and momenta
+  double e1 = sqrt(p1*p1 + me2);
+  double r2 = ea_sq - wpl2;
+  if (r2 <= 0) { return 0; }
+  double y = wpl2/ea_sq;
+  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
+  double p2 = sqrt(p1*p1 + 2.0*p1*q*cth12 + q*q);
+  double e2 = sqrt(p2*p2 + me2);
+  if (e2 < m_electron) { return 0; }
+
+  // dsigma / dOmega
+  //double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
+  double s = 2.0*ea*sqrt(r2);
+  double t = fp->ks2/s;
+  double u = (ea_sq + r2)/s;
+  double xsec = diff_primakoff_bracket(cth, t, u);
+
+  // Chemical potentials and f factors
+  double z1 = (e1-mu_total)/kBT, z2 = (e2-mu_total)/kBT;
+  double f1 = 1.0/(1.0 + exp(z1));
+  double cf2 = 1.0 - 1.0/(1.0 + exp(z2));
+
+  return prefactor*f1*cf2*xsec/(fp->norm);
+}
+
+double my_f4 (double x[], size_t dim, void * p) {
+  const double me2 = m_electron*m_electron;
+
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double ea = x[0], p1 = x[1], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
+  double mu_total = fp->mu + m_electron;
+  double ea_sq = ea*ea;
+
+  // Energies and momenta
+  double e1 = sqrt(p1*p1 + me2);
+  double r2 = ea_sq - wpl2;
+  if (r2 <= 0) { return 0; }
+  double s = 2.0*ea*sqrt(r2);
+  double t = fp->ks2/s;
+  double u = (ea_sq + r2)/s;
+  double xsec = primakoff_bracket(t, u);
+
+  // Chemical potentials and f factors
+  double z1 = (e1-mu_total)/kBT;
+  double f1 = 2.0/(1.0 + exp(z1));
+
+  return f1*xsec;
+}
+
+
+double wrapper1(double omega, void * p) {
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double om2 = omega*omega;
+  double r2 = om2 - fp->wpl2;
+  if (r2 <= 0) { return 0; }
+  double s = 2.0*omega*sqrt(r2);
+  double t = fp->ks2/s;
+  double u = (om2 + r2)/s;
+  return primakoff_bracket(t, u);
+}
+
+double wrapper2(double p1, void * p) {
+  const int n = 1e4;
+  const double me2 = m_electron*m_electron;
+  double result, error;
+
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double omega_lo = sqrt(fp->wpl2);
+  double mu_total = fp->mu + m_electron;
+  double e1 = sqrt(p1*p1 + me2);
+  double z1 = (e1-mu_total)/(fp->kBT);
+
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(n);
+  gsl_function f;
+  f.function = &wrapper1;
+  f.params = p;
+  //gsl_integration_qagiu(&f, 0, 0, 1.0e-5, n, w, &result, &error);
+  gsl_integration_qag(&f, 1.0, 10.0, 0, 1.0e-5, n, 5, w, &result, &error);
+  gsl_integration_workspace_free(w);
+  return 2.0*result/(1.0 + exp(z1));
+}
+
+double wrapper3(double p1, void * p) {
+  const double me2 = m_electron*m_electron;
+
+  struct solar_model_params * fp = (struct solar_model_params *)p;
+  double omega_lo = sqrt(fp->wpl2);
+  double mu_total = fp->mu + m_electron;
+  double e1 = sqrt(p1*p1 + me2);
+  double z1 = (e1-mu_total)/(fp->kBT);
+
+  return 2.0*wrapper1(fp->ea, p)/(1.0 + exp(z1));
+}
+
 std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<double> ergs) {
   // const double efermi_factor = pow(3*pi*pi, 2./3.)*keV2cm*keV2cm/m_electron;
-  gsl_monte_function f, g;
+  gsl_monte_function f;
+  gsl_function g;
   struct solar_model_params params;
 
   f.f = &my_f;
   f.dim = 3;
   f.params = &params;
-  g.f = &my_f2;
-  g.dim = 3;
+  g.function = &wrapper3;
   g.params = &params;
 
   double num, num_err, denom, denom_err;
@@ -769,8 +899,16 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
   t = gsl_rng_default;
   rng = gsl_rng_alloc(t);
 
-  std::vector<double> radii = get_all_radii();
+  //std::vector<double> radii = get_all_radii();
+  std::vector<double> all_radii;
+  for (int i = 0; i < 200; ++i) {
+    all_radii.push_back(0.005*i);
+  }
+  std::vector<double> radii = get_supported_radii(all_radii);
   std::cout << "No. radii: " << radii.size() << ", r_0 = " << radii[0] << std::endl;
+
+  const int n = 1e4;
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(n);
 
   std::vector<double> t_r, t_e, integrals, errors;
   for(auto e = ergs.begin(); e != ergs.end(); ++e) {
@@ -778,8 +916,8 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
       t_e.push_back(*e);
       t_r.push_back(*r);
       // if (*e < 2.0) { calls = 1e6; } else { calls = 1e5; }
-      calls = 1e5;
-      if (*e > 10.0) { xu[0] = 500.0; } else { xu[0] = 100.0; }
+      calls = 5e5;
+      //if (*e > 10.0) { xu[0] = 500.0; } else { xu[0] = 100.0; }
       // params.efermi = efermi_factor*pow(n_electron(*r), 2./3.);
       // params.efermi = m_electron + electron_chemical_potential(*r);
       params.mu = electron_chemical_potential(*r);
@@ -787,22 +925,91 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
       params.ks2 = kappa_squared_mod(*r);
       params.kBT = temperature_in_keV(*r);
       params.wpl2 = omega_pl_squared_mod(*r);
-      gsl_monte_miser_state *s1 = gsl_monte_miser_alloc(3);
-      gsl_monte_miser_state *s2 = gsl_monte_miser_alloc(3);
-      gsl_monte_miser_integrate(&f, xl, xu, 3, calls, rng, s1, &num, &num_err);
-      gsl_monte_miser_integrate(&g, xl, xu, 3, calls, rng, s2, &denom, &denom_err);
+      gsl_monte_miser_state *s = gsl_monte_miser_alloc(3);
+      gsl_monte_miser_integrate(&f, xl, xu, 3, calls, rng, s, &num, &num_err);
+      gsl_integration_qagiu(&g, 0, 0, 1.0e-5, n, w, &denom, &denom_err);
       double res = num/denom;
       double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
       integrals.push_back(res);
       errors.push_back(err);
-      gsl_monte_miser_free(s1);
-      gsl_monte_miser_free(s2);
+      gsl_monte_miser_free(s);
     }
   }
+
+  gsl_integration_workspace_free(w);
 
   std::vector<std::vector<double> > buffer = { t_e, t_r, integrals, errors };
   return buffer;
 }
+
+std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_factor(std::vector<double> radii) {
+  gsl_monte_function f, g;
+  gsl_function h;
+  struct solar_model_params params;
+
+  f.f = &my_f3;
+  f.dim = 4;
+  f.params = &params;
+  //g.f = &my_f4;
+  //g.dim = 2;
+  //g.params = &params;
+  h.function = &wrapper2;
+  h.params = &params;
+
+  double num, num_err, denom, denom_err;
+  double xl_1[4] = { 1.0, 0.0, -1.0, -1.0 };
+  double xu_1[4] = { 10.0, 100.0, 1.0, 1.0 };
+  double xl_2[2] = { 1.0, 0.0 };
+  double xu_2[2] = { 10.0, 100.0 };
+
+  size_t calls_1 = 2e6, calls_2 = 1e5;
+  const gsl_rng_type *t;
+  gsl_rng *rng;
+  gsl_rng_env_setup ();
+  t = gsl_rng_default;
+  rng = gsl_rng_alloc(t);
+
+  const int n = 1e4;
+  gsl_integration_workspace * w = gsl_integration_workspace_alloc(n);
+
+  std::vector<double> valid_radii = get_supported_radii(radii);
+  std::cout << "No. radii: " << radii.size() << ", r_0 = " << radii[0] << std::endl;
+
+  std::vector<double> t_r, integrals, errors;
+  for(auto r = radii.begin(); r != radii.end(); ++r) {
+    t_r.push_back(*r);
+    params.mu = electron_chemical_potential(*r);
+    params.ks2 = kappa_squared_mod(*r);
+    params.kBT = temperature_in_keV(*r);
+    params.wpl2 = omega_pl_squared_mod(*r);
+    gsl_integration_qagiu(&h, 0, 0, 1.0e-4, n, w, &denom, &denom_err);
+    //gsl_integration_qag(&h, 1.0, 10.0, 0, 1.0e-4, n, 5, w, &denom, &denom_err);
+    params.norm = denom;
+    gsl_monte_miser_state *s_1 = gsl_monte_miser_alloc(4);
+    // gsl_monte_miser_state *s_2 = gsl_monte_miser_alloc(2);
+    gsl_monte_miser_integrate(&f, xl_1, xu_1, 4, calls_1, rng, s_1, &num, &num_err);
+    // gsl_monte_miser_integrate(&g, xl_2, xu_2, 2, calls_2, rng, s_2, &denom, &denom_err);
+    //gsl_monte_vegas_state *s_1 = gsl_monte_vegas_alloc(4);
+    //gsl_monte_vegas_state *s_2 = gsl_monte_vegas_alloc(2);
+    //gsl_monte_vegas_integrate(&f, xl_1, xu_1, 4, calls_1, rng, s_1, &num, &num_err);
+    //gsl_monte_vegas_integrate(&g, xl_2, xu_2, 2, calls_2, rng, s_2, &denom, &denom_err);
+    //double res = num/denom;
+    double res = num;
+    double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
+    integrals.push_back(res);
+    errors.push_back(err);
+    gsl_monte_miser_free(s_1);
+    //gsl_monte_miser_free(s_2);
+    //gsl_monte_vegas_free(s_1);
+    //gsl_monte_vegas_free(s_2);
+  }
+
+  gsl_integration_workspace_free(w);
+
+  std::vector<std::vector<double> > buffer = { t_r, integrals, errors };
+  return buffer;
+}
+
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
 double SolarModel::Gamma_P_ff(double omega, double r, int isotope_index) {
