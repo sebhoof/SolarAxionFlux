@@ -164,7 +164,7 @@ void OneDInterpolator::init(const std::vector<double> &x, const std::vector<doub
   const double* y_ptr = &y[0];
   acc = gsl_interp_accel_alloc();
   if (type == "cspline") {
-    spline = gsl_spline_alloc (gsl_interp_cspline, pts);
+    spline = gsl_spline_alloc(gsl_interp_cspline, pts);
   } else if (type == "linear") {
     spline = gsl_spline_alloc(gsl_interp_linear, pts);
   } else {

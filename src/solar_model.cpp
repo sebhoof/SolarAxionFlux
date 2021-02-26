@@ -9,8 +9,7 @@ const double abs_prec_aux_fun = 0;
 const double rel_prec_aux_fun = 1.0e-4;
 const int int_space_size_aux_fun = 1e6;
 const int max_iter = 1e4;
-// TODO To replace with pointer to SolarModel and radius -> no, is a bit slower
-struct solar_model_params { double ea; double ks2; double wpl2; double kBT; double n_e; double mu; double p1; double norm; std::vector<gsl_integration_workspace*> ws_vec; };
+struct solar_model_params { double ea; double p1; double ks2; double wpl2; double kBT; double n_e; double mu; std::vector<gsl_integration_workspace*> ws_vec; };
 
 double omega_pl_correction_integrand(double k, void * params) {
     struct solar_model_params * p = (struct solar_model_params *)params;
@@ -80,6 +79,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   // Initialise necessary variables for the screening scale calculation.
   std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
   std::vector<double> chemical_potential, omega_pl_squared_vals, kappa_squared_vals;
+  std::vector<double> temp_radius, temp_degen_factor, degen_factor;
 
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
@@ -98,6 +98,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     pts += 1;
   }
   num_interp_pts = pts;
+  int temp_skip = pts/100 + 1;
 
   const double* radius = &data["radius"][0];
 
@@ -189,6 +190,9 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     omega_pl_squared_vals.push_back(ompl_corr_res);
     gsl_integration_qagiu(&g, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &ks_corr_res, &ks_corr_err);
     kappa_squared_vals.push_back(ks_corr_res);
+
+    // Calculate degeneracy factor only for ~ 100 values of the radius; interpolate later
+    if( (i%temp_skip == 0) || (i == pts-1) ) { temp_radius.push_back(data["radius"][i]); }
   }
 
   gsl_root_fsolver_free(u);
@@ -196,8 +200,8 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   gsl_integration_workspace_free(w);
 
   // Set up the interpolating functions quantities so far
-  accel.resize(10);
-  linear_interp.resize(10);
+  accel.resize(11);
+  linear_interp.resize(11);
   init_numbered_interp(0, radius, &temperature[0]); // Temperature
   init_numbered_interp(1, radius, &n_e[0]); // n_e from summing over elements (full ionisation)
   init_numbered_interp(2, radius, &n_e_Raff[0]); // n_e from Raffelt
@@ -207,6 +211,18 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   init_numbered_interp(7, radius, &chemical_potential[0]); // Chemical potential
   init_numbered_interp(8, radius, &omega_pl_squared_vals[0]); // Degeneracy-corrected plasma frequency
   init_numbered_interp(9, radius, &kappa_squared_vals[0]); // Degeneracy-corrected screening scale
+
+  temp_degen_factor = calc_averaged_electron_degeneracy_factor(temp_radius);
+  gsl_interp_accel *temp_acc = gsl_interp_accel_alloc();
+  gsl_spline *temp_spline = gsl_spline_alloc(gsl_interp_linear, temp_radius.size());
+  const double* tr = &temp_radius[0];
+  const double* tdf = &temp_degen_factor[0];
+  gsl_spline_init(temp_spline, tr, tdf, temp_radius.size());
+  for (int i = 0; i < pts; i++) { degen_factor.push_back( gsl_spline_eval(temp_spline, data["radius"][i], temp_acc) ); }
+  gsl_spline_free(temp_spline);
+  gsl_interp_accel_free(temp_acc);
+
+  init_numbered_interp(10, radius, &degen_factor[0]); // Degeneracy factor for the Primakoff flux
 
   // Quantities depending on specfific isotope or element
   n_isotope_acc.resize(num_tracked_isotopes);
@@ -654,46 +670,8 @@ double diff_primakoff_bracket(double cth, double t, double u) {
   double num = 1.0 - cth*cth;
   double v = u + t;
   double denom = (u - cth)*(v - cth);
-  return num/denom;
+  return 0.5*num/denom;
 }
-
-/*
-double my_mc_f (double x[], size_t dim, void * p) {
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = x[0], p1 = x[1], cth = x[2], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
-  double mu_total = fp->mu + m_electron;
-  double ea_sq = ea*ea;
-
-  // Energies and momenta
-  double e1 = sqrt(p1*p1 + me2);
-  double r2 = ea_sq - wpl2;
-  if (r2 <= 0) { return 0; }
-  double y = wpl2/ea_sq;
-  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
-
-  double s = 2.0*ea*sqrt(r2);
-  double t = fp->ks2/s;
-  double u = (ea_sq + r2)/s;
-  double xsec = diff_primakoff_bracket(cth, t, u);
-
-  // Chemical potentials and f factors
-  double z0 = mu_total/kBT;
-  double z1 = e1/kBT - z0;
-  double f1 = 1.0/(1.0 + exp(z1));
-
-  double z21 = sqrt(me2 + gsl_pow_2(p1+q))/kBT, z22 = sqrt(me2 + gsl_pow_2(p1-q))/kBT;
-  double dz21 = z0 - z21, dz22 = z0 - z22;
-  dz21 = std::max(dz21, -99.0), dz22 = std::max(dz22, -99.0); // Prevent underflow error
-  double cth12_integral = z21*gsl_sf_log_1plusx(exp(dz21)) - z22*gsl_sf_log_1plusx(exp(dz22));
-  cth12_integral += gsl_sf_fermi_dirac_1(dz21) - gsl_sf_fermi_dirac_1(dz22);
-  cth12_integral *= 0.5*kBT*kBT/(p1*q);
-  cth12_integral += 1.0;
-
-  return f1*cth12_integral*xsec;
-}
-*/
 
 double wrapper1(double omega, void * p) {
   struct solar_model_params * fp = (struct solar_model_params *)p;
@@ -716,13 +694,14 @@ double wrapper2(double p1, void * p) {
   double mu_total = fp->mu + m_electron;
   double e1 = sqrt(p1*p1 + me2);
   double z1 = (e1-mu_total)/(fp->kBT);
+  double f1 = 1.0/(1.0 + exp(z1));
 
   gsl_function f;
   f.function = &wrapper1;
   f.params = p;
   gsl_integration_qag(&f, 1.0, 10.0, 0, 1.0e-4, n, 5, fp->ws_vec[1], &result, &error);
 
-  return 2.0*result/(1.0 + exp(z1));
+  return result*f1;
 }
 
 double wrapper3(double p1, void * p) {
@@ -734,7 +713,7 @@ double wrapper3(double p1, void * p) {
   double e1 = sqrt(p1*p1 + me2);
   double z1 = (e1-mu_total)/(fp->kBT);
 
-  return 2.0*wrapper1(fp->ea, p)/(1.0 + exp(z1));
+  return wrapper1(fp->ea, p)/(1.0 + exp(z1));
 }
 
 double wrapper4(double cth, void * p) {
@@ -763,7 +742,8 @@ double wrapper4(double cth, void * p) {
 
   double z21 = sqrt(me2 + gsl_pow_2(p1+q))/kBT, z22 = sqrt(me2 + gsl_pow_2(p1-q))/kBT;
   double dz21 = z0 - z21, dz22 = z0 - z22;
-  dz21 = std::max(dz21, -99.0), dz22 = std::max(dz22, -99.0); // Prevent underflow error
+  // Prevent underflow error. Only affects r > 0.9
+  dz21 = std::max(dz21, -99.0), dz22 = std::max(dz22, -99.0);
   double cth12_integral = z21*gsl_sf_log_1plusx(exp(dz21)) - z22*gsl_sf_log_1plusx(exp(dz22));
   cth12_integral += gsl_sf_fermi_dirac_1(dz21) - gsl_sf_fermi_dirac_1(dz22);
   cth12_integral *= 0.5*kBT*kBT/(p1*q);
@@ -813,7 +793,7 @@ double wrapper7(double p1, void * p) {
   return wrapper5(fp->ea, p);
 }
 
-std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<double> ergs) {
+std::vector<std::vector<double> > SolarModel::calc_electron_degeneracy_factor(std::vector<double> ergs, std::vector<double> all_radii) {
   gsl_function f, g;
   struct solar_model_params params;
 
@@ -824,10 +804,6 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
 
   double num, num_err, denom, denom_err;
 
-  std::vector<double> all_radii;
-  for (int i = 0; i < 200; ++i) {
-    all_radii.push_back(0.005*i);
-  }
   std::vector<double> radii = get_supported_radii(all_radii);
 
   const int n = 1e4;
@@ -860,63 +836,7 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
   return buffer;
 }
 
-/*
-MC routines
-std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_factor(std::vector<double> radii) {
-  const int n_dim_1 = 3;
-  gsl_monte_function f, g;
-  gsl_function h;
-  struct solar_model_params params;
-
-  f.f = &my_mc_f;
-  f.dim = n_dim_1;
-  f.params = &params;
-  h.function = &wrapper2;
-  h.params = &params;
-
-  double num, num_err, denom, denom_err;
-  double xl_1[n_dim_1] = { 1.0, 0.0, -1.0 };
-  double xu_1[n_dim_1] = { 10.0, 100.0, 1.0 };
-  double xl_2[2] = { 1.0, 0.0 };
-  double xu_2[2] = { 10.0, 100.0 };
-
-  size_t calls_1 = 1e6, calls_2 = 1e5;
-  const gsl_rng_type *t;
-  gsl_rng *rng;
-  gsl_rng_env_setup ();
-  t = gsl_rng_default;
-  rng = gsl_rng_alloc(t);
-
-  const int n = 1e4;
-  gsl_integration_workspace * w = gsl_integration_workspace_alloc(n);
-
-  std::vector<double> valid_radii = get_supported_radii(radii);
-
-  std::vector<double> t_r, integrals, errors;
-  for(auto r = radii.begin(); r != radii.end(); ++r) {
-    t_r.push_back(*r);
-    params.mu = electron_chemical_potential(*r);
-    params.ks2 = kappa_squared(*r);
-    params.kBT = temperature_in_keV(*r);
-    params.wpl2 = omega_pl_squared(*r);
-    gsl_integration_qagiu(&h, 0, 0, 1.0e-4, n, w, &denom, &denom_err);
-    gsl_monte_miser_state *s_1 = gsl_monte_miser_alloc(n_dim_1);
-    gsl_monte_miser_integrate(&f, xl_1, xu_1, n_dim_1, calls_1, rng, s_1, &num, &num_err);
-    double res = num/denom;
-    double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
-    integrals.push_back(res);
-    errors.push_back(err);
-    gsl_monte_miser_free(s_1);
-  }
-
-  gsl_integration_workspace_free(w);
-
-  std::vector<std::vector<double> > buffer = { t_r, integrals, errors };
-  return buffer;
-}
-*/
-
-std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_factor_rev(std::vector<double> radii) {
+std::vector<double> SolarModel::calc_averaged_electron_degeneracy_factor(std::vector<double> radii) {
   gsl_function f, g;
   struct solar_model_params params;
 
@@ -936,25 +856,24 @@ std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_facto
 
   std::vector<double> t_r, integrals, errors;
   for(auto r = radii.begin(); r != radii.end(); ++r) {
-    t_r.push_back(*r);
     params.mu = electron_chemical_potential(*r);
     params.ks2 = kappa_squared(*r);
     params.kBT = temperature_in_keV(*r);
     params.wpl2 = omega_pl_squared(*r);
     gsl_integration_qagiu(&g, 0, 0, 1.0e-4, n, ws_vec[3], &denom, &denom_err);
-    //params.norm = denom;
     gsl_integration_qagiu(&f, 0, 0, 1.0e-4, n, ws_vec[4], &num, &num_err);
     double res = num/denom;
-    double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
+    // double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
     integrals.push_back(res);
-    errors.push_back(err);
+    // errors.push_back(err);
   }
 
   for (auto ws: ws_vec) { gsl_integration_workspace_free(ws); }
 
-  std::vector<std::vector<double> > buffer = { t_r, integrals, errors };
-  return buffer;
+  return integrals;
 }
+
+double SolarModel::avg_degeneracy_factor(double r) { return gsl_spline_eval(linear_interp[10], r, accel[10]); }
 
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
@@ -1061,26 +980,31 @@ double SolarModel::Gamma_P_all_electron(double omega, double r) {
 }
 
 double SolarModel::Gamma_P_Primakoff(double omega, double r) {
-  const double prefactor6 = g_agg*g_agg/(32.0*pi);
+  // const double prefactor6 = g_agg*g_agg/(32.0*pi);
+  const double prefactor6 = g_agg*g_agg*alpha_EM*gsl_pow_3(keV2cm)/8.0;
   double w_pl_sq = omega_pl_squared(r);
-  double ks_sq = kappa_squared(r);
-  double T_in_keV = temperature_in_keV(r);
+  // double ks_sq = kappa_squared(r);
+  // double T_in_keV = temperature_in_keV(r);
+  double z = omega/temperature_in_keV(r);
 
   double om2 = omega*omega;
   double x = om2/w_pl_sq;
   if (x > 1.0) {
-    double phase_factor = 2.0/(sqrt(1.0 - 1.0/x) * gsl_expm1(omega/T_in_keV));
-    double rate = ks_sq*T_in_keV;
+    double phase_factor = 2.0/(sqrt(1.0 - 1.0/x) * gsl_expm1(z));
+    // double rate = ks_sq*T_in_keV;
+    double n_dens = avg_degeneracy_factor(r)*n_electron(r) + z2_n(r);
     double s = 2.0*omega*sqrt(om2 - w_pl_sq);
-    double t = ks_sq/s;
-    double analytical_integral = 0;
+    double t = kappa_squared(r)/s;
+    // double analytical_integral = 0;
     double u = (2.0*om2 - w_pl_sq)/s;
-    if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
-    double v = u + t;
-    if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
-    analytical_integral *= 0.5/t;
-    analytical_integral -= 1.0;
-    return prefactor6*phase_factor*rate*analytical_integral;
+    double analytical_integral = primakoff_bracket(t, u);
+    // if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
+    // double v = u + t;
+    // if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
+    //analytical_integral *= 0.5/t;
+    // analytical_integral -= 1.0;
+    // return prefactor6*phase_factor*rate*analytical_integral;
+    return prefactor6*phase_factor*n_dens*analytical_integral;
   } else {
     return 0;
   }

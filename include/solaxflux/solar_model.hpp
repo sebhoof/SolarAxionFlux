@@ -108,8 +108,9 @@ class SolarModel {
     // Electron degeneracy-related functions
     double calc_electron_chemical_potential(double r);
     double electron_chemical_potential(double r);
-    std::vector<std::vector<double> > electron_degeneracy(std::vector<double> radii);
-    std::vector<std::vector<double> > averaged_electron_degeneracy_factor_rev(std::vector<double> radii);
+    std::vector<std::vector<double> > calc_electron_degeneracy_factor(std::vector<double> ergs, std::vector<double> all_radii);
+    std::vector<double> calc_averaged_electron_degeneracy_factor(std::vector<double> radii);
+    double avg_degeneracy_factor(double r);
 
     // B-field correction
     void set_bfields(double b_rad, double b_tach, double b_outer); // Set B-fields in tesla

@@ -89,7 +89,7 @@ void run_unit_test() {
   std::cout << "\n# Calculating integrated Primakoff flux between [0,50] keV for " << n_rad_values << " different radii..." << std::endl;
   calculate_total_flux_solar_disc_at_fixed_radii(0.0, 50.0, test_rads, s, &SolarModel::Gamma_P_Primakoff, output_path + "primakoff_integrated_fluxes.dat");
   auto t8e = std::chrono::high_resolution_clock::now();
-  std::cout << "# alculating integrated Primakoff flux for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t8e-t8s).count() << " seconds." << std::endl;
+  std::cout << "# Calculating integrated Primakoff flux for " << n_rad_values << " different radii took " << std::chrono::duration_cast<std::chrono::seconds>(t8e-t8s).count() << " seconds." << std::endl;
 
   auto t9s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Compton spectrum..." << std::endl;
