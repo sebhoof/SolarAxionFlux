@@ -3,12 +3,13 @@
 
 #include "solar_model.hpp"
 
+
+// Some auxilliary function for the initialisation of the SolarModel
 const double abs_prec_aux_fun = 0;
 const double rel_prec_aux_fun = 1.0e-4;
-// const int int_method_aux_fun = 5;
 const int int_space_size_aux_fun = 1e6;
 const int max_iter = 1e4;
-// TODO To replace with pointer to SolarModel and radius
+// TODO To replace with pointer to SolarModel and radius -> no, is a bit slower
 struct solar_model_params { double ea; double ks2; double wpl2; double kBT; double n_e; double mu; double p1; double norm; std::vector<gsl_integration_workspace*> ws_vec; };
 
 double omega_pl_correction_integrand(double k, void * params) {
@@ -33,7 +34,7 @@ double n_e_from_chemical_potential(double mu, void * p) {
   struct solar_model_params * fp = (struct solar_model_params *)p;
   double kBT = fp->kBT, n_e = fp->n_e;
   double lambda32 = sqrt(gsl_pow_3(2.0*pi/(kBT*m_electron)));
-  return gsl_sf_fermi_dirac_half(mu/kBT) - 0.5*n_e*lambda32;   //double check factor 0.5
+  return gsl_sf_fermi_dirac_half(mu/kBT) - 0.5*n_e*lambda32;
 }
 
 // Constructors
@@ -78,7 +79,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   // Extract the temperature (has to be converted into keV), density, electron density, and ion density * charge^2  from the files.
   // Initialise necessary variables for the screening scale calculation.
   std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
-  std::vector<double> chemical_potential, omega_pl_corr, kappa_squared_corr;
+  std::vector<double> chemical_potential, omega_pl_squared_vals, kappa_squared_vals;
 
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
@@ -91,7 +92,6 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
 
     for (int i = 0; i < n_cols; i++) {
       double intercept = (r0*data[i][1]-r1*data[i][0])/(r0-r1);
-      //data[i].insert(data[i].begin(), intercept);
       data.prepend_data(intercept, i);
     }
     r_lo = 0;
@@ -138,8 +138,6 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     }
     n_e.push_back(ne*rhorel);
 
-    //omega_pl.push_back(sqrt(4.0*pi*alpha_EM/m_electron*(ne*rhorel)*gsl_pow_3(keV2cm)));
-
     // Ion number density and ion number density weighted by charge^2 from summing over all elements (full ionisation) and individual element densities
     double n_total_val = 0.0, z2_n_total_val = 0.0;
     for (int j = 0; j < num_tracked_isotopes; j++) {
@@ -168,8 +166,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     params.kBT = temperature[i];
     params.n_e = gsl_pow_3(keV2cm)*n_e[i];
 
-    // Chemical potential
-    //std::cout << "Test 1" << std::endl;
+    // Calculate the chemical potential
     int status;
     int iter = 0;
     // Initial guess = 0, upper ~ zeta(3/2) (exponent = 1), lower ~ -14 (exponent = -1000)
@@ -187,14 +184,11 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     chemical_potential.push_back(mu);
     params.mu = mu;
 
-    // Modification of the plasma frequency
-    //std::cout << "Test 2" << std::endl;
+    // Calculated the (degeneracy-corrected) plasma frequency and screening scale
     gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, v, &ompl_corr_res, &ompl_corr_err);
-    omega_pl_corr.push_back(ompl_corr_res);
-    // Modification of the screening scale
-    //std::cout << "Test 3" << std::endl;
+    omega_pl_squared_vals.push_back(ompl_corr_res);
     gsl_integration_qagiu(&g, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &ks_corr_res, &ks_corr_err);
-    kappa_squared_corr.push_back(ks_corr_res);
+    kappa_squared_vals.push_back(ks_corr_res);
   }
 
   gsl_root_fsolver_free(u);
@@ -210,10 +204,9 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   init_numbered_interp(3, radius, &density[0]); // Density
   init_numbered_interp(4, radius, &n_total[0]); // Number density of all ions (currently not used)
   init_numbered_interp(5, radius, &z2_n_total[0]); // Z^2 x number density (full ionisation)
-  //init_numbered_interp(7, &omega_pl[0], radius); // Inverse of the plasma frequency
-  init_numbered_interp(7, radius, &chemical_potential[0]); // Chem. pot.
-  init_numbered_interp(8, radius, &omega_pl_corr[0]); // Correction for omega_pl_squared
-  init_numbered_interp(9, radius, &kappa_squared_corr[0]); // Correction for kappa_squared
+  init_numbered_interp(7, radius, &chemical_potential[0]); // Chemical potential
+  init_numbered_interp(8, radius, &omega_pl_squared_vals[0]); // Degeneracy-corrected plasma frequency
+  init_numbered_interp(9, radius, &kappa_squared_vals[0]); // Degeneracy-corrected screening scale
 
   // Quantities depending on specfific isotope or element
   n_isotope_acc.resize(num_tracked_isotopes);
@@ -428,12 +421,12 @@ int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map
 // Routine to return the various Solar quantities as a function of radius (see hpp file)
 double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_interp[0], r, accel[0]); }
 double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
-double SolarModel::kappa_squared(double r) { return 4.0*pi*alpha_EM/temperature_in_keV(r)*(z2_n(r)+n_electron(r))*gsl_pow_3(keV2cm); }
-double SolarModel::kappa_squared_mod(double r) {
-  double z_contrib = z2_n(r)*gsl_pow_3(keV2cm)/temperature_in_keV(r);
+double SolarModel::kappa_squared(double r) {
+  const double prefactor = 4.0*pi*alpha_EM;
   double e_contrib = gsl_spline_eval(linear_interp[9], r, accel[9])/(pi*pi);
+  double z_contrib = z2_n(r)*gsl_pow_3(keV2cm)/temperature_in_keV(r);
   double total = z_contrib + e_contrib;
-  return 4.0*pi*alpha_EM*total;
+  return prefactor*total;
 }
 double SolarModel::n_element(double r, std::string element) { return gsl_spline_eval(n_element_lin_interp.at(element), r, n_element_acc.at(element)); }
 double SolarModel::mass_fraction(double r, std::string element){ return n_element(r,element)*atomic_weight({element,0})*(1.0E+9*eV2g)*atomic_mass_unit/density(r); }
@@ -465,12 +458,13 @@ double SolarModel::n_electron(double r) {
     return gsl_spline_eval(linear_interp[2], r, accel[2]);
   }
 }
+
 double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - mass_fraction(r, "He"); }
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
-double SolarModel::omega_pl_squared(double r) { return 4.0*pi*alpha_EM/m_electron*n_electron(r)*gsl_pow_3(keV2cm); }
-double SolarModel::omega_pl_squared_mod(double r) { return 4.0*alpha_EM*gsl_spline_eval(linear_interp[8], r, accel[8])/pi; }
-
-//double SolarModel::r_from_omega_pl(double omega_pl) { return  gsl_spline_eval(linear_interp[7], omega_pl, accel[7]); }
+double SolarModel::omega_pl_squared(double r) {
+  const double prefactor = 4.0*alpha_EM/pi;
+  return prefactor*gsl_spline_eval(linear_interp[8], r, accel[8]);
+}
 
 // Opacity correction factor
 double SolarModel::apply_opacity_correction_factor(double r) {
@@ -574,18 +568,10 @@ double rosseland_integrand(double omega, void * params){
     const double prefactor = 15.0/(4.0*gsl_pow_4(pi));
     struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
     double r = (p->r);
-    // double opac = p->s->opacity(u * p->s->temperature_in_keV(r), r);
     double opac = p->s->opacity(omega, r);
     double u = omega/(p->s->temperature_in_keV(r));
-    //double opac = 1.0;
-    if (opac == 0) {
-        return 0;
-    }
-    //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(gsl_expm1(u));
-    //double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_4(u)*exp(u) / gsl_pow_2(exp(u) - 1.0);
+    if (opac == 0) { return 0; }
     double R = prefactor * gsl_sf_exp(u) *gsl_pow_2(u/gsl_sf_exprel(u));
-    // double R = 15.0 / (4.0 * gsl_pow_4(pi)) * gsl_pow_3(u)/((1.0 - gsl_sf_exp(-u))*gsl_sf_exprel(u));
-    // double R = 15.0 / (4.0 * pi*pi*pi*pi) * u*u*u*u *exp(u) / ((exp(u)-1)*(exp(u)-1));
     return R / opac ;
 }
 
@@ -1020,9 +1006,9 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
       t_r.push_back(*r);
       params.mu = electron_chemical_potential(*r);
       params.ea = *e;
-      params.ks2 = kappa_squared_mod(*r);
+      params.ks2 = kappa_squared(*r);
       params.kBT = temperature_in_keV(*r);
-      params.wpl2 = omega_pl_squared_mod(*r);
+      params.wpl2 = omega_pl_squared(*r);
       gsl_integration_qagiu(&f, 0, 0, 1.0e-5, n, ws_vec[2], &num, &num_err);
       gsl_integration_qagiu(&g, 0, 0, 1.0e-5, n, ws_vec[1], &denom, &denom_err);
       double res = num/denom;
@@ -1080,9 +1066,9 @@ std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_facto
     // std::cout << "radius: " << *r << std::endl;
     t_r.push_back(*r);
     params.mu = electron_chemical_potential(*r);
-    params.ks2 = kappa_squared_mod(*r);
+    params.ks2 = kappa_squared(*r);
     params.kBT = temperature_in_keV(*r);
-    params.wpl2 = omega_pl_squared_mod(*r);
+    params.wpl2 = omega_pl_squared(*r);
     gsl_integration_qagiu(&h, 0, 0, 1.0e-4, n, w, &denom, &denom_err);
     //gsl_integration_qag(&h, 1.0, 10.0, 0, 1.0e-4, n, 5, w, &denom, &denom_err);
     //params.norm = denom;
@@ -1134,9 +1120,9 @@ std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_facto
   for(auto r = radii.begin(); r != radii.end(); ++r) {
     t_r.push_back(*r);
     params.mu = electron_chemical_potential(*r);
-    params.ks2 = kappa_squared_mod(*r);
+    params.ks2 = kappa_squared(*r);
     params.kBT = temperature_in_keV(*r);
-    params.wpl2 = omega_pl_squared_mod(*r);
+    params.wpl2 = omega_pl_squared(*r);
     gsl_integration_qagiu(&g, 0, 0, 1.0e-4, n, ws_vec[3], &denom, &denom_err);
     //params.norm = denom;
     gsl_integration_qagiu(&f, 0, 0, 1.0e-4, n, ws_vec[4], &num, &num_err);
