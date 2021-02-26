@@ -639,6 +639,7 @@ double SolarModel::calc_electron_chemical_potential(double r) {
 
 double SolarModel::electron_chemical_potential(double r) { return gsl_spline_eval(linear_interp[7], r, accel[7]); }
 
+// Some auxilliary functions for Primakoff rate and degeneracy calculation
 double primakoff_bracket(double t, double u) {
   double analytical_integral = 0;
   if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
@@ -656,168 +657,8 @@ double diff_primakoff_bracket(double cth, double t, double u) {
   return num/denom;
 }
 
-// x[0] = E_2, x[1] = c12,
-double my_f (double x[], size_t dim, void * p) {
-  /* Old calculation inspired by the Italians
-  const double prefactor1 = gsl_pow_2(alpha_EM/(2.0*pi))/pi;
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = fp->ea, e1 = x[0], c12 = x[1], c1a = x[2], ks2 = fp->ks2, kBT = fp->kBT;
-  double mu_total = fp->mu + m_electron;
-
-  double e2 = e1 - ea;
-  if (e2 < m_electron) { return 0; }
-  // Electron density in ideal Fermi gas; non-relativistic limit (for chemical potential)
-  double c2a = c12*c1a + sqrt(1.0 - c1a*c1a)*sqrt(1.0 - c12*c12);
-  // Chemical potentials
-  double mu1 = (e1-mu_total)/kBT, mu2 = (e2-mu_total)/kBT;
-  double f1 = 1.0/(1.0 + exp(mu1));
-  //double cf2 = -1.0/(1.0 + exp(-e2/kBT));
-  double cf2 = 1.0 - 1.0/(1.0 + exp((e2-mu_total)/kBT));
-  double p1 = sqrt(e1*e1 - me2);
-  double p2 = sqrt(e2*e2 - me2);
-  double pa = ea; // pa = ea (ma = 0; massless case)struct solar_model_params * fp = (struct solar_model_params *)p;
-  double om2 = ea*ea;
-  double p1p2 = e1*e2 - p1*p2*c12;
-  double p1pa = e1*ea - p1*pa*c1a;
-  double p2pa = e2*ea - p2*pa*c2a;
-  double p21pa = (e2-e1)*ea - (p2*c2a - p1*c1a)*pa ;
-  double q2 = e1*e1 + e2*e2 + ea*ea - 2.0*me2 + 2.0*(p2*pa*c2a - p1*pa*c1a - p1*p2*c12); // pa = ea (ma = 0; massless case)
-  double y = p1pa/p2pa;
-
-  //std::cout << e1 << " " << e2 << " " << ea << " " << p1 << " " << p2 << " " << pa << " " << ks2 << " " << kBT << " " << efermi << std::endl;
-  // double prefactor2 = f1*cf2*p1*p2*om2/(q2*(q2+ks2));
-  double prefactor2 = p1*p2*om2/(q2*(q2+ks2));
-  double bracket = 2.0 - y - 1.0/y + 2.0*om2*(p1p2 + p21pa - me2)/(p1pa*p2pa);
-  return prefactor1*prefactor2*bracket;
-  */
-
-  const double prefactor = 0.5/pi;
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = fp->ea, p1 = x[0], cth = x[1], phi = x[2], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
-  double mu_total = fp->mu + m_electron;
-  double ea_sq = ea*ea;
-
-  // Energies and momenta
-  double e1 = sqrt(p1*p1 + me2);
-  double r2 = ea_sq - wpl2;
-  if (r2 <= 0) { return 0; }
-  double y = wpl2/ea_sq;
-  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
-  double p2 = sqrt(p1*p1 + 2.0*p1*q*cos(phi) + q*q);
-  double e2 = sqrt(p2*p2 + me2);
-  if (e2 < m_electron) { return 0; }
-
-  double s = 2.0*ea*sqrt(r2);
-  double t = fp->ks2/s;
-  double u = (ea_sq + r2)/s;
-  double xsec = diff_primakoff_bracket(cth, t, u);
-
-  // dsigma / dOmega
-  // double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
-
-  // Chemical potentials and f factors
-  double z1 = (e1-mu_total)/kBT, z2 = (e2-mu_total)/kBT;
-  double f1 = 1.0/(1.0 + exp(z1));
-  double cf2 = 1.0 - 1.0/(1.0 + exp(z2));
-
-  // std::cout << mu_total << " (" << e1 << ", " << e2 << ")" << f1 << " " << cf2 << " " << xsec << std::endl;
-
-  return prefactor*f1*cf2*xsec;
-}
-
-double my_f2 (double x[], size_t dim, void * p) {
-  const double prefactor = 0.5/pi;
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = fp->ea, p1 = x[0], cth = x[1], phi = x[2], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
-  double mu_total = fp->mu + m_electron;
-  double ea_sq = ea*ea;
-
-  // Energies and momenta
-  double e1 = sqrt(p1*p1 + me2);
-  double r2 = ea_sq - wpl2;
-  if (r2 <= 0) { return 0; }
-  double y = wpl2/ea_sq;
-  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
-
-  // dsigma / dOmega
-  // double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
-  double s = 2.0*ea*sqrt(r2);
-  double t = fp->ks2/s;
-  double u = (ea_sq + r2)/s;
-  double xsec = diff_primakoff_bracket(cth, t, u);
-
-  // Chemical potentials and f factors
-  double z1 = (e1-mu_total)/kBT;
-  double f1 = 1.0/(1.0 + exp(z1));
-
-  return prefactor*f1*xsec;
-}
-
-double my_f3 (double x[], size_t dim, void * p) {
-  const double prefactor = 0.5;
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = x[0], p1 = x[1], cth = x[2], cth12 = x[3], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
-  double mu_total = fp->mu + m_electron;
-  double ea_sq = ea*ea;
-
-  // Energies and momenta
-  double e1 = sqrt(p1*p1 + me2);
-  double r2 = ea_sq - wpl2;
-  if (r2 <= 0) { return 0; }
-  double y = wpl2/ea_sq;
-  double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
-  double p2 = sqrt(p1*p1 + 2.0*p1*q*cth12 + q*q);
-  double e2 = sqrt(p2*p2 + me2);
-  if (e2 < m_electron) { return 0; }
-
-  // dsigma / dOmega
-  //double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
-  double s = 2.0*ea*sqrt(r2);
-  double t = fp->ks2/s;
-  double u = (ea_sq + r2)/s;
-  double xsec = diff_primakoff_bracket(cth, t, u);
-
-  // Chemical potentials and f factors
-  double z1 = (e1-mu_total)/kBT, z2 = (e2-mu_total)/kBT;
-  double f1 = 1.0/(1.0 + exp(z1));
-  double cf2 = 1.0 - 1.0/(1.0 + exp(z2));
-
-  return prefactor*f1*cf2*xsec;
-}
-
-double my_f4 (double x[], size_t dim, void * p) {
-  const double me2 = m_electron*m_electron;
-
-  struct solar_model_params * fp = (struct solar_model_params *)p;
-  double ea = x[0], p1 = x[1], ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2;
-  double mu_total = fp->mu + m_electron;
-  double ea_sq = ea*ea;
-
-  // Energies and momenta
-  double e1 = sqrt(p1*p1 + me2);
-  double r2 = ea_sq - wpl2;
-  if (r2 <= 0) { return 0; }
-  double s = 2.0*ea*sqrt(r2);
-  double t = fp->ks2/s;
-  double u = (ea_sq + r2)/s;
-  double xsec = primakoff_bracket(t, u);
-
-  // Chemical potentials and f factors
-  double z1 = (e1-mu_total)/kBT;
-  double f1 = 2.0/(1.0 + exp(z1));
-
-  return f1*xsec;
-}
-
-double my_f5 (double x[], size_t dim, void * p) {
+/*
+double my_mc_f (double x[], size_t dim, void * p) {
   const double me2 = m_electron*m_electron;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
@@ -831,12 +672,7 @@ double my_f5 (double x[], size_t dim, void * p) {
   if (r2 <= 0) { return 0; }
   double y = wpl2/ea_sq;
   double q = ea*sqrt(2.0 - y - 2.0*sqrt(1.0 - y)*cth);
-  //double p2 = sqrt(p1*p1 + 2.0*p1*q*cth12 + q*q);
-  //double e2 = sqrt(p2*p2 + me2);
-  //if (e2 < m_electron) { return 0; }
 
-  // dsigma / dOmega
-  //double xsec = (1.0 + cth) / (1.0 - cth + 0.5*ks2/ea_sq);
   double s = 2.0*ea*sqrt(r2);
   double t = fp->ks2/s;
   double u = (ea_sq + r2)/s;
@@ -857,7 +693,7 @@ double my_f5 (double x[], size_t dim, void * p) {
 
   return f1*cth12_integral*xsec;
 }
-
+*/
 
 double wrapper1(double omega, void * p) {
   struct solar_model_params * fp = (struct solar_model_params *)p;
@@ -1024,19 +860,17 @@ std::vector<std::vector<double> > SolarModel::electron_degeneracy(std::vector<do
   return buffer;
 }
 
+/*
+MC routines
 std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_factor(std::vector<double> radii) {
   const int n_dim_1 = 3;
   gsl_monte_function f, g;
   gsl_function h;
   struct solar_model_params params;
 
-  //f.f = &my_f3;
-  f.f = &my_f5;
+  f.f = &my_mc_f;
   f.dim = n_dim_1;
   f.params = &params;
-  //g.f = &my_f4;
-  //g.dim = 2;
-  //g.params = &params;
   h.function = &wrapper2;
   h.params = &params;
 
@@ -1053,50 +887,34 @@ std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_facto
   t = gsl_rng_default;
   rng = gsl_rng_alloc(t);
 
-  //auto old_handler = gsl_set_error_handler_off();
-
   const int n = 1e4;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(n);
 
   std::vector<double> valid_radii = get_supported_radii(radii);
-  // std::cout << "No. radii: " << radii.size() << ", r_0 = " << radii[0] << std::endl;
 
   std::vector<double> t_r, integrals, errors;
   for(auto r = radii.begin(); r != radii.end(); ++r) {
-    // std::cout << "radius: " << *r << std::endl;
     t_r.push_back(*r);
     params.mu = electron_chemical_potential(*r);
     params.ks2 = kappa_squared(*r);
     params.kBT = temperature_in_keV(*r);
     params.wpl2 = omega_pl_squared(*r);
     gsl_integration_qagiu(&h, 0, 0, 1.0e-4, n, w, &denom, &denom_err);
-    //gsl_integration_qag(&h, 1.0, 10.0, 0, 1.0e-4, n, 5, w, &denom, &denom_err);
-    //params.norm = denom;
     gsl_monte_miser_state *s_1 = gsl_monte_miser_alloc(n_dim_1);
-    // gsl_monte_miser_state *s_2 = gsl_monte_miser_alloc(2);
     gsl_monte_miser_integrate(&f, xl_1, xu_1, n_dim_1, calls_1, rng, s_1, &num, &num_err);
-    // gsl_monte_miser_integrate(&g, xl_2, xu_2, 2, calls_2, rng, s_2, &denom, &denom_err);
-    //gsl_monte_vegas_state *s_1 = gsl_monte_vegas_alloc(4);
-    //gsl_monte_vegas_state *s_2 = gsl_monte_vegas_alloc(2);
-    //gsl_monte_vegas_integrate(&f, xl_1, xu_1, 4, calls_1, rng, s_1, &num, &num_err);
-    //gsl_monte_vegas_integrate(&g, xl_2, xu_2, 2, calls_2, rng, s_2, &denom, &denom_err);
     double res = num/denom;
-    //double res = num;
     double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
     integrals.push_back(res);
     errors.push_back(err);
     gsl_monte_miser_free(s_1);
-    //gsl_monte_miser_free(s_2);
-    //gsl_monte_vegas_free(s_1);
-    //gsl_monte_vegas_free(s_2);
   }
 
   gsl_integration_workspace_free(w);
-  //gsl_set_error_handler(old_handler);
 
   std::vector<std::vector<double> > buffer = { t_r, integrals, errors };
   return buffer;
 }
+*/
 
 std::vector<std::vector<double> > SolarModel::averaged_electron_degeneracy_factor_rev(std::vector<double> radii) {
   gsl_function f, g;
@@ -1362,7 +1180,6 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
     if (opacity_lin_interp_op.find(element) == opacity_lin_interp_op.end()) {
       std::string err_msg = "OP data for element "+element+" does not exist.";
       throw XUnsupportedOption(err_msg);
-      //terminate_with_error("ERROR! OP data for element "+element+" does not exist.");
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
       // std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
       std::string err_msg = "OP data for "+element+" at position ite = "+std::to_string(ite)+" and jne = "+std::to_string(jne)+" does not exist.";
@@ -1407,34 +1224,7 @@ double SolarModel::opas_grid_interp_erg(double erg, double r) {
   return result;
 }
 
-//  double linear interpolation on solar grid (currently not used)
-// double SolarModel::opacity_table_interpolator_op2(double omega, double r, std::string element) {
-//   // Need temperature in Kelvin
-//   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
-//   double ne = n_electron(r);
-//   double ite = 40.0*log10(temperature);
-//   double jne = 4.0*log10(ne);
-//   int ite2 = int(ceil(20.0*log10(temperature))*2);
-//   int ite1 = ite2 - 2;
-//   // Need omega in Kelvin
-//   double u1 = omega/(1.0e-3*K2eV*pow(10,double(ite1)/40.0));
-//   double u2 = omega/(1.0e-3*K2eV*pow(10,double(ite2)/40.0));
-//   int jne2 = int(ceil(log10(ne)*2)*2);
-//   int jne1 = jne2 - 2;
-//   double t1 = (ite-double(ite1))/2.0;
-//   double t2 = (jne-double(jne1))/2.0;
-//   double result = (1.0-t1)*(1.0-t2)*op_grid_interp_erg(u1,ite1,jne1,element) + (1.0-t1)*t2*op_grid_interp_erg(u1,ite1,jne2,element)
-//                 + t1*(1.0-t2)*op_grid_interp_erg(u2,ite2,jne1,element) + t1*t2*op_grid_interp_erg(u2,ite2,jne2,element);
-//
-//   if (result < 0) {
-//     std::cout << "ERROR! Negative opacity!" << std::endl;
-//     std::cout << "Test 1: " << u1 << " " << u2 << " | " << ite1 << " " << ite2 << " | " << jne1 << " " << jne2 << std::endl;
-//     std::cout << "Test 2: " << t1 << " " << t2 << " | " << op_grid_interp_erg(u1,ite1,jne1,element) << " " << op_grid_interp_erg(u1,ite2,jne2,element) << " | " << result << std::endl;
-//   }
-//   return result;
-// }
-
-//  double logarithmic interpolation on solar grid (used for all codes)
+// Logarithmic interpolation on solar grid (used for all codes)
 double SolarModel::opacity_table_interpolator_op(double omega, double r, std::string element) {
   // Need temperature in Kelvin
   double temperature = temperature_in_keV(r)/(1.0e-3*K2eV);
@@ -1454,7 +1244,6 @@ double SolarModel::opacity_table_interpolator_op(double omega, double r, std::st
   if (result < 0) {
     std::string err_msg = "Negative opacity from SolarModel::opacity_table_interpolator_op.";
     throw XSanityCheck(err_msg);
-    //std::cout << "ERROR! Negative opacity!" << std::endl;
   }
   return result;
 }
@@ -1476,7 +1265,6 @@ double SolarModel::ionisationsqr_element(double r, std::string element) {
   if (result < 0) {
     std::string err_msg = "Negative ionisation.";
     throw XSanityCheck(err_msg);
-    //std::cout << "ERROR! Negative ionisation!" << std::endl;
   }
   return result;
 }
@@ -1508,7 +1296,6 @@ double SolarModel::opacity_table_interpolator_tops(double omega, double r) {
   double t2 = (rho-double(rholow))/double(rhoup-rholow);
   double result = pow(pow(tops_grid_interp_erg(omega,Tlow,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tlow,rhoup),t2),1.0-t1) * pow(pow(tops_grid_interp_erg(omega,Tup,rholow),1.0-t2) * pow(tops_grid_interp_erg(omega,Tup,rhoup),t2),t1);
   if (result < 0) {
-    // std::cout << "ERROR! Negative opacity!" << std::endl;
     std::string err_msg = "Negative opacity from SolarModel::opacity_table_interpolator_tops.";
     throw XSanityCheck(err_msg);
   }
@@ -1539,7 +1326,6 @@ double SolarModel::opacity_table_interpolator_opas(double omega, double r) {
   }
 }
 
-
 // Read off ionisation states
 double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
   double result = 0.0;
@@ -1550,7 +1336,6 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
     } else if (element_ionisationsqr.at(grid_position).find(element) == element_ionisationsqr.at(grid_position).end()) {
       std::string err_msg = "OP ionisation data for element "+element+" does not exist.";
       throw XUnsupportedOption(err_msg);
-      // terminate_with_error("ERROR! OP  Ionisation data for element "+element+" does not exist.");
     } else  {
       result = element_ionisationsqr.at(grid_position).at(element);
       if (gsl_isnan(result) == true) { return 0; }
@@ -1579,6 +1364,7 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
 
 // Metadata and information
 double SolarModel::get_r_lo() { return r_lo; }
+
 double SolarModel::get_r_hi() { return r_hi; }
 
 std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
@@ -1597,22 +1383,31 @@ std::vector<double> SolarModel::get_supported_radii(std::vector<double> radii) {
 std::vector<double> SolarModel::get_all_radii() { return data["radius"]; }
 
 double SolarModel::get_gagg_ref_value_in_inverse_GeV() { return 1.0e6*g_agg; }
+
 double SolarModel::get_gaee_ref_value() { return g_aee; }
+
 std::string SolarModel::get_solaxlib_name_and_version() { return LIBRARY_NAME; }
+
 std::string SolarModel::get_solar_model_name() { return solar_model_name; }
+
 std::string SolarModel::get_opacitycode_name() { return opacitycode_name.at(opcode); }
+
 void SolarModel::set_bfields(double b_rad, double b_tach, double b_outer) {
   bfield_rad_T = b_rad;
   bfield_tach_T = b_tach;
   bfield_outer_T = b_outer;
 }
+
 std::vector<double> SolarModel::get_bfields() {
   std::vector<double> result = { bfield_rad_T, bfield_tach_T, bfield_outer_T };
   return result;
 }
+
 void SolarModel::set_opacity_correction(double a, double b) { opacity_correction_a = a; opacity_correction_b = b; }
+
 std::vector<double> SolarModel::get_opacity_correction() {
   std::vector<double> result = { opacity_correction_a, opacity_correction_b };
   return result;
 }
+
 bool SolarModel::is_initialised() { return initialisation_status; }

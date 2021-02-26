@@ -18,9 +18,6 @@
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_integration.h>
-#include <gsl/gsl_monte.h>
-#include <gsl/gsl_monte_miser.h>
-// #include <gsl/gsl_monte_vegas.h>
 #include <gsl/gsl_errno.h>
 
 #include "constants.hpp"
@@ -112,7 +109,6 @@ class SolarModel {
     double calc_electron_chemical_potential(double r);
     double electron_chemical_potential(double r);
     std::vector<std::vector<double> > electron_degeneracy(std::vector<double> radii);
-    std::vector<std::vector<double> > averaged_electron_degeneracy_factor(std::vector<double> radii);
     std::vector<std::vector<double> > averaged_electron_degeneracy_factor_rev(std::vector<double> radii);
 
     // B-field correction

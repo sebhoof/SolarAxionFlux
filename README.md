@@ -29,7 +29,7 @@ A complete guide on how to install and test the code (requires CMAKE v3.12 or hi
 * For Mac OS: use e.g. [Homebrew](https://brew.sh) to install CMAKE via `brew install cmake`.
 * For Mac OS: use e.g. [Homebrew](https://brew.sh) to install the GSL library via `brew install gsl`. For Linux: use `sudo apt-get install libgsl-dev` instead. If you do not have admin privileges on either operating system, you need to [install the GSL library from source](https://www.gnu.org/software/gsl/).
 * Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`, where `[foldername]` can be replaced by a folder name of your choice.
-* Use the latest `master` branch (no need to do anything) or checkout the latest tagged version as a new branch (e.g. `git checkout v0.6b -b [some_branch_name]`).
+* Use the latest `master` branch (no need to do anything) or checkout the latest tagged version as a new branch (e.g. `git checkout v0.7b -b [some_branch_name]`).
 * Set up a directory via `cd [foldername]`, `mkdir build`, and `cd build/`.
 * In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
 
