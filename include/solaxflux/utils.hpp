@@ -241,6 +241,7 @@ std::vector<double> get_relevant_peaks(double erg_lo, double erg_hi);
 ///////////////////////////////////
 
 double safe_log10(double x, double lgx0);
+std::string current_time_string();
 void print_current_time();
 
 #endif // defined __utils_hpp__

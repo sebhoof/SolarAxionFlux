@@ -407,10 +407,14 @@ double safe_log10(double x, double lgx0) {
   return result;
 }
 
-void print_current_time() {
+std::string current_time_string() {
   auto t = std::time(0);
   auto now = std::localtime(&t);
-  std::cout << "Timestamp: " << (now->tm_year + 1900) << '-'
-            << (now->tm_mon + 1) << '-' <<  now->tm_mday
-            << " | " << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << std::endl;
+  std::string s = std::to_string(now->tm_year + 1900) + '-' + std::to_string(now->tm_mon + 1) + \
+                  '-' + std::to_string(now->tm_mday) + " | " + \
+                  std::to_string(now->tm_hour) + ":" + std::to_string(now->tm_min) + \
+                  ":" + std::to_string(now->tm_sec);
+  return s;
 }
+
+void print_current_time() { std::cout << "Timestamp: " << current_time_string() << std::endl; }

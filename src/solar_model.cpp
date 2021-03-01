@@ -79,7 +79,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   // Initialise necessary variables for the screening scale calculation.
   std::vector<double> temperature, n_e, n_e_Raff, density, n_total, z2_n_total;
   std::vector<double> chemical_potential, omega_pl_squared_vals, kappa_squared_vals;
-  std::vector<double> temp_radius, temp_degen_factor, degen_factor;
+  std::vector<double> temp_radius, temp_degen_factor, degen_factor, temp_rosseland, rosseland;
 
   std::vector<std::vector<double>> n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
@@ -334,20 +334,38 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
     }
   }
 
-  std::string solar_model_name_stripped = solar_model_name.substr(solar_model_name.find("_"));
+  std::string solar_model_name_stripped;
+  try {
+    solar_model_name_stripped = solar_model_name.substr(solar_model_name.find("_"));
+  } catch (std::exception& e) {
+    std::string err = "Caught an exception regarding your solar model filename. Try renaming your solar model file to 'SolarModel_X' where X is your current filename.";
+    throw XSanityCheck(err);
+  }
   //solar_model_name_stripped = solar_model_name_stripped.substr(0,solar_model_name_stripped.find(".")));
+  int pts_ross_op;
+  const double* radius_ross_op;
+  const double* log10_ross_op;
   try {
     data_rosseland_opacity = ASCIItableReader(path_to_data+"opacity_tables/Rosseland_mean/Rosseland"+solar_model_name_stripped);
+    pts_ross_op = data_rosseland_opacity.getnrow();
+    radius_ross_op = &data_rosseland_opacity[0][0];
+    log10_ross_op = &data_rosseland_opacity[1][0];
+  } catch (XFileNotFound& e) {
+    std::cout << current_time_string()+" WARNING. Rosseland opacity file for solar model "+solar_model_name_stripped+" not found. Attempting to calculate it..." << std::endl;
+    temp_rosseland = log10_rosseland_opacity(temp_radius);
+    std::cout << current_time_string()+" Rosseland opacity calculated successfully!" << std::endl;
+
+    pts_ross_op = temp_radius.size();
+    radius_ross_op = &temp_radius[0];
+    log10_ross_op = &temp_rosseland[0];
+    std::vector<std::vector<double>> buffer = { temp_radius, temp_rosseland };
+    save_to_file(path_to_data+"opacity_tables/Rosseland_mean/Rosseland"+solar_model_name_stripped, buffer);
   } catch (std::runtime_error& e) {
     throw;
   }
-  int pts_ross_op = data_rosseland_opacity.getnrow();
-  const double* radius_ross_op = &data_rosseland_opacity[0][0];
-  const double* log10_ross_op = &data_rosseland_opacity[1][0];
   accel[6] = gsl_interp_accel_alloc();
   linear_interp[6] = gsl_spline_alloc(gsl_interp_linear, pts_ross_op);
   gsl_spline_init(linear_interp[6], radius_ross_op, log10_ross_op, pts_ross_op);
-
   // All done! Set Solar model class to be correctly initialised
   initialisation_status = true;
 }
@@ -591,9 +609,12 @@ double rosseland_integrand(double omega, void * params){
     return R / opac ;
 }
 
-double SolarModel::rosseland_opacity(double r) {
-    integrand_params_rosseland p = { this, r };
+std::vector<double> SolarModel::log10_rosseland_opacity(std::vector<double> radii) {
     double result, error;
+    std::vector<double> results;
+
+    integrand_params_rosseland p;
+    p.s = this;
     size_t neval;
     gsl_function f;
     f.function = &rosseland_integrand;
@@ -601,15 +622,20 @@ double SolarModel::rosseland_opacity(double r) {
     //gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_aux_fun);
     gsl_integration_cquad_workspace * v = gsl_integration_cquad_workspace_alloc(int_space_size_aux_fun);
     std::vector<double> relevant_peaks = get_relevant_peaks(0.1, 19.0);
-    //gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
-    //gsl_integration_qag(&f, 3.0, 5.0, 0, 1.0e-4, int_space_size_aux_fun, 5, w, &result, &error);
-    //gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 0.0, 1.0e-3, int_space_size_aux_fun, w, &result, &error);
-    //gsl_integration_qags(&f, 0.1, 19.0, 0, 1.0e-4, int_space_size_aux_fun, w, &result, &error);
-    gsl_integration_cquad(&f, 0.1, 19.0, 0.0, 1.0e-4, v, &result, &error, &neval);
+    for(auto r = radii.begin(); r != radii.end(); ++r) {
+      p.r = *r;
+      //gsl_integration_qagiu(&f, 0, abs_prec_aux_fun, rel_prec_aux_fun, int_space_size_aux_fun, w, &result, &error);
+      //gsl_integration_qag(&f, 3.0, 5.0, 0, 1.0e-4, int_space_size_aux_fun, 5, w, &result, &error);
+      //gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 0.0, 1.0e-3, int_space_size_aux_fun, w, &result, &error);
+      //gsl_integration_qags(&f, 0.1, 19.0, 0, 1.0e-4, int_space_size_aux_fun, w, &result, &error);
+      gsl_integration_cquad(&f, 0.1, 19.0, 0.0, 1.0e-4, v, &result, &error, &neval);
+      results.push_back(log10(temperature_in_keV(*r)/result));
+    }
+
     //gsl_integration_workspace_free (w);
     gsl_integration_cquad_workspace_free(v);
     //gsl_integration_qng(&f, 4, 5 , abs_prec_aux_fun, 1.0e-2, &result, &error,&neval);
-    return temperature_in_keV(r)/result;
+    return results;
 }
 
 double SolarModel::interpolate_rosseland_opacity(double r) {

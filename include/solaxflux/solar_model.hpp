@@ -102,8 +102,8 @@ class SolarModel {
     // N.B. Opacity only depends on chemical properties; below just overloaded for convenience;
     double opacity_element(double omega, double r, Isotope isotope);
     double opacity(double omega, double r);
+    std::vector<double> log10_rosseland_opacity(std::vector<double> radii);
     double interpolate_rosseland_opacity(double r);
-    double rosseland_opacity(double r);
 
     // Electron degeneracy-related functions
     double calc_electron_chemical_potential(double r);
