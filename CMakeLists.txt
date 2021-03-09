@@ -16,7 +16,7 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 # Check for GNU Scientific Library (GSL) and add it
-find_package(GSL 2.4 REQUIRED)
+find_package(GSL 2.3 REQUIRED)
 include_directories("${GSL_INCLUDE_DIRS}")
 set(LIBRARIES ${LIBRARIES} ${GSL_LIBRARIES})
 
