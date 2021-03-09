@@ -12,6 +12,7 @@
 *.pch
 
 # Compiled Dynamic libraries
+lib/libaxionflux.s*
 *.so
 *.dylib
 *.dll
@@ -30,3 +31,6 @@
 *.exe
 *.out
 *.app
+
+# Directories
+bin
