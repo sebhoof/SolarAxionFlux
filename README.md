@@ -23,7 +23,7 @@ We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two represent
 
 ## Installation
 
-The code is written in C++ and contains Python files for data processing tasks. It only depends on the GSL library (v2.4 or higher) and, optionally, on Python v3.x to build Python wrappers with pybind11 (requires cython). The compiler needs to be compatible with the C++11 standard.
+The code is written in C++ and contains Python files for data processing tasks. It only depends on the GSL library (v2.3 or higher) and, optionally, on Python v3.x to build Python wrappers with pybind11 (requires cython). The compiler needs to be compatible with the C++11 standard.
 
 A complete guide on how to install and test the code (requires CMAKE v3.12 or higher) is given below:
 * For Mac OS: use e.g. [Homebrew](https://brew.sh) to install CMAKE via `brew install cmake`.
