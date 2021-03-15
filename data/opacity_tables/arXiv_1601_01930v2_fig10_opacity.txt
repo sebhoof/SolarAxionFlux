@@ -1,5 +1,5 @@
 # Rosseland opacities from Fig.10 in arXiv:1601.01930v2 (AGSS09 model)
-# Radius [Solar radius] | Opacity (k) [keV]
+# Radius [Solar radius] | Opacity k [keV]
 0.00000000e+00 3.62393909e-06
 4.35542862e-03 3.61912323e-06
 1.48043696e-02 3.60943548e-06
@@ -71,4 +71,3 @@
 7.12588908e-01 6.04198327e-08
 7.22947966e-01 5.93279555e-08
 9.85000000e-01 2.70124915e-10
-9.99999999e-01 2.70124915e-10
