@@ -253,31 +253,6 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
   double overall_factor = gsl_pow_2((setup->b_field/9.0)*(setup->length/9.26))*conversion_prob_factor;
   double erg_resolution = setup->erg_resolution;
 
-  /*
-  OneDInterpolator spectral_flux_gagg, spectral_flux_gaee;
-  // TODO: Do convolution if necessary -> Actually, this should be done only later!
-  if (erg_resolution > 0) {
-
-    ASCIItableReader temp (spectral_flux_file_gagg);
-    std::vector<double> ergs = temp[0];
-    std::vector<double> flux_gagg = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gagg);
-    spectral_flux_gagg = OneDInterpolator(ergs, flux_gagg);
-    save_to_file(spectral_flux_file_gagg+"_conv", {ergs, flux_gagg}, "");
-
-    if (spectral_flux_file_gaee != "") {
-      temp = ASCIItableReader (spectral_flux_file_gaee);
-      ergs = temp[0];
-      std::vector<double> flux_gaee = convolved_spectrum_from_file(ergs, support, erg_resolution, spectral_flux_file_gaee);
-      spectral_flux_gaee = OneDInterpolator(ergs, flux_gaee);
-      save_to_file(spectral_flux_file_gaee+"_conv", {ergs, flux_gaee}, "");
-    }
-
-  } else {
-    spectral_flux_gagg = OneDInterpolator(spectral_flux_file_gagg);
-    if (spectral_flux_file_gaee != "") { spectral_flux_gaee = OneDInterpolator(spectral_flux_file_gaee); }
-  }
-  */
-
   double gagg_result, gagg_error, gaee_result, gaee_error;
   OneDInterpolator spectral_flux_gagg (spectral_flux_file_gagg);
   OneDInterpolator spectral_flux_gaee;
@@ -542,7 +517,6 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
@@ -636,8 +610,6 @@ std::vector<double> counts_prediciton_from_file(double mass, double gagg, std::s
 
     if (n_masses > 1) {
       for (int j=0; j<n_bins; ++j) {
-        //OneDInterpolator temp_gagg (log_masses, ref_counts_gagg[j]);
-        //interp_ref_counts_gagg[j] = std::move(temp_gagg);
         interp_ref_counts_gagg[j] = OneDInterpolator(log_masses, ref_counts_gagg[j]);
         if (n_cols > 3) {
           OneDInterpolator temp_gaee (log_masses, ref_counts_gaee[j]);

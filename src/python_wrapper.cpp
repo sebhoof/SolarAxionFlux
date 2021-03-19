@@ -15,10 +15,6 @@ PYBIND11_MODULE(pyaxionflux, m) {
   const std::vector<double> cc = { 3.0e3, 50.0, 4.0 };
   m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=cc);
   m.def("calculate_reference_counts", &py11_calculate_reference_counts, "Calculate reference counts for each bin of a known experiment.", "masses"_a, "dataset"_a, "spectrum_file_P"_a, "spectrum_file_ABC"_a="", "output_file_name"_a="");
-  // EXPERIMENTAL
-  // m.def("interpolate_reference_counts", &py11_interpolate_saved_reference_counts, "EXPERIMENTAL. Interpolate reference counts from file with signature (mass, gagg, reference_counts_file, gaee=0).");
-  // m.def("calculate_inverse_cdfs_from_solar_model", &py11_calculate_inverse_cdfs_from_solar_model, "EXPERIMENTAL. Calculate the inverse CDF for the axion spectrum from a solar model with signature (solar_model_file, radii, energies, gaee, save_output_prefix).");
-  // m.def("draw_mc_samples_from_file", &py11_draw_mc_samples_from_file, "EXPERIMENTAL. Draw MC samples from a tabulated spectrum.");
 }
 
 void module_info() {
@@ -45,7 +41,7 @@ void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_fil
     n_bar.push_back( s.z2_n(r) );
     omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
     kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-    degen_factor.push_back( s.avg_degeneracy_factor(r); );
+    degen_factor.push_back( s.avg_degeneracy_factor(r) );
     for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
       radii_2.push_back(r);
       opacities.push_back( s.opacity(*erg, r) );
@@ -137,27 +133,3 @@ std::vector<std::vector<double> > py11_calculate_reference_counts(std::vector<do
 
   return axion_reference_counts_from_file(&setup, masses, spectrum_file_P, spectrum_file_ABC, output_file_name, true);
 }
-
-// EXPERIMENTAL
-// std::vector<double> py11_interpolate_saved_reference_counts(double mass, double gagg, std::string reference_counts_file, double gaee) {
-//   return counts_prediciton_from_file(mass, gagg, reference_counts_file, gaee);
-// }
-//
-// void py11_calculate_inverse_cdfs_from_solar_model(std::string solar_model_file, std::vector<double> radii, std::vector<double> energies, double gaee, std::string save_output_prefix) {
-//   SolarModel s (solar_model_file, OP);
-//   std::cout << s.temperature_in_keV(0.9) << std::endl;
-//   std::cout << s.temperature_in_keV(0.95) << std::endl;
-//   std::cout << s.temperature_in_keV(0.985) << std::endl;
-//   std::cout << s.kappa_squared(0.985) << std::endl;
-//   std::cout << s.omega_pl_squared(0.985) << std::endl;
-//   AxionMCGenerator2D mc (s, energies, radii, gaee, save_output_prefix);
-//   mc.save_inv_cdf_to_file(save_output_prefix+"_inverseCDFdata");
-// }
-//
-// std::vector<std::vector<double> > py11_draw_mc_samples_from_file(std::string mc_file_prefix, int n) {
-//   AxionMCGenerator2D mc (mc_file_prefix, true);
-//   std::vector<double> radii = mc.draw_axion_radii(n);
-//   std::vector<double> energies = mc.draw_axion_energies_given_radii(radii);
-//   std::vector<std::vector<double> > result = { radii, energies };
-//   return result;
-// }

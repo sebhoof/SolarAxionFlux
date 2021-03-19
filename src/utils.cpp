@@ -113,11 +113,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
 // Functions related to the ASCIItableReader class
 int ASCIItableReader::read(std::string filename) {
   std::ifstream in(filename.c_str(), std::ios::binary);
-  if (in.fail()) {
-    //std::string err_string = "ERROR! Failed loading: "+filename+".";
-    //terminate_with_error(err_string);
-    throw XFileNotFound(filename);
-  }
+  if (in.fail()) { throw XFileNotFound(filename); }
   std::string line;
   while(std::getline(in, line)) {
     if (line[0] == '#') continue;
