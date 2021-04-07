@@ -568,7 +568,7 @@ double aux_integrand(double x, void * params) {
   a2 = a2*a2;
   double b2 = sqrt(x2 + u) - x;
   b2 = b2*b2;
-  double analytical_integral = 0.5 * ( 1.0/(1.0 + y2/b2) - 1.0/(1.0 + y2/a2) + log((a2 + y2) / (b2 + y2)) );
+  double analytical_integral = 0.5 * log((a2 + y2) / (b2 + y2));
   return x * exp(-x2) * analytical_integral;
 }
 
