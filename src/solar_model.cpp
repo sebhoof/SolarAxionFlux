@@ -587,6 +587,8 @@ double aux_function(double u, double y) {
   return result;
 }
 
+
+// Functions for calculating and interpolating the Rosseland mean opacity
 struct integrand_params_rosseland { SolarModel* s; double r; };
 
 double rosseland_integrand(double omega, void * params){
@@ -625,7 +627,7 @@ std::vector<double> SolarModel::log10_rosseland_opacity(std::vector<double> radi
 double SolarModel::interpolate_rosseland_opacity(double r) {
   double log10op = interp_index(6, r);
   double result = pow(10, log10op);
-  if ((isnan(result) == true) or (isinf(result)==true)) {result = 0;}
+  if ((isnan(result) == true) or (isinf(result)==true)) { result = 0; }
   return result;
 }
 
@@ -1035,63 +1037,61 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
 
 // O'Hare version (applies also far from resonance?)
 double SolarModel::Gamma_P_LP(double omega, double r) {
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   if (omega_pl_squared(r) > omega*omega) { return 0; }  // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
   if (gamma==0) { gamma = -gsl_expm1(-u)*opacity(temperature_in_keV(r)*0.075, r); }
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
+  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
   double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
+  double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r)) + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
 double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
+  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
+  if (omega_pl_squared(r) > omega*omega) { return 0; }  // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
+  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
   double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
   double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
 double SolarModel::Gamma_P_TP(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) { return 0; }  //energy can't be lower than plasma frequency
+  const double geom_factor = 1.0; // factor accounting for observers position (1.0 = angular average)
+  const double photon_polarization = 2.0;
+  if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
-  double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
-  // double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega);   //transfered momentum squared
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
-  double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  const double photon_polarization = 2.0;
+  double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1); // transfered momentum squared
+  // double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega); //transfered momentum squared
+  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
+  double DeltaTsq = g_agg*g_agg * average_b_field_sq / 4.0;
   double result = geom_factor * photon_polarization * gamma * DeltaTsq / ( (DeltaPsq+gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
 double SolarModel::Gamma_P_TP_Rosseland(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) { return 0; }  // energy can't be lower than plasma frequency
+  const double geom_factor = 1.0; // factor accounting for observers position (1.0 = angular average)
+  const double photon_polarization = 2.0;
+  if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
-  double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1);   //transfered momentum squared
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
-  double DeltaTsq = g_agg*g_agg * average_b_field_sq /4.0;
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  const double photon_polarization = 2.0;
+  double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1); // transfered momentum squared
+  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
+  double DeltaTsq = g_agg*g_agg * average_b_field_sq / 4.0;
   double result = geom_factor * photon_polarization * gamma * DeltaTsq / ( (DeltaPsq+gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
   return result;
 }
 
-double SolarModel::Gamma_P_plasmon(double omega, double r) {
-  return Gamma_P_TP_Rosseland(omega, r) + Gamma_P_LP_Rosseland(omega, r);
-}
+double SolarModel::Gamma_P_plasmon(double omega, double r) { return Gamma_P_TP(omega, r) + Gamma_P_LP(omega, r); }
 
-double SolarModel::Gamma_P_all_photon(double omega, double r) {
-  return Gamma_P_Primakoff(omega, r) + Gamma_P_plasmon(omega, r);
-}
+double SolarModel::Gamma_P_all_photon(double omega, double r) { return Gamma_P_Primakoff(omega, r) + Gamma_P_plasmon(omega, r); }
 
+
+// Interpolators for the various opacity codes
 // Read off interpolated elements for op, tops and opas
 double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string element) {
   double result = 0;
@@ -1106,9 +1106,9 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
       std::string err_msg = "OP data for "+element+" at position ite = "+std::to_string(ite)+" and jne = "+std::to_string(jne)+" does not exist.";
       throw XSanityCheck(err_msg);
     } else {
-      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler);   // error handler modified to avoid boundary error (fill value = 0)
+      gsl_error_handler_t* old_handler = gsl_set_error_handler (&my_gsl_handler); // error handler modified to avoid boundary error (fill value = 0)
       result = gsl_spline_eval(opacity_lin_interp_op.at(element).at(grid_position), log(u), opacity_acc_op.at(element).at(grid_position));
-      gsl_set_error_handler (old_handler);    //  reset the error handler
+      gsl_set_error_handler (old_handler); // reset the error handler
       if (gsl_isnan(result)) { result = 0; }
     }
   }
