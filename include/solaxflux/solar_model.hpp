@@ -37,6 +37,8 @@ class SolarModel {
     SolarModel operator=(const SolarModel&) = delete;
 
     // Solar properties
+    // Interpolate numerated data
+    double interp_index(int i, double r);
     // Fast lookup function for the standard isotope index
     int lookup_isotope_index(Isotope isotope);
     // Solar plasma temperature in keV

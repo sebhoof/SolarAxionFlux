@@ -437,15 +437,18 @@ void SolarModel::init_interp(gsl_interp_accel*& acc, gsl_spline*& interp, const 
 
 void SolarModel::init_numbered_interp(const int index, const double* x, const double* y) { init_interp(accel[index], linear_interp[index], x, y); }
 
+// Use the interpolators
+double SolarModel::interp_index(int i, double r) { return gsl_spline_eval(linear_interp[i], r, accel[i]); }
+
 // Isotope index lookup
 int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map.at(isotope); }
 
 // Routine to return the various Solar quantities as a function of radius (see hpp file)
-double SolarModel::temperature_in_keV(double r) { return gsl_spline_eval(linear_interp[0], r, accel[0]); }
-double SolarModel::density(double r) { return gsl_spline_eval(linear_interp[3], r, accel[3]); }
+double SolarModel::temperature_in_keV(double r) { return interp_index(0, r); }
+double SolarModel::density(double r) { return interp_index(3, r); }
 double SolarModel::kappa_squared(double r) {
   const double prefactor = 4.0*pi*alpha_EM;
-  double e_contrib = gsl_spline_eval(linear_interp[9], r, accel[9])/(pi*pi);
+  double e_contrib = interp_index(9, r)/(pi*pi);
   double z_contrib = z2_n(r)*gsl_pow_3(keV2cm)/temperature_in_keV(r);
   double total = z_contrib + e_contrib;
   return prefactor*total;
@@ -467,7 +470,7 @@ double SolarModel::z2_n(double r) {
   if (heavyions_available.find(solar_model_name) != heavyions_available.end()) {
     return (mass_fraction(r,"H") + mass_fraction(r,"He") + alpha(r)*metallicity(r)) * density(r)/((1.0E+9*eV2g)*atomic_mass_unit);
   } else {
-    return gsl_spline_eval(linear_interp[5], r, accel[5]);  // full ionisation
+    return interp_index(5, r);  // full ionisation
   }
 }
 double SolarModel::n_iz(double r, int isotope_index) { return gsl_spline_eval(n_isotope_lin_interp[isotope_index], r, n_isotope_acc[isotope_index]); }
@@ -475,9 +478,9 @@ double SolarModel::n_iz(double r, int isotope_index) { return gsl_spline_eval(n_
 double SolarModel::n_iz(double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return n_iz(r, isotope_index); }
 double SolarModel::n_electron(double r) {
   if (raffelt_approx == false) {
-    return gsl_spline_eval(linear_interp[1], r, accel[1]);
+    return interp_index(1, r);
   } else {
-    return gsl_spline_eval(linear_interp[2], r, accel[2]);
+    return interp_index(2, r);
   }
 }
 
@@ -485,7 +488,7 @@ double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - m
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) {
   const double prefactor = 4.0*alpha_EM/pi;
-  return prefactor*gsl_spline_eval(linear_interp[8], r, accel[8]);
+  return prefactor*interp_index(8, r);
 }
 
 // Opacity correction factor
@@ -620,7 +623,7 @@ std::vector<double> SolarModel::log10_rosseland_opacity(std::vector<double> radi
 }
 
 double SolarModel::interpolate_rosseland_opacity(double r) {
-  double log10op = gsl_spline_eval(linear_interp[6], r, accel[6]);
+  double log10op = interp_index(6, r);
   double result = pow(10, log10op);
   if ((isnan(result) == true) or (isinf(result)==true)) {result = 0;}
   return result;
@@ -660,7 +663,7 @@ double SolarModel::calc_electron_chemical_potential(double r) {
   return mu;
 }
 
-double SolarModel::electron_chemical_potential(double r) { return gsl_spline_eval(linear_interp[7], r, accel[7]); }
+double SolarModel::electron_chemical_potential(double r) { return interp_index(7, r); }
 
 // Some auxilliary functions for Primakoff rate and degeneracy calculation
 double primakoff_bracket(double t, double u) {
@@ -880,7 +883,7 @@ std::vector<double> SolarModel::calc_averaged_electron_degeneracy_factor(std::ve
   return integrals;
 }
 
-double SolarModel::avg_degeneracy_factor(double r) { return gsl_spline_eval(linear_interp[10], r, accel[10]); }
+double SolarModel::avg_degeneracy_factor(double r) { return interp_index(10, r); }
 
 
 // Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
