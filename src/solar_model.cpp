@@ -1035,28 +1035,46 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
 }
 */
 
+double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double temperature, double opacity) {
+  static double prefactor = g_agg*g_agg;
+  double om2 = omega*omega;
+  // if (om_pl_sq > om2) { return 0; }
+  double z = omega/temperature;
+  double gammaL = -gsl_expm1(-z)*opacity;
+  double average_bfield_sq = bfield*bfield/3.0;
+  double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
+  return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
+}
+
 // O'Hare version (applies also far from resonance?)
 double SolarModel::Gamma_P_LP(double omega, double r) {
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  if (omega_pl_squared(r) > omega*omega) { return 0; }  // energy can't be lower than plasma frequency
-  double u = omega/temperature_in_keV(r);
-  double gamma = -gsl_expm1(-u)*opacity(omega, r);
-  if (gamma==0) { gamma = -gsl_expm1(-u)*opacity(temperature_in_keV(r)*0.075, r); }
-  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
-  double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
-  double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r)) + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
-  return result;
+  double om_pl_sq = omega_pl_squared(r);
+  double b = bfield(r);
+  double temperature = temperature_in_keV(r);
+  double op = opacity(omega, r);
+  if (not(op > 0)) { op = opacity(temperature_in_keV(r)*0.075, r); }
+  return aux_Gamma_P_LP(omega, om_pl_sq, b, temperature, op);
 }
 
 double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  if (omega_pl_squared(r) > omega*omega) { return 0; }  // energy can't be lower than plasma frequency
-  double u = omega/temperature_in_keV(r);
-  double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
-  double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
-  double DeltaLsq = g_agg*g_agg * average_b_field_sq ;
-  double result = geom_factor * gamma * DeltaLsq * omega*omega / ( (gsl_pow_2(omega*omega - omega_pl_squared(r))  + gsl_pow_2(omega*gamma)) * gsl_expm1(u) ) ;
-  return result;
+  double om_pl_sq = omega_pl_squared(r);
+  double b = bfield(r);
+  double temperature = temperature_in_keV(r);
+  double op = interpolate_rosseland_opacity(r);
+  return aux_Gamma_P_LP(omega, om_pl_sq, b, temperature, op);
+}
+
+double aux_Gamma_P_TP(double omega, double om_pl_sq, double bfield, double temperature, double opacity) {
+  const double photon_polarization = 2.0;
+  double om2 = omega*omega;
+  if (om_pl_sq > om2) { return 0; }
+  double z = omega/temperature;
+  double gammaT = -gsl_expm1(-z)*opacity;
+  double average_bfield_sq = bfield*bfield/3.0;
+  double deltaTsq = g_agg*g_agg * average_bfield_sq / 4.0;
+  double momentum_transfer = om2*gsl_pow_2( sqrt(1.0-om_pl_sq/om2) - 1.0);
+  double fraction = gammaT / ( momentum_transfer + gsl_pow_2(0.5*gammaT) );
+  return photon_polarization * deltaTsq * fraction / gsl_expm1(z);
 }
 
 double SolarModel::Gamma_P_TP(double omega, double r) {

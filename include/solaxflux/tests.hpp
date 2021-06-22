@@ -17,7 +17,7 @@
 void run_unit_test() {
   auto t_start = std::chrono::high_resolution_clock::now();
   std::cout << "\n     ### This is the " LIBRARY_NAME " library ###\n" << std::endl;
-  std::cout << "# Testing the Solar Model routines (this may take 15 mins or longer)..." << std::endl;
+  std::cout << "# Testing the Solar Model routines (this may take 10 mins or longer)..." << std::endl;
 
   auto t1s = std::chrono::high_resolution_clock::now();
   std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";

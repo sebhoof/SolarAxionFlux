@@ -7,7 +7,7 @@ include(GNUInstallDirs)
 
 # Set preprocessor macros
 add_compile_definitions(SOLAXFLUX_DIR="${PROJECT_SOURCE_DIR}")
-add_compile_definitions(LIBRARY_NAME="SolarAxionFlux v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}b")
+add_compile_definitions(LIBRARY_NAME="SolarAxionFlux v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 # Set some compiler flags for non-release-type builds (okay for a small library)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
