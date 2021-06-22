@@ -1037,8 +1037,8 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
 
 double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double temperature, double opacity) {
   static double prefactor = g_agg*g_agg;
+  if (omega <= 0) { return 0; } // Analytical limit for omega -> 0
   double om2 = omega*omega;
-  // if (om_pl_sq > om2) { return 0; }
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
   double average_bfield_sq = bfield*bfield/3.0;
