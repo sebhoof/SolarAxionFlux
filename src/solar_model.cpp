@@ -1041,6 +1041,8 @@ double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double tempe
   double om2 = omega*omega;
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
+  //if (abs(omega-sqrt(om_pl_sq))/gammaL >50.0) {return 0;} //just integrate around resonance
+  if (gsl_pow_2(om2 - om_pl_sq) >10000.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
   double average_bfield_sq = bfield*bfield/3.0;
   double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
