@@ -40,7 +40,7 @@ void run_unit_test() {
   for (int k=0; k<n_erg_values; k++) { test_ergs.push_back(0.1+k*11.9/n_erg_values); }
   std:: vector<double> test_ergs_LP;
   for (int k=0; k<n_erg_values_LP; k++) {
-      test_ergs_LP.push_back((0.001*gsl_pow_int(1.006,k)));
+      test_ergs_LP.push_back((0.01*gsl_pow_int(1.006,k)));
   }
   const int n_rad_values = 6;
   std:: vector<double> test_rads;
