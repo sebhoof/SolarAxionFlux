@@ -64,7 +64,7 @@ class SolarModel {
     double kappa_squared(double r);
     // Plasma frequency squared (in keV^2)
     double omega_pl_squared(double r);
-    //double r_from_omega_pl(double omega_pl);
+    double r_from_omega_pl(double omega_pl);
 
     // Solar B-field
     double bfield(double r);

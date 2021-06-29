@@ -36,6 +36,8 @@ double n_e_from_chemical_potential(double mu, void * p) {
   return gsl_sf_fermi_dirac_half(mu/kBT) - 0.5*n_e*lambda32;
 }
 
+
+
 // Constructors
 SolarModel::SolarModel() : opcode(OP) {} // N.B. We don't need dummy memory allocation for GSL since destructor checks if the vectors containing them are empty
 
@@ -489,6 +491,48 @@ double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - m
 double SolarModel::omega_pl_squared(double r) {
   const double prefactor = 4.0*alpha_EM/pi;
   return prefactor*interp_index(8, r);
+}
+
+// Function for finding r from omega plasma
+struct ompl_from_r_params{ SolarModel* s; double wpl2;};
+
+double err_func_ompl_from_r(double r, void * params){
+    struct ompl_from_r_params * p = (struct ompl_from_r_params *)params;
+    double wpl2 = (p->wpl2);
+    double omega2_at_r = p->s->omega_pl_squared(r);
+    return wpl2-omega2_at_r ;
+}
+
+double SolarModel::r_from_omega_pl(double omega_pl){
+    if (omega_pl*omega_pl > omega_pl_squared(0)) {return 0;}
+    if (omega_pl*omega_pl < omega_pl_squared(1.0)) {return 1.0;}
+    struct ompl_from_r_params params;
+    params.wpl2 = omega_pl*omega_pl;
+    params.s = this;
+    gsl_function f;
+    f.function = &err_func_ompl_from_r;
+    f.params = &params;
+    // Set counters and initialise equation solver.
+    int status;
+    int iter = 0, max_iter = 1e4;
+    gsl_root_fsolver *s;
+    s = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+    // Initial guess = 0.5, upper ~ 1.0, lower ~ 0.0
+    double r = 0.5, r_max = r_hi, r_min = r_lo;
+    gsl_root_fsolver_set(s, &f, r_min, r_max);
+    do {
+      iter++;
+      status = gsl_root_fsolver_iterate (s);
+      r = gsl_root_fsolver_root(s);
+      r_min = gsl_root_fsolver_x_lower(s);
+      r_max = gsl_root_fsolver_x_upper(s);
+      status = gsl_root_test_interval (r_min, r_max, 1.0e-5, 0.0);
+    } while (status == GSL_CONTINUE && iter < max_iter);
+
+    gsl_root_fsolver_free(s);
+    return r;
+
+    
 }
 
 // Opacity correction factor
@@ -1042,7 +1086,7 @@ double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double tempe
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
   //if (abs(omega-sqrt(om_pl_sq))/gammaL >50.0) {return 0;} //just integrate around resonance
-  if (gsl_pow_2(om2 - om_pl_sq) >10000.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
+  if (gsl_pow_2(om2 - om_pl_sq) >1000.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
   double average_bfield_sq = bfield*bfield/3.0;
   double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);

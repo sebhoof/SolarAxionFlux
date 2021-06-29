@@ -20,15 +20,25 @@ double rho_integrand_1d(double rho, void * params) {
 
 double erg_integrand_1d(double erg, void * params) {
   double result, error;
-
   struct solar_model_integration_parameters_1d * p2 = (struct solar_model_integration_parameters_1d *)params;
   p2->erg = erg;
-
+    
+  if ((p2->integrand == &SolarModel::Gamma_P_LP) || (p2->integrand == &SolarModel::Gamma_P_LP_Rosseland)) {
+      std::vector<double> radii;
+      double res = p2->s->r_from_omega_pl(erg);
+      double low = p2->s->get_r_lo();
+      double high = std::min(p2->s->get_r_hi(),0.95);  // 0.95 maximum set by hand to avoid missing opacity data
+      if ((res > low) && (res < high)) {radii ={low , res , high};}
+      else {radii ={low , high};}
+      gsl_integration_qagp(p2->f, &radii[0], radii.size(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);}
+    
+  else {
   gsl_integration_qag(p2->f, p2->s->get_r_lo(), p2->s->get_r_hi(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, int_method_1d, p2->w, &result, &error);
   //static std::vector<double> radii = { p2->s->get_r_lo(), p2->s->r_from_omega_pl(erg), p2->s->get_r_hi() };
   //gsl_integration_qagp(p2->f, &radii[0], radii.size(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);
   //gsl_integration_qags(p2->f, p2->s->get_r_lo(), 0.9, int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);
-
+  }
+    
   return result;
 }
 
@@ -73,7 +83,6 @@ double erg_integrand_2d(double erg, void * params) {
 std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
   std::vector<double> results;
   std::ofstream output;
-
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
   gsl_function f;
   f.function = rho_integrand_1d;
@@ -87,7 +96,7 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   std::vector<std::vector<double> > buffer = { ergs, results };
   std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
-
+  
   return results;
 }
 
