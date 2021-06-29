@@ -27,9 +27,9 @@ double erg_integrand_1d(double erg, void * params) {
       std::vector<double> radii;
       double res = p2->s->r_from_omega_pl(erg);
       double low = p2->s->get_r_lo();
-      double high = std::min(p2->s->get_r_hi(),0.95);  // 0.95 maximum set by hand to avoid missing opacity data
-      if ((res > low) && (res < high)) {radii ={low , res , high};}
-      else {radii ={low , high};}
+      double high = std::min(p2->s->get_r_hi(),0.99);  // 0.99 maximum set by hand to avoid missing opacity data
+      if ((res > low) && (res < high)) {radii ={low, res , high};}
+      else {radii ={low, high};}
       gsl_integration_qagp(p2->f, &radii[0], radii.size(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);}
     
   else {

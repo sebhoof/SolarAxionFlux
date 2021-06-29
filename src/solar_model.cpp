@@ -1085,14 +1085,14 @@ double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double tempe
   double om2 = omega*omega;
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
-  //if (abs(omega-sqrt(om_pl_sq))/gammaL >50.0) {return 0;} //just integrate around resonance
-  if (gsl_pow_2(om2 - om_pl_sq) >1000.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
+  if (gammaL < 1.0e-4) {gammaL=1.0e-4;} //to avoid numerical issues from very narrow resonances
+  //if (abs(omega-sqrt(om_pl_sq))/gammaL >80.0) {return 0;} //just integrate around resonance
+  if (gsl_pow_2(om2 - om_pl_sq) >80.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
   double average_bfield_sq = bfield*bfield/3.0;
   double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
 }
 
-// O'Hare version (applies also far from resonance?)
 double SolarModel::Gamma_P_LP(double omega, double r) {
   double om_pl_sq = omega_pl_squared(r);
   double b = bfield(r);
@@ -1107,6 +1107,7 @@ double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
   double b = bfield(r);
   double temperature = temperature_in_keV(r);
   double op = interpolate_rosseland_opacity(r);
+  if (not(op > 0)) { op = opacity(temperature_in_keV(r)*0.075, r); }
   return aux_Gamma_P_LP(omega, om_pl_sq, b, temperature, op);
 }
 
