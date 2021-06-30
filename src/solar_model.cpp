@@ -503,36 +503,39 @@ double err_func_ompl_from_r(double r, void * params){
     return wpl2-omega2_at_r ;
 }
 
-double SolarModel::r_from_omega_pl(double omega_pl){
-    if (omega_pl*omega_pl > omega_pl_squared(0)) {return 0;}
-    if (omega_pl*omega_pl < omega_pl_squared(1.0)) {return 1.0;}
-    struct ompl_from_r_params params;
-    params.wpl2 = omega_pl*omega_pl;
-    params.s = this;
-    gsl_function f;
-    f.function = &err_func_ompl_from_r;
-    f.params = &params;
-    // Set counters and initialise equation solver.
-    int status;
-    int iter = 0, max_iter = 1e4;
-    gsl_root_fsolver *s;
-    s = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    // Initial guess = 0.5, upper ~ 1.0, lower ~ 0.0
-    double r = 0.5, r_max = r_hi, r_min = r_lo;
-    gsl_root_fsolver_set(s, &f, r_min, r_max);
-    do {
-      iter++;
-      status = gsl_root_fsolver_iterate (s);
-      r = gsl_root_fsolver_root(s);
-      r_min = gsl_root_fsolver_x_lower(s);
-      r_max = gsl_root_fsolver_x_upper(s);
-      status = gsl_root_test_interval (r_min, r_max, 1.0e-5, 0.0);
-    } while (status == GSL_CONTINUE && iter < max_iter);
+double SolarModel::r_from_omega_pl(double omega_pl) {
+  static double wpl2_min = omega_pl_squared(r_lo), wpl2_max = omega_pl_squared(r_hi);
+  double wpl2 = omega_pl*omega_pl;
+  if (wpl2 > wpl2_min) { return r_lo; }
+  if (wpl2 < wpl2_max) { return r_hi; }
 
-    gsl_root_fsolver_free(s);
-    return r;
+  struct ompl_from_r_params params;
+  params.wpl2 = wpl2;
+  params.s = this;
+  gsl_function f;
+  f.function = &err_func_ompl_from_r;
+  f.params = &params;
 
-    
+  // Set counters and initialise equation solver.
+  int status;
+  int iter = 0, max_iter = 1e4;
+  gsl_root_fsolver *s;
+  s = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+  // Initial guess = 0.5, upper ~ 1.0, lower ~ 0.0
+  double r = 0.5, r_max = r_hi, r_min = r_lo;
+  gsl_root_fsolver_set(s, &f, r_min, r_max);
+  do {
+    iter++;
+    status = gsl_root_fsolver_iterate (s);
+    r = gsl_root_fsolver_root(s);
+    r_min = gsl_root_fsolver_x_lower(s);
+    r_max = gsl_root_fsolver_x_upper(s);
+    status = gsl_root_test_interval (r_min, r_max, 1.0e-5, 0.0);
+  } while (status == GSL_CONTINUE && iter < max_iter);
+
+  gsl_root_fsolver_free(s);
+
+  return r;
 }
 
 // Opacity correction factor
@@ -1065,35 +1068,23 @@ double SolarModel::Gamma_P_Primakoff(double omega, double r) {
   }
 }
 
-/*
-double SolarModel::Gamma_P_LP(double omega, double r) {
-  if (omega_pl_squared(r) > omega*omega) {return 0;}  //energy can't be lower than plasma frequency
-  if ((omega*omega) / omega_pl_squared(r) > 10) {return 0;}  //result does not apply far from resonance
-  double u = omega/temperature_in_keV(r);
-  double gamma = -gsl_expm1(-u)*opacity(omega, r);
-  double average_b_field_sq = gsl_pow_2(bfield(r))/(3.0);
-  double DeltaLsq = g_agg*g_agg * average_b_field_sq /4.0;
-  const double geom_factor = 1.0;  // factor accounting for observers position (1.0 = angular average)
-  double result = geom_factor * gamma * DeltaLsq / ( (gsl_pow_2(sqrt(omega_pl_squared(r))-omega)  + gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
-  return result;
-}
-*/
-
 double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double temperature, double opacity) {
   static double prefactor = g_agg*g_agg;
-  if (omega <= 0) { return 0; } // Analytical limit for omega -> 0
   double om2 = omega*omega;
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
+  // double gammaL = -expm1(-z)*opacity;
   if (gammaL < 1.0e-4) {gammaL=1.0e-4;} //to avoid numerical issues from very narrow resonances
   //if (abs(omega-sqrt(om_pl_sq))/gammaL >80.0) {return 0;} //just integrate around resonance
-  if (gsl_pow_2(om2 - om_pl_sq) >80.0 * om2*gammaL*gammaL) {return 0;} //just integrate around resonance
+  if (gsl_pow_2(om2 - om_pl_sq) > 100.0 * om2*gammaL*gammaL) { return 0; } //just integrate around resonance
   double average_bfield_sq = bfield*bfield/3.0;
   double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
+  // return prefactor * average_bfield_sq * fraction / expm1(z);
 }
 
 double SolarModel::Gamma_P_LP(double omega, double r) {
+  if (omega <= 0) { return 0; } // Analytical limit for omega -> 0
   double om_pl_sq = omega_pl_squared(r);
   double b = bfield(r);
   double temperature = temperature_in_keV(r);
@@ -1103,11 +1094,11 @@ double SolarModel::Gamma_P_LP(double omega, double r) {
 }
 
 double SolarModel::Gamma_P_LP_Rosseland(double omega, double r) {
+  if (omega <= 0) { return 0; } // Analytical limit for omega -> 0
   double om_pl_sq = omega_pl_squared(r);
   double b = bfield(r);
   double temperature = temperature_in_keV(r);
   double op = interpolate_rosseland_opacity(r);
-  if (not(op > 0)) { op = opacity(temperature_in_keV(r)*0.075, r); }
   return aux_Gamma_P_LP(omega, om_pl_sq, b, temperature, op);
 }
 
