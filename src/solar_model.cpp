@@ -1075,8 +1075,10 @@ double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double tempe
   double gammaL = -gsl_expm1(-z)*opacity;
   // double gammaL = -expm1(-z)*opacity;
   if (gammaL < 1.0e-4) {gammaL=1.0e-4;} //to avoid numerical issues from very narrow resonances
+  double fwhm = sqrt(om2 + gammaL * omega) - sqrt(om2 - gammaL * omega); //fwhm of lorentz peak
   //if (abs(omega-sqrt(om_pl_sq))/gammaL >80.0) {return 0;} //just integrate around resonance
-  if (gsl_pow_2(om2 - om_pl_sq) > 100.0 * om2*gammaL*gammaL) { return 0; } //just integrate around resonance
+  //if (gsl_pow_2(om2 - om_pl_sq) > 100.0 * om2*gammaL*gammaL) { return 0; } //just integrate around resonance
+  if ( abs(omega - sqrt(om_pl_sq)) >18.0 * fwhm) {return 0;}
   double average_bfield_sq = bfield*bfield/3.0;
   double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
