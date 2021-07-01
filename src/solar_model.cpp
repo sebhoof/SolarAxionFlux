@@ -1073,16 +1073,14 @@ double aux_Gamma_P_LP(double omega, double om_pl_sq, double bfield, double tempe
   double om2 = omega*omega;
   double z = omega/temperature;
   double gammaL = -gsl_expm1(-z)*opacity;
-  // double gammaL = -expm1(-z)*opacity;
-  if (gammaL < 1.0e-4) {gammaL=1.0e-4;} //to avoid numerical issues from very narrow resonances
-  double fwhm = sqrt(om2 + gammaL * omega) - sqrt(om2 - gammaL * omega); //fwhm of lorentz peak
-  //if (abs(omega-sqrt(om_pl_sq))/gammaL >80.0) {return 0;} //just integrate around resonance
-  //if (gsl_pow_2(om2 - om_pl_sq) > 100.0 * om2*gammaL*gammaL) { return 0; } //just integrate around resonance
-  if ( abs(omega - sqrt(om_pl_sq)) >18.0 * fwhm) {return 0;}
+  gammaL = std::max(gammaL, 1e-4); // to avoid numerical issues from very narrow resonances
+  double xi2 = gammaL*omega;
+  double fwhm = sqrt(om2 + xi2) - sqrt(om2 - xi2); // FWHM of Lorentz/Cauchy peak
+  // if (gsl_pow_2(om2 - om_pl_sq) > 100.0 * om2*gammaL*gammaL) { return 0; } //just integrate around resonance
+  if (abs(omega - sqrt(om_pl_sq)) > 18.0*fwhm) { return 0; } // Just integrate around resonance
   double average_bfield_sq = bfield*bfield/3.0;
-  double fraction = om2*gammaL / ( gsl_pow_2(om2 - om_pl_sq) + om2*gammaL*gammaL );
+  double fraction = omega*xi2 / ( gsl_pow_2(om2 - om_pl_sq) + xi2*xi2 );
   return prefactor * average_bfield_sq * fraction / gsl_expm1(z);
-  // return prefactor * average_bfield_sq * fraction / expm1(z);
 }
 
 double SolarModel::Gamma_P_LP(double omega, double r) {

@@ -33,26 +33,23 @@ void run_unit_test() {
   }
   auto t1e = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
-  double wpl=0.2;
-  std::cout << "Find radius where plasma frequency is " << wpl << " keV." << std::endl;
-  std::cout << s.r_from_omega_pl(wpl) << std::endl;
   const int n_erg_values = 500;
   const int n_erg_values_LP = 1000;
   std:: vector<double> test_ergs;
   for (int k=0; k<n_erg_values; k++) { test_ergs.push_back(0.1+k*11.9/n_erg_values); }
   std:: vector<double> test_ergs_LP;
-  for (int k=0; k<n_erg_values_LP; k++) {
-      test_ergs_LP.push_back((0.001*gsl_pow_int(1.006,k)));
-  }
+  for (int k=0; k<n_erg_values_LP; k++) { test_ergs_LP.push_back((0.001*gsl_pow_int(1.006,k))); }
   const int n_rad_values = 6;
   std:: vector<double> test_rads;
   for (int k=0; k<n_rad_values; k++) { test_rads.push_back(k*1.0/(n_rad_values-1)); }
 
   std::cout << "\n# Test isotope- and element-specific functions..." << std::endl;
   std::cout << "Ratio of 3He and total He (3He + 4He) number densities at 0.5 Rsol: " << s.n_iz(0.5, {"He", 3}) / s.n_element(0.5, "He") << " (should be approx. 0.000251)." << std::endl;
+  const double wpl = 0.2;
+  std::cout << "Radius where plasma frequency is " << wpl << " keV: " << s.r_from_omega_pl(wpl) << " Rsol (should be approx. 0.144 Rsol)." << std::endl;
+  double res_width = -gsl_expm1(-sqrt(s.omega_pl_squared(0))/ s.temperature_in_keV(0))*s.opacity(sqrt(s.omega_pl_squared(0)),0);
+  std::cout << "Width of LP resonance in the core: " << res_width << " keV (should be approx. 0.00189 keV)." << std::endl;
 
-  std::cout << "Width of LP resonance in the core" << std::endl;
-  std::cout << -gsl_expm1(-sqrt(s.omega_pl_squared(0))/ s.temperature_in_keV(0))*s.opacity(sqrt(s.omega_pl_squared(0)),0) << std::endl;
   auto t2s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, output_path + "primakoff.dat");
