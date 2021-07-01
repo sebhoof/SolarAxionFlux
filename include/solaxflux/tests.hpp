@@ -73,7 +73,7 @@ void run_unit_test() {
 
   auto t5s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating resonant longitudinal plasmon spectrum..." << std::endl;
-  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP, output_path + "LP_res.dat");
+  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP, output_path + "LP.dat");
   auto t5e = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the LP spectrum (" << n_erg_values_LP << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t5e-t5s).count() << " seconds." << std::endl;
 
