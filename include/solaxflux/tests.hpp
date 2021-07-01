@@ -33,7 +33,7 @@ void run_unit_test() {
   }
   auto t1e = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
-  double wpl=0.33;
+  double wpl=0.2;
   std::cout << "Find radius where plasma frequency is " << wpl << " keV." << std::endl;
   std::cout << s.r_from_omega_pl(wpl) << std::endl;
   const int n_erg_values = 500;
