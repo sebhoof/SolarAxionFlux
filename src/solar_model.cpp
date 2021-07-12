@@ -1320,12 +1320,13 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
 }
 
 //flux from nuclear transitions  (iron 57 as default)
-/*
+
 double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition trans) {
     double convfac = gsl_pow_3(keV2cm) * hbar *1.0E+6;
     double z = exp(- trans.energy / temperature_in_keV(r));
     double w1 = (2.0 * trans.excitedJ + 1.0) * z / ((2.0 * trans.groundJ + 1.0) + (2.0 * trans.excitedJ + 1.0) * z);
     double nIsotope = n_element(r, trans.element) * trans.isotope_fraction; //
+    if (nIsotope == 0) { nIsotope =  trans.nperrho * density(r); } //compensates for solar models which don't track the element in question
     double Na = nIsotope * w1 / trans.tau * trans.atogammaratio();  //axion emission rate per volume
     double sigma = trans.energy * sqrt(temperature_in_keV(r) / (trans.nuclmass * atomic_mass_unit * 1.0E+6)); // Doppler width
     double result = convfac;
@@ -1333,10 +1334,10 @@ double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition tra
     result *= Na / (sqrt(2.0 * pi) * sigma) * exp(- gsl_pow_2(omega - trans.energy)/ (2.0 * sigma * sigma));
     return result;
 }
- */
  
-//flux from nuclear transitions  CAST Version
-
+ 
+//flux from nuclear transitions  CAST Version (Fe mass fraction not radius dependent)
+/*
 double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition trans) {
     double convfac = gsl_pow_3(keV2cm) * hbar *1.0E+6;
     double z = exp(- trans.energy / temperature_in_keV(r));
@@ -1349,7 +1350,7 @@ double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition tra
     result *= Na / (sqrt(2.0 * pi) * sigma) * exp(- gsl_pow_2(omega - trans.energy)/ (2.0 * sigma * sigma));
     return result;
 }
- 
+*/
 double SolarModel::Gamma_P_Fe57(double omega, double r) {return Gamma_P_nuclear(omega, r, fe57trans);}
 
 

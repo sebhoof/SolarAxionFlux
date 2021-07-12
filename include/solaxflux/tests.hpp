@@ -142,7 +142,7 @@ void run_unit_test() {
            integratedflux2 += *it;
        }
   integratedflux2 *= step;
-  std::cout << "Validation of Fe57 flux:"<< std::endl << "B16-AGSS09: Integrated flux = " << integratedflux << " g_eff^2 cm^-2 s^-1" << std::endl << "BS2000: Integrated flux = " << integratedflux2 << " g_eff^2 cm^-2 s^-1" << std::endl << "CAST collab found 4.56E+23 g_eff^2 cm^-2 s^-1" << std::endl;
+  std::cout << "Validation of Fe57 flux:"<< std::endl << "B16-AGSS09: Integrated flux = " << integratedflux << " g_eff^2 cm^-2 s^-1" << std::endl << "BS2000: Integrated flux = " << integratedflux2 << " g_eff^2 cm^-2 s^-1" << std::endl << "CAST collaboration found 4.56E+23 g_eff^2 cm^-2 s^-1" << std::endl;
  
   std::cout << std::endl << s.temperature_in_keV(0) << "  " << s.density(0) << std::endl;
   std::cout << std::endl << s2.temperature_in_keV(0) << "  " << s2.density(0) << std::endl;
