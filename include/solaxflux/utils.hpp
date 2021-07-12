@@ -244,4 +244,29 @@ double safe_log10(double x, double lgx0);
 std::string current_time_string();
 void print_current_time();
 
+//nuclear transition class
+class Nucleartransition {
+  public:
+    Nucleartransition();
+    Nucleartransition(double energy, double nuclmass, std::string element, double isotope_fraction, double excitedJ,
+                      double groundJ, double delta, double beta, double mu0, double mu3, double eta, double tau);
+    
+    double energy;
+    double nuclmass;
+    std::string element;
+    double isotope_fraction;
+    double excitedJ;
+    double groundJ;
+    double delta;
+    double beta;
+    double mu0;
+    double mu3;
+    double eta;
+    double tau;  // this is NOT the lifetime of excited state, but the partial lifetime associated with M2 transition
+    std::string geff();
+    double atogammaratio();
+};
+const Nucleartransition fe57trans(14.4, 57.0, "Fe", 0.0212, 3.0/2.0 , 1.0/2.0 , 0.002, -1.19, 0.88, 4.71, 0.8, 1.3E-6);
+
+
 #endif // defined __utils_hpp__

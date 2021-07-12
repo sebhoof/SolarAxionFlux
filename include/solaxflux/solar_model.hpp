@@ -86,7 +86,9 @@ class SolarModel {
     double Gamma_P_TP_Rosseland(double omega, double r); // using Rosseland opacities; only non-resonant part (m_a = 0)
     double Gamma_P_plasmon(double omega, double r); // all plasmon interactions
     double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
-
+    //general nuclear transition and most improtant iron 57 
+    double Gamma_P_nuclear(double omega, double r, Nucleartransition trans);
+    double Gamma_P_Fe57(double omega, double r);
     // Interpolation routines for the opacity data
     double op_grid_interp_erg(double u, int ite, int jne, std::string element);
     double tops_grid_interp_erg(double erg, float t, float rho);

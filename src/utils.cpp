@@ -377,6 +377,23 @@ int Isotope::z_val() const { return element_z_value; }
 
 bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->get_element_name(); }
 
+//nucleartransition functions
+Nucleartransition::Nucleartransition(double erg, double m, std::string el, double is_frac,
+                                     double eJ, double gJ, double d, double b,
+                                     double m0, double m3, double e, double t) {
+    energy = erg; nuclmass = m; element = el; isotope_fraction = is_frac; excitedJ = eJ;
+    groundJ = gJ; delta = d; beta =b; mu0 = m0 ; mu3 = m3; eta = e; tau =t;
+}
+
+std::string Nucleartransition::geff() {return std::to_string(beta).append(" g^0 + g^3") ;}
+
+double Nucleartransition::atogammaratio() {
+    double result= 1.0;
+    result *= 1.0 / (2.0 * pi * alpha_EM * (1.0 + delta * delta));
+    result *= gsl_pow_2 (1.0 / ((mu0 - 0.5) * beta + mu3 - eta));
+    return result;
+}
+
 // Return atomic weight of an isotope (not a class member)
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }
 

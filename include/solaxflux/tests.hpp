@@ -35,10 +35,15 @@ void run_unit_test() {
   std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
   const int n_erg_values = 500;
   const int n_erg_values_LP = 1000;
+  const int n_erg_values_Fe57 = 10000;
   std:: vector<double> test_ergs;
   for (int k=0; k<n_erg_values; k++) { test_ergs.push_back(0.1+k*11.9/n_erg_values); }
   std:: vector<double> test_ergs_LP;
-  for (int k=0; k<n_erg_values_LP; k++) { test_ergs_LP.push_back((0.001*gsl_pow_int(1.006,k))); }
+  for (int k=0; k<n_erg_values_LP; k++) { test_ergs_LP.push_back(0.001*gsl_pow_int(1.006,k)); }
+  std::vector<double> test_ergs_Fe;
+  double width = 0.1;
+  double step = width / n_erg_values_Fe57;
+  for (int k=0; k<n_erg_values_Fe57; k++) {test_ergs_Fe.push_back(14.4 + (k -  n_erg_values_Fe57/2) * step );}
   const int n_rad_values = 6;
   std:: vector<double> test_rads;
   for (int k=0; k<n_rad_values; k++) { test_rads.push_back(k*1.0/(n_rad_values-1)); }
@@ -50,6 +55,8 @@ void run_unit_test() {
   double res_width = -gsl_expm1(-sqrt(s.omega_pl_squared(0))/ s.temperature_in_keV(0))*s.opacity(sqrt(s.omega_pl_squared(0)),0);
   std::cout << "Width of LP resonance in the core: " << res_width << " keV (should be approx. 0.00189 keV)." << std::endl;
 
+    
+  /*
   auto t2s = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
   calculate_spectral_flux_Primakoff(test_ergs, s, output_path + "primakoff.dat");
@@ -115,7 +122,20 @@ void run_unit_test() {
   calculate_spectral_flux_axionelectron(test_ergs, s, output_path + "all_gaee.dat");
   auto t12e = std::chrono::high_resolution_clock::now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t12e-t12s).count() << " seconds." << std::endl;
-
+ */
+    
+ auto t13s = std::chrono::high_resolution_clock::now();
+ std::cout << "\n# Computing spectrum from Fe57 nuclear transition" << std::endl;
+ std::vector<double> specFeFlux = calculate_spectral_flux(test_ergs_Fe, s, &SolarModel::Gamma_P_Fe57, output_path + "Fe57.dat");
+ auto t13e = std::chrono::high_resolution_clock::now();
+ std::cout << "# Calculating the spectrum from Fe57 nuclear transition for (" << n_erg_values_Fe57 << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t13e-t13s).count() << " seconds." << std::endl;
+ double integratedflux = 0.0;
+ for (std::vector<double>::iterator it=specFeFlux.begin() ; it != specFeFlux.end(); ++it) {
+        integratedflux += *it;
+    }
+ integratedflux *= step;
+ std::cout << "Validation of Fe57 flux: Integrated flux = " << integratedflux << " g_eff^2 cm^-2 s^-1" << std::endl << "CAST collab found 4.56E+23 g_eff^2 cm^-2 s^-1" << std::endl;
+    
   auto t_end = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Finished testing! Total runtime: " << std::chrono::duration_cast<std::chrono::minutes>(t_end-t_start).count() << " mins." << std::endl;
 }
