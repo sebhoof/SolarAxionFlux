@@ -1328,7 +1328,7 @@ double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition tra
     double Na = nIsotope * w1 / trans.tau * trans.atogammaratio();  //axion emission rate per volume
     double sigma = trans.energy * sqrt(temperature_in_keV(r) / (trans.nuclmass * atomic_mass_unit * 1.0E+6)); // Doppler width
     double result = convfac;
-    result *= 1.0 / (4.0 * pi * omega*omega);   // to compensate for phase space factor introduced in calculate_spectral_flux
+    result *= gsl_pow_3(2.0 * pi) / (4.0 * pi * omega*omega);   // to compensate for phase space factor introduced in calculate_spectral_flux
     result *= Na / (sqrt(2.0 * pi) * sigma) * exp(- gsl_pow_2(omega - trans.energy)/ (2.0 * sigma * sigma));
     return result;
 }

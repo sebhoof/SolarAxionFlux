@@ -248,8 +248,7 @@ void print_current_time();
 class Nucleartransition {
   public:
     Nucleartransition();
-    Nucleartransition(double energy, double nuclmass, std::string element, double isotope_fraction, double excitedJ,
-                      double groundJ, double delta, double beta, double mu0, double mu3, double eta, double tau);
+    Nucleartransition(double energy, double nuclmass, std::string element, double isotope_fraction, double excitedJ, double groundJ, double delta, double beta, double mu0, double mu3, double eta, double tau);
     
     double energy;
     double nuclmass;
