@@ -20,19 +20,22 @@ void run_unit_test() {
   std::cout << "# Testing the Solar Model routines (this may take 10 mins or longer)..." << std::endl;
 
   auto t1s = std::chrono::high_resolution_clock::now();
-  std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
+  std::string solar_model_name_1 = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
+  std::string solar_model_name_2 = SOLAXFLUX_DIR "/data/solar_models/SolarModel_BP00.dat";
   std::string output_path = SOLAXFLUX_DIR "/results/";
   SolarModel s;
+  SolarModel s2;
   try {
     s = SolarModel("WRONG_FILENAME");
   } catch(XFileNotFound& err) {
     std::cout << "# Oops, the wrong filename was used... This will throw an error like the one below:" << std::endl;
     std::cout << err.what() << std::endl;
     std::cout << "# The error was caught and handled by using the correct filename. The test will continue now..." << std::endl;
-    s = SolarModel(solar_model_name, OP, true);
+    s = SolarModel(solar_model_name_1, OP, true);
   }
+    s2 = SolarModel(solar_model_name_2, OP, true);
   auto t1e = std::chrono::high_resolution_clock::now();
-  std::cout << "\n# Setting up the Solar model '" << solar_model_name << "' took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
+  std::cout << "\n# Setting up the Solar models '" << solar_model_name_1 <<" and " <<  solar_model_name_2 << " took " << std::chrono::duration_cast<std::chrono::seconds>(t1e-t1s).count() << " seconds." << std::endl;
   const int n_erg_values = 500;
   const int n_erg_values_LP = 1000;
   const int n_erg_values_Fe57 = 10000;
@@ -124,18 +127,25 @@ void run_unit_test() {
   std::cout << "# Calculating the full axion-electron spectrum (" << n_erg_values << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t12e-t12s).count() << " seconds." << std::endl;
  */
     
- auto t13s = std::chrono::high_resolution_clock::now();
- std::cout << "\n# Computing spectrum from Fe57 nuclear transition" << std::endl;
- std::vector<double> specFeFlux = calculate_spectral_flux(test_ergs_Fe, s, &SolarModel::Gamma_P_Fe57, output_path + "Fe57.dat");
- auto t13e = std::chrono::high_resolution_clock::now();
- std::cout << "# Calculating the spectrum from Fe57 nuclear transition for (" << n_erg_values_Fe57 << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t13e-t13s).count() << " seconds." << std::endl;
- double integratedflux = 0.0;
- for (std::vector<double>::iterator it=specFeFlux.begin() ; it != specFeFlux.end(); ++it) {
-        integratedflux += *it;
-    }
- integratedflux *= step;
- std::cout << "Validation of Fe57 flux: Integrated flux = " << integratedflux << " g_eff^2 cm^-2 s^-1" << std::endl << "CAST collab found 4.56E+23 g_eff^2 cm^-2 s^-1" << std::endl;
-    
+  auto t13s = std::chrono::high_resolution_clock::now();
+  std::cout << "\n# Computing spectrum from Fe57 nuclear transition" << std::endl;
+  std::vector<double> specFeFlux = calculate_spectral_flux(test_ergs_Fe, s, &SolarModel::Gamma_P_Fe57, output_path + "Fe57.dat");
+  std::vector<double> specFeFlux2 = calculate_spectral_flux(test_ergs_Fe, s2, &SolarModel::Gamma_P_Fe57, output_path + "Fe57.dat");
+  auto t13e = std::chrono::high_resolution_clock::now();
+  std::cout << "# Calculating the spectrum from Fe57 nuclear transition for (" << n_erg_values_Fe57 << " energy values) took " << std::chrono::duration_cast<std::chrono::seconds>(t13e-t13s).count() << " seconds." << std::endl;
+  double integratedflux = 0.0;
+  for (std::vector<double>::iterator it=specFeFlux.begin() ; it != specFeFlux.end(); ++it) {
+        integratedflux += *it;}
+  integratedflux *= step;
+  double integratedflux2 = 0.0;
+  for (std::vector<double>::iterator it=specFeFlux2.begin() ; it != specFeFlux2.end(); ++it) {
+           integratedflux2 += *it;
+       }
+  integratedflux2 *= step;
+  std::cout << "Validation of Fe57 flux:"<< std::endl << "B16-AGSS09: Integrated flux = " << integratedflux << " g_eff^2 cm^-2 s^-1" << std::endl << "BS2000: Integrated flux = " << integratedflux2 << " g_eff^2 cm^-2 s^-1" << std::endl << "CAST collab found 4.56E+23 g_eff^2 cm^-2 s^-1" << std::endl;
+ 
+  std::cout << std::endl << s.temperature_in_keV(0) << "  " << s.density(0) << std::endl;
+  std::cout << std::endl << s2.temperature_in_keV(0) << "  " << s2.density(0) << std::endl;
   auto t_end = std::chrono::high_resolution_clock::now();
   std::cout << "\n# Finished testing! Total runtime: " << std::chrono::duration_cast<std::chrono::minutes>(t_end-t_start).count() << " mins." << std::endl;
 }
