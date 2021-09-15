@@ -7,7 +7,7 @@ Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormae
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
-We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
+We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The paper was published in [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also available as [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
 
 <p>
 <p align="center">
@@ -42,7 +42,24 @@ We re-distribute (in adjusted form) solar models and opacity tables, which shoul
 
 ### The code
 
-Please cite our accompanying study on the solar axion flux and obervability of axion models if you you make use of the code [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
+When you make use of our code, please link to this Github page and cite our accompanying study using the BibTeX entry provided below or by getting it directly from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
+```
+@ARTICLE{2101.08789,
+       author = {{Hoof}, Sebastian and {Jaeckel}, Joerg and {Thormaehlen}, Lennert J.},
+        title = "{Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters}",
+      journal = {JCAP},
+         year = 2021,
+        month = sep,
+       volume = {2021},
+       number = {9},
+          eid = {006},
+        pages = {006},
+          doi = {10.1088/1475-7516/2021/09/006},
+archivePrefix = {arXiv},
+       eprint = {2101.08789},
+ primaryClass = {hep-ph}
+}
+```
 
 ### Solar models
 * BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
