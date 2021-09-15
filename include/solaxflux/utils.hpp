@@ -266,7 +266,7 @@ class Nucleartransition {
     std::string geff();
     double atogammaratio();
 };
-const Nucleartransition fe57trans(14.4, 57.0, "Fe", 0.0212, 3.0/2.0 , 1.0/2.0 , 0.002, -1.19, 0.88, 4.71, 0.8, 1.3E-6, 3.0E+17);
+const Nucleartransition fe57trans(14.4, 57.0, "Fe", 0.0212, 3.0/2.0 , 1.0/2.0 , 0.002, -1.31, 0.88, 4.77, 1.2054, 1.3E-6, 3.0E+17);
 
 
 #endif // defined __utils_hpp__

@@ -1319,7 +1319,7 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
   return result;
 }
 
-//flux from nuclear transitions  (iron 57 as default)
+//flux from nuclear transitions 
 
 double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition trans) {
     double convfac = gsl_pow_3(keV2cm) * hbar *1.0E+6;
