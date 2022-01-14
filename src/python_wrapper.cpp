@@ -8,8 +8,21 @@ using namespace pybind11::literals;
 PYBIND11_MODULE(pyaxionflux, m) {
   m.doc() = "Python wrapper for " LIBRARY_NAME " library functions";
 
+  try { pybind11::module_::import("numpy"); } catch (...) { return; }
+
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
+  pybind11::class_<SolarModel>(m, "SolarModel", "A simplified reduced implementation of the C++ SolarModel class in Python.")
+    .def(pybind11::init([](std::string file) { return new SolarModel(file); }), "Class constructor using only the path to the solar model file.", "solar_model_file"_a)
+    .def("temperature", pybind11::vectorize(&SolarModel::temperature_in_keV), "Solar model temperature (in keV)", "radius"_a)
+    .def("kappa_squared", pybind11::vectorize(&SolarModel::kappa_squared), "Screening scale squared (in keV^2)", "radius"_a)
+    .def("omega_pl_squared", pybind11::vectorize(&SolarModel::omega_pl_squared), "Plasma frequency squared (in keV^2)", "radius"_a)
+    .def("n_e", pybind11::vectorize(&SolarModel::n_electron), "Electron density (in keV^3)", "radius"_a)
+    .def("z2_n", pybind11::vectorize(&SolarModel::z2_n), "Charge-square-weighted ion density (in keV^3)", "radius"_a)
+    .def("degeneracy_factor", pybind11::vectorize(&SolarModel::avg_degeneracy_factor), "Electron degeneracy factor", "radius"_a)
+    .def("primakoff_rate", pybind11::vectorize(&SolarModel::Gamma_P_Primakoff), "Primakoff production rate", "omega"_a, "radius"_a)
+    .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_P_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
+  ;
   m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
   const std::vector<double> cc = { 3.0e3, 50.0, 4.0 };

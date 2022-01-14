@@ -60,7 +60,7 @@ class SolarModel {
     double alpha(double r);
     // The electron density of the plasma (in cm^-3)
     double n_electron(double r);
-    // Screening parameter kappa^2 (kappa^-1 = Debye-Hueckel radius)
+    // Screening parameter kappa^2 (in keV^2; kappa^-1 = Debye-Hueckel radius)
     double kappa_squared(double r);
     // Plasma frequency squared (in keV^2)
     double omega_pl_squared(double r);
