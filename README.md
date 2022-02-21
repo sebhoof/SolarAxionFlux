@@ -7,7 +7,7 @@ Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormae
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
-We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
+We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). The calculations of the axion flux from nuclear transitions was added for the project available at [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
 
 <p>
 <p align="center">
@@ -42,7 +42,7 @@ We re-distribute (in adjusted form) solar models and opacity tables, which shoul
 
 ### The code
 
-Please cite our accompanying study on the solar axion flux and obervability of axion models if you you make use of the code [arXiv:2101.08789](https://arxiv.org/abs/2101.08789).
+Please cite our accompanying study on the solar axion flux and obervability of axion models if you make use of the code [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). If you also use the flux from nuclear transitions, please cite [arXiv:2111.06407](https://arxiv.org/abs/2111.06407) as well.
 
 ### Solar models
 * BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
