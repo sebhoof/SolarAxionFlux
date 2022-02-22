@@ -68,7 +68,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
   if (path != "") {
     if (file_exists(path)) {
       if (overwrite) {
-        std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
+        std::cout << "WARNING! File " << path << " exists and will be overwritten." << std::endl;
       } else {
         std::cout << "WARNING! File " << path << " exists! Now saving to " << path << "_new" << std::endl; path += "_new";
       }

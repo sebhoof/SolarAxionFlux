@@ -4,6 +4,8 @@
 
 Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormaehlen](mailto:l.thormaehlen@thphys.uni-heidelberg.de)
 
+Information on **how to acknowledge this work** in the literature can be found under [References](#references).
+
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
@@ -64,7 +66,7 @@ archivePrefix = {arXiv},
 
 If you use the flux from nuclear transitions, please also cite the accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
 ```
-@ARTICLE{2022EPJC...82..120D,
+@ARTICLE{2111.06407,
        author = {{Di Luzio}, Luca and {Galan}, Javier and {Giannotti}, Maurizio and {Irastorza}, Igor G. and {Jaeckel}, Joerg and {Lindner}, Axel and {Ruz}, Jaime and {Schneekloth}, Uwe and {Sohl}, Lukas and {Thormaehlen}, Lennert J. and {Vogel}, Julia K.},
         title = "{Probing the axion-nucleon coupling with the next generation of axion helioscopes}",
       journal = {European Physical Journal C},
