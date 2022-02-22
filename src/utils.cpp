@@ -68,7 +68,7 @@ void save_to_file(std::string path, std::vector<std::vector<double>> buffer, std
   if (path != "") {
     if (file_exists(path)) {
       if (overwrite) {
-        std::cout << "WARNING! File " << path << " exists and will be overwritten..." << std::endl;
+        std::cout << "WARNING! File " << path << " exists and will be overwritten." << std::endl;
       } else {
         std::cout << "WARNING! File " << path << " exists! Now saving to " << path << "_new" << std::endl; path += "_new";
       }
@@ -279,13 +279,11 @@ void TwoDInterpolator::init(std::string type) {
     gsl_spline2d_set(spline, z, ind_x, ind_y, data[2][i]);
   }
     gsl_spline2d_init (spline, x, y, z, nx, ny);
-    //std::cout << "TwoDInterpolator init done!" << std::endl;
 }
 
 TwoDInterpolator::TwoDInterpolator(std::vector<std::vector<double>> table, std::string type) { data = table; init(type); }
 
 TwoDInterpolator::TwoDInterpolator(std::string file, std::string type) {
-  // terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
   try {
     ASCIItableReader table (file);
     data = table.get_data();
@@ -376,6 +374,20 @@ int Isotope::a_val() const { return isotope_a_value; }
 int Isotope::z_val() const { return element_z_value; }
 
 bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->get_element_name(); }
+
+// Nucleartransition functions
+Nucleartransition::Nucleartransition(double erg, double m, std::string el, double is_frac, double eJ, double gJ, double d, double b, double m0, double m3, double e, double t, double n) {
+  energy = erg; nuclmass = m; element = el; isotope_fraction = is_frac; excitedJ = eJ;
+  groundJ = gJ; delta = d; beta =b; mu0 = m0 ; mu3 = m3; eta = e; tau = t; nperrho = n;
+}
+
+std::string Nucleartransition::geff() { return std::to_string(beta).append(" g^0 + g^3"); }
+
+double Nucleartransition::atogammaratio() {
+  double result = 1.0 / (2.0 * pi * alpha_EM * (1.0 + delta * delta));
+  result *= gsl_pow_2 (1.0 / ((mu0 - 0.5) * beta + mu3 - eta));
+  return result;
+}
 
 // Return atomic weight of an isotope (not a class member)
 double atomic_weight(Isotope isotope) { return isotope_avg_weight.at(isotope); }

@@ -36,6 +36,7 @@ res6 = np.genfromtxt("TP.dat")
 res7 = np.genfromtxt("LP.dat")
 res8 = np.genfromtxt("TP_Rosseland.dat")
 res9 = np.genfromtxt("LP_Rosseland.dat")
+res10 = np.genfromtxt("Fe57.dat")
 
 
 #corr = np.genfromtxt("weighted_compton.dat")
@@ -98,7 +99,7 @@ plt.xscale('log')
 plt.legend(frameon=False)
 
 plt.savefig("validation_Tplasmon.pdf", bbox_inches='tight')
-plt.show()
+#plt.show()
 plt.close()
 
 
@@ -124,7 +125,7 @@ plt.ylim([0.0,37])
 plt.legend(frameon=False)
 
 plt.savefig("validation_Lplasmon.pdf", bbox_inches='tight')
-plt.show()
+#plt.show()
 plt.close()
 
 fig, ax = plt.subplots()
@@ -145,7 +146,20 @@ plt.xlim([0,10])
 plt.ylim([0,12])
 
 plt.legend(ncol=2, frameon=False)
-
 plt.savefig("validation_gaee.pdf")
 #plt.show()
+plt.close()
+
+## Validation plot for Fe57
+plot_setup()
+plt.plot(res10[:,0], res10[:,1], 'b-', label=r'Fe57')
+
+plt.title(r'Axion-nucleon interactions, $g_{\mathrm{eff}} = 1$')
+plt.xlabel(r'Energy $\omega$ [keV]')
+plt.ylabel(r'Axion flux $\mathrm{d}\Phi_a/\mathrm{d}\omega$ [\SI{}{\per\cm\squared\per\keV\per\s}]')
+
+plt.legend(ncol=2, frameon=False)
+
+plt.savefig("validation_fe57.pdf")
+plt.show()
 plt.close()
