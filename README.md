@@ -7,7 +7,8 @@ Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormae
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
-We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). The calculations of the axion flux from nuclear transitions was added for the project available at [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
+We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). The published paper can be found at [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also on the arXiv [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) Calculations of the axion flux from nuclear transitions were added later, in an article published at [EPJC]( 	
+https://doi.org/10.1140/epjc/s10052-022-10061-1), also available on the arXiv [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
 
 <p>
 <p align="center">
@@ -42,7 +43,44 @@ We re-distribute (in adjusted form) solar models and opacity tables, which shoul
 
 ### The code
 
-Please cite our accompanying study on the solar axion flux and obervability of axion models if you make use of the code [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). If you also use the flux from nuclear transitions, please cite [arXiv:2111.06407](https://arxiv.org/abs/2111.06407) as well.
+When you make use of our code, please link to this Github page and cite our accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
+```
+@ARTICLE{2101.08789,
+       author = {{Hoof}, Sebastian and {Jaeckel}, Joerg and {Thormaehlen}, Lennert J.},
+        title = "{Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters}",
+      journal = {JCAP},
+         year = 2021,
+        month = sep,
+       volume = {2021},
+       number = {9},
+          eid = {006},
+        pages = {006},
+          doi = {10.1088/1475-7516/2021/09/006},
+archivePrefix = {arXiv},
+       eprint = {2101.08789},
+ primaryClass = {hep-ph}
+}
+```
+
+If you use the flux from nuclear transitions, please also cite the accompanying study [arXiv:2111.06407](https://arxiv.org/abs/2111.06407) using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
+```
+@ARTICLE{2022EPJC...82..120D,
+       author = {{Di Luzio}, Luca and {Galan}, Javier and {Giannotti}, Maurizio and {Irastorza}, Igor G. and {Jaeckel}, Joerg and {Lindner}, Axel and {Ruz}, Jaime and {Schneekloth}, Uwe and {Sohl}, Lukas and {Thormaehlen}, Lennert J. and {Vogel}, Julia K.},
+        title = "{Probing the axion-nucleon coupling with the next generation of axion helioscopes}",
+      journal = {European Physical Journal C},
+         year = 2022,
+        month = feb,
+       volume = {82},
+       number = {2},
+          eid = {120},
+        pages = {120},
+          doi = {10.1140/epjc/s10052-022-10061-1},
+archivePrefix = {arXiv},
+       eprint = {2111.06407},
+ primaryClass = {hep-ph}
+}
+```
+
 
 ### Solar models
 * BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
