@@ -279,13 +279,11 @@ void TwoDInterpolator::init(std::string type) {
     gsl_spline2d_set(spline, z, ind_x, ind_y, data[2][i]);
   }
     gsl_spline2d_init (spline, x, y, z, nx, ny);
-    //std::cout << "TwoDInterpolator init done!" << std::endl;
 }
 
 TwoDInterpolator::TwoDInterpolator(std::vector<std::vector<double>> table, std::string type) { data = table; init(type); }
 
 TwoDInterpolator::TwoDInterpolator(std::string file, std::string type) {
-  // terminate_with_error_if(not(file_exists(file)), "ERROR! File '"+file+"' for interpolation not found!");
   try {
     ASCIItableReader table (file);
     data = table.get_data();
@@ -377,21 +375,18 @@ int Isotope::z_val() const { return element_z_value; }
 
 bool Isotope::same_z(Isotope *isotope) { return element_name == isotope->get_element_name(); }
 
-//nucleartransition functions
-Nucleartransition::Nucleartransition(double erg, double m, std::string el, double is_frac,
-                                     double eJ, double gJ, double d, double b,
-                                     double m0, double m3, double e, double t, double n) {
-    energy = erg; nuclmass = m; element = el; isotope_fraction = is_frac; excitedJ = eJ;
-    groundJ = gJ; delta = d; beta =b; mu0 = m0 ; mu3 = m3; eta = e; tau = t; nperrho = n;
+// Nucleartransition functions
+Nucleartransition::Nucleartransition(double erg, double m, std::string el, double is_frac, double eJ, double gJ, double d, double b, double m0, double m3, double e, double t, double n) {
+  energy = erg; nuclmass = m; element = el; isotope_fraction = is_frac; excitedJ = eJ;
+  groundJ = gJ; delta = d; beta =b; mu0 = m0 ; mu3 = m3; eta = e; tau = t; nperrho = n;
 }
 
-std::string Nucleartransition::geff() {return std::to_string(beta).append(" g^0 + g^3") ;}
+std::string Nucleartransition::geff() { return std::to_string(beta).append(" g^0 + g^3"); }
 
 double Nucleartransition::atogammaratio() {
-    double result= 1.0;
-    result *= 1.0 / (2.0 * pi * alpha_EM * (1.0 + delta * delta));
-    result *= gsl_pow_2 (1.0 / ((mu0 - 0.5) * beta + mu3 - eta));
-    return result;
+  double result = 1.0 / (2.0 * pi * alpha_EM * (1.0 + delta * delta));
+  result *= gsl_pow_2 (1.0 / ((mu0 - 0.5) * beta + mu3 - eta));
+  return result;
 }
 
 // Return atomic weight of an isotope (not a class member)

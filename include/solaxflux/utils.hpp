@@ -244,7 +244,7 @@ double safe_log10(double x, double lgx0);
 std::string current_time_string();
 void print_current_time();
 
-//nuclear transition class
+// Nuclear transition class
 class Nucleartransition {
   public:
     Nucleartransition();
@@ -261,11 +261,12 @@ class Nucleartransition {
     double mu0;
     double mu3;
     double eta;
-    double tau;  // this is NOT the lifetime of excited state, but the partial lifetime associated with M2 transition
-    double nperrho;  //volume-averaged number of nuclei per mass of solar matter [g^-1]
+    double tau; // This is NOT the lifetime of excited state, but the partial lifetime associated with M2 transition
+    double nperrho; // Volume-averaged number of nuclei per mass of solar matter [g^-1]
     std::string geff();
     double atogammaratio();
 };
+
 const Nucleartransition fe57trans(14.4, 57.0, "Fe", 0.0212, 3.0/2.0 , 1.0/2.0 , 0.002, -1.31, 0.88, 4.77, 1.2054, 1.3E-6, 3.0E+17);
 
 

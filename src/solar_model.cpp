@@ -922,9 +922,7 @@ std::vector<double> SolarModel::calc_averaged_electron_degeneracy_factor(std::ve
     gsl_integration_qagiu(&g, 0, 0, 1.0e-4, n, ws_vec[3], &denom, &denom_err);
     gsl_integration_qagiu(&f, 0, 0, 1.0e-4, n, ws_vec[4], &num, &num_err);
     double res = num/denom;
-    // double err = res*sqrt( gsl_pow_2(num_err/num) + gsl_pow_2(denom_err/denom) );
     integrals.push_back(res);
-    // errors.push_back(err);
   }
 
   for (auto ws: ws_vec) { gsl_integration_workspace_free(ws); }
@@ -1122,7 +1120,6 @@ double SolarModel::Gamma_P_TP(double omega, double r) {
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
   double DeltaPsq = omega*omega * gsl_pow_2(sqrt(1-omega_pl_squared(r)/(omega*omega))-1); // transfered momentum squared
-  // double DeltaPsq = gsl_pow_2(0.5*omega_pl_squared(r)/omega); //transfered momentum squared
   double average_b_field_sq = gsl_pow_2(bfield(r)) / 3.0;
   double DeltaTsq = g_agg*g_agg * average_b_field_sq / 4.0;
   double result = geom_factor * photon_polarization * gamma * DeltaTsq / ( (DeltaPsq+gsl_pow_2(0.5*gamma)) * gsl_expm1(u) ) ;
@@ -1319,23 +1316,21 @@ double SolarModel::ionisationsqr_grid(int ite, int jne, std::string element) {
   return result;
 }
 
-//flux from nuclear transitions 
-
+// Flux from nuclear transitions 
 double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition trans) {
-    double convfac = gsl_pow_3(keV2cm) * hbar *1.0E+6;
-    double z = exp(- trans.energy / temperature_in_keV(r));
-    double w1 = (2.0 * trans.excitedJ + 1.0) * z / ((2.0 * trans.groundJ + 1.0) + (2.0 * trans.excitedJ + 1.0) * z);
-    double nIsotope = n_element(r, trans.element) * trans.isotope_fraction; //
-    if (nIsotope == 0) { nIsotope =  trans.nperrho * density(r); } //compensates for solar models which don't track the element in question
-    double Na = nIsotope * w1 / trans.tau * trans.atogammaratio();  //axion emission rate per volume
-    double sigma = trans.energy * sqrt(temperature_in_keV(r) / (trans.nuclmass * atomic_mass_unit * 1.0E+6)); // Doppler width
-    double result = convfac;
-    result *= gsl_pow_3(2.0 * pi) / (4.0 * pi * omega*omega);   // to compensate for phase space factor introduced in calculate_spectral_flux
-    result *= Na / (sqrt(2.0 * pi) * sigma) * exp(- gsl_pow_2(omega - trans.energy)/ (2.0 * sigma * sigma));
-    return result;
+  double convfac = gsl_pow_3(keV2cm) * hbar *1.0e6;
+  double z = exp(- trans.energy / temperature_in_keV(r));
+  double w1 = (2.0 * trans.excitedJ + 1.0) * z / ((2.0 * trans.groundJ + 1.0) + (2.0 * trans.excitedJ + 1.0) * z);
+  double nIsotope = n_element(r, trans.element) * trans.isotope_fraction; //
+  if (nIsotope == 0) { nIsotope =  trans.nperrho * density(r); } // compensates for solar models which don't track the element in question
+  double Na = nIsotope * w1 / trans.tau * trans.atogammaratio(); // axion emission rate per volume
+  double sigma = trans.energy * sqrt(temperature_in_keV(r) / (trans.nuclmass * atomic_mass_unit * 1.0e6)); // Doppler width
+  double result = convfac;
+  result *= gsl_pow_3(2.0 * pi) / (4.0 * pi * omega*omega); // to compensate for phase space factor introduced in calculate_spectral_flux
+  result *= Na / (sqrt(2.0 * pi) * sigma) * exp(- gsl_pow_2(omega - trans.energy)/ (2.0 * sigma * sigma));
+  return result;
 }
- 
- 
+
 //flux from nuclear transitions  CAST Version (Fe mass fraction not radius dependent)
 /*
 double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition trans) {
@@ -1351,9 +1346,8 @@ double SolarModel::Gamma_P_nuclear(double omega, double r, Nucleartransition tra
     return result;
 }
 */
-double SolarModel::Gamma_P_Fe57(double omega, double r) {return Gamma_P_nuclear(omega, r, fe57trans);}
 
-
+double SolarModel::Gamma_P_Fe57(double omega, double r) { return Gamma_P_nuclear(omega, r, fe57trans); }
 
 
 // TODO: Utilise this + the new typedef in later versions?

@@ -86,7 +86,7 @@ class SolarModel {
     double Gamma_P_TP_Rosseland(double omega, double r); // using Rosseland opacities; only non-resonant part (m_a = 0)
     double Gamma_P_plasmon(double omega, double r); // all plasmon interactions
     double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
-    //general nuclear transition and most improtant iron 57 
+    // General nuclear transition and most improtant iron 57 
     double Gamma_P_nuclear(double omega, double r, Nucleartransition trans);
     double Gamma_P_Fe57(double omega, double r);
     // Interpolation routines for the opacity data
@@ -94,7 +94,6 @@ class SolarModel {
     double tops_grid_interp_erg(double erg, float t, float rho);
     double opas_grid_interp_erg(double erg, double r);
     double opacity_table_interpolator_op(double omega, double r, std::string element);
-    //double opacity_table_interpolator_op2(double omega, double r, std::string element);
     double opacity_table_interpolator_tops(double omega, double r);
     double opacity_table_interpolator_opas(double omega, double r);
     double opacity_element(double omega, double r, std::string element);
@@ -187,8 +186,10 @@ class SolarModel {
 
 // Typedef of SolarModel member function as 'SolarModelMemberFn'
 typedef double (SolarModel::*SolarModelMemberFn)(double,double);
-const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function { {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
-                                                                                  {"opacity",&SolarModel::Gamma_P_opacity}, {"all_electron",&SolarModel::Gamma_P_all_electron} };
+const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function {
+  {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
+  {"opacity",&SolarModel::Gamma_P_opacity}, {"all_electron",&SolarModel::Gamma_P_all_electron}
+};
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
 
 #endif // defined __solar_model_hpp__

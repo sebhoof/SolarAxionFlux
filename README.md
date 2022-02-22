@@ -7,7 +7,7 @@ Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormae
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
 ## Example results
-We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The preprint is available at [arXiv:2101.08789](https://arxiv.org/abs/2101.08789). The published paper can be found at [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also on the arXiv [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) Calculations of the axion flux from nuclear transitions were added later, in an article published at [EPJC]( 	
+We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The published paper can be found at [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also on the arXiv [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) Calculations of the axion flux from nuclear transitions were added later, in an article published at [EPJC]( 	
 https://doi.org/10.1140/epjc/s10052-022-10061-1), also available on the arXiv [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
 
 <p>
@@ -43,7 +43,7 @@ We re-distribute (in adjusted form) solar models and opacity tables, which shoul
 
 ### The code
 
-When you make use of our code, please link to this Github page and cite our accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
+When you make use of our code, please **link to this Github project** and cite our accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
 ```
 @ARTICLE{2101.08789,
        author = {{Hoof}, Sebastian and {Jaeckel}, Joerg and {Thormaehlen}, Lennert J.},
@@ -62,7 +62,7 @@ archivePrefix = {arXiv},
 }
 ```
 
-If you use the flux from nuclear transitions, please also cite the accompanying study [arXiv:2111.06407](https://arxiv.org/abs/2111.06407) using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
+If you use the flux from nuclear transitions, please also cite the accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
 ```
 @ARTICLE{2022EPJC...82..120D,
        author = {{Di Luzio}, Luca and {Galan}, Javier and {Giannotti}, Maurizio and {Irastorza}, Igor G. and {Jaeckel}, Joerg and {Lindner}, Axel and {Ruz}, Jaime and {Schneekloth}, Uwe and {Sohl}, Lukas and {Thormaehlen}, Lennert J. and {Vogel}, Julia K.},
