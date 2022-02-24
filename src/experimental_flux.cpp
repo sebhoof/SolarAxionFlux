@@ -433,7 +433,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
   double bin_delta = setup->bin_delta;
-  double norm_factor1 = s->Gamma_P_Primakoff(ref_erg_value, s->get_r_lo());
+  double norm_factor1 = s->Gamma_Primakoff(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value, setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
@@ -441,7 +441,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
-  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_Primakoff;
+  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_Primakoff;
 
   erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->dataset, s, integrand, w1, w2 };
   gsl_function f3;
@@ -514,14 +514,14 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double bin_delta = setup->bin_delta;
   double bin_hi = bin_lo + bin_delta*double(n_bins);
 
-  double norm_factor1 = s->Gamma_P_all_electron(ref_erg_value, s->get_r_lo());
+  double norm_factor1 = s->Gamma_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
-  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_P_all_electron;
+  double (SolarModel::*integrand)(double, double) = &SolarModel::Gamma_all_electron;
 
   erg_integration_params p3 = { mass, setup->length, setup->r_max, setup->dataset, s, integrand, w1, w2 };
   gsl_function f3;

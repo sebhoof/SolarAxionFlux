@@ -70,25 +70,25 @@ class SolarModel {
     double bfield(double r);
 
     // Production rates for the various axion production channels
-    double Gamma_P_ff(double omega, double r, int isotope_index);
-    double Gamma_P_ff(double omega, double r, Isotope isotope);
-    double Gamma_P_ff(double omega, double r); // sum over all isotopes
-    double Gamma_P_ee(double omega, double r);
-    double Gamma_P_Compton(double omega, double r);
-    double Gamma_P_opacity(double omega, double r, std::string element);
-    double Gamma_P_opacity(double omega, double r, Isotope isotope); // overloaded for convenience; opacity only depends on chemical element, not on isotope
-    double Gamma_P_opacity(double omega, double r); // sum over all elements
-    double Gamma_P_all_electron(double omega, double r); // sum over all axion-electron interactions
-    double Gamma_P_Primakoff(double omega, double r); // The usual Primakoff rate, but incl. corrections for lower energies < 1 keV
-    double Gamma_P_LP(double omega, double r);
-    double Gamma_P_LP_Rosseland(double omega, double r); // using Rosseland opacities
-    double Gamma_P_TP(double omega, double r); // only non-resonant part (m_a = 0)
-    double Gamma_P_TP_Rosseland(double omega, double r); // using Rosseland opacities; only non-resonant part (m_a = 0)
-    double Gamma_P_plasmon(double omega, double r); // all plasmon interactions
-    double Gamma_P_all_photon(double omega, double r); // sum over all axion-photon interactions
+    double Gamma_ff(double omega, double r, int isotope_index);
+    double Gamma_ff(double omega, double r, Isotope isotope);
+    double Gamma_ff(double omega, double r); // sum over all isotopes
+    double Gamma_ee(double omega, double r);
+    double Gamma_Compton(double omega, double r);
+    double Gamma_opacity(double omega, double r, std::string element);
+    double Gamma_opacity(double omega, double r, Isotope isotope); // overloaded for convenience; opacity only depends on chemical element, not on isotope
+    double Gamma_opacity(double omega, double r); // sum over all elements
+    double Gamma_all_electron(double omega, double r); // sum over all axion-electron interactions
+    double Gamma_Primakoff(double omega, double r); // The usual Primakoff rate, but incl. corrections for lower energies < 1 keV
+    double Gamma_LP(double omega, double r);
+    double Gamma_LP_Rosseland(double omega, double r); // using Rosseland opacities
+    double Gamma_TP(double omega, double r); // only non-resonant part (m_a = 0)
+    double Gamma_TP_Rosseland(double omega, double r); // using Rosseland opacities; only non-resonant part (m_a = 0)
+    double Gamma_plasmon(double omega, double r); // all plasmon interactions
+    double Gamma_all_photon(double omega, double r); // sum over all axion-photon interactions
     // General nuclear transition and most improtant iron 57 
-    double Gamma_P_nuclear(double omega, double r, Nucleartransition trans);
-    double Gamma_P_Fe57(double omega, double r);
+    double Gamma_nuclear(double omega, double r, Nucleartransition trans);
+    double Gamma_Fe57(double omega, double r);
     // Interpolation routines for the opacity data
     double op_grid_interp_erg(double u, int ite, int jne, std::string element);
     double tops_grid_interp_erg(double erg, float t, float rho);
@@ -187,8 +187,8 @@ class SolarModel {
 // Typedef of SolarModel member function as 'SolarModelMemberFn'
 typedef double (SolarModel::*SolarModelMemberFn)(double,double);
 const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function {
-  {"Primakoff",&SolarModel::Gamma_P_Primakoff}, {"Compton",&SolarModel::Gamma_P_Compton}, {"ee",&SolarModel::Gamma_P_ee}, {"ff",&SolarModel::Gamma_P_ff},
-  {"opacity",&SolarModel::Gamma_P_opacity}, {"all_electron",&SolarModel::Gamma_P_all_electron}
+  {"Primakoff",&SolarModel::Gamma_Primakoff}, {"Compton",&SolarModel::Gamma_Compton}, {"ee",&SolarModel::Gamma_ee}, {"ff",&SolarModel::Gamma_ff},
+  {"opacity",&SolarModel::Gamma_opacity}, {"all_electron",&SolarModel::Gamma_all_electron}
 };
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
 
