@@ -25,6 +25,8 @@ void test_module();
 void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii = 1000);
 // Calculate the spectral flux for different energies and radii
 void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff", std::string op_code = "OP");
+// Calculate the integrated flux up to given radii
+std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radii(std::vector<double> radii, SolarModel *s, std::string output_file_root = "", std::vector<double> erg_limits = {1.0, 20.0}, std::string process = "Primakoff");
 // Calculate the spectral flux for different energies (radius = 1) with corrected opacities and magnetic fields
 void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a = 0.0, double b = 0.0, std::vector<double> c = {0.0, 0.0, 0.0});
 // Calculate reference counts for a named helioscope experiment/dataset

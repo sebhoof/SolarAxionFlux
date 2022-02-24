@@ -25,8 +25,10 @@ PYBIND11_MODULE(pyaxionflux, m) {
   ;
   m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
-  const std::vector<double> cc = { 3.0e3, 50.0, 4.0 };
-  m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=cc);
+  const std::vector<double> v1 = { 1.0, 20.0 };
+  m.def("calculate_fluxes_on_solar_disc", &py11_calc_integrated_flux_up_to_different_radii, "Integrated flux within different radii on the solar disc.", "radii"_a, "s"_a, "output_file_root"_a="", "erg_limits"_a=v1, "process"_a="Primakoff");
+  const std::vector<double> v2 = { 3.0e3, 50.0, 4.0 };
+  m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=v2);
   m.def("calculate_reference_counts", &py11_calculate_reference_counts, "Calculate reference counts for each bin of a known experiment.", "masses"_a, "dataset"_a, "spectrum_file_P"_a, "spectrum_file_ABC"_a="", "output_file_name"_a="");
 }
 
@@ -109,6 +111,42 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
     std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
     throw XUnsupportedOption(err_msg);
   }
+}
+
+std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radii(std::vector<double> radii, SolarModel *s, std::string output_file_root, std::vector<double> erg_limits, std::string process) {
+  int n_radii = radii.size();
+  double rad_min = *std::min_element(radii.begin(), radii.end());
+  double rad_max = *std::max_element(radii.begin(), radii.end());
+
+  if ( (rad_min < s->get_r_lo()) || (rad_max > s->get_r_hi()) ) { std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl; }
+  // Check min/max and avoid Python roundoff errors
+  rad_min = std::min(std::max(rad_min, 1.000001*s->get_r_lo()), 0.999999*s->get_r_hi());
+  rad_max = std::max(std::min(rad_max, 0.999999*s->get_r_hi()), 1.000001*s->get_r_lo());
+  std::cout << "INFO. Performing calculation for energies in [" << erg_limits[0] << ", " << erg_limits[1] << "] keV and ";
+  if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
+
+  std::vector<std::vector<double> > result;
+  std::string saveas_p = (output_file_root != "") ? output_file_root+"_P.dat" : "";
+  std::string saveas_e = (output_file_root != "") ? output_file_root+"_ABC.dat" : "";
+  std::string saveas_pl = (output_file_root != "") ? output_file_root+"_plasmon.dat" : "";
+  if (process == "Primakoff") {
+    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_Primakoff, saveas_p);
+  } else if (process == "ABC") {
+    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_all_electron, saveas_e);
+  } else if (process == "plasmon") {
+    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_plasmon, saveas_pl);
+  } else if (process == "all") {
+    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_Primakoff, saveas_p);
+    std::vector<std::vector<double> > temp1 = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_all_electron, saveas_e);
+    result.push_back(temp1[1]);
+    std::vector<std::vector<double> > temp2 = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_plasmon, saveas_pl);
+    result.push_back(temp2[1]);
+  } else {
+    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
+    throw XUnsupportedOption(err_msg);
+  }
+
+  return result;
 }
 
 void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a, double b, std::vector<double> c) {
