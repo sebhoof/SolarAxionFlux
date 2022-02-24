@@ -403,13 +403,18 @@ double safe_log10(double x, double lgx0) {
   return result;
 }
 
+std::string add_leading_zero(int i) {
+  std::stringstream s;
+  s << std::setfill('0') << std::setw(2) << i;
+  return s.str();
+};
+
 std::string current_time_string() {
   auto t = std::time(0);
   auto now = std::localtime(&t);
-  std::string s = std::to_string(now->tm_year + 1900) + '-' + std::to_string(now->tm_mon + 1) + \
-                  '-' + std::to_string(now->tm_mday) + " | " + \
-                  std::to_string(now->tm_hour) + ":" + std::to_string(now->tm_min) + \
-                  ":" + std::to_string(now->tm_sec);
+  std::string s = std::to_string(now->tm_year + 1900) + '-' + add_leading_zero(now->tm_mon + 1) + \
+                  '-' + add_leading_zero(now->tm_mday) + " | " + add_leading_zero(now->tm_hour) + \
+                  ":" + add_leading_zero(now->tm_min) + ":" + add_leading_zero(now->tm_sec);
   return s;
 }
 

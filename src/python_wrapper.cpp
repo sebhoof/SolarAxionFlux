@@ -22,8 +22,8 @@ PYBIND11_MODULE(pyaxionflux, m) {
     .def("degeneracy_factor", pybind11::vectorize(&SolarModel::avg_degeneracy_factor), "Electron degeneracy factor", "radius"_a)
     .def("primakoff_rate", pybind11::vectorize(&SolarModel::Gamma_P_Primakoff), "Primakoff production rate", "omega"_a, "radius"_a)
     .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_P_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
+    .def("save_solar_model_data", &SolarModel::save_solar_model_data, "Save all solar model data relevant for axion computations.", "output_file_root"_a, "ergs"_a, "n_radii"_a=1000)
   ;
-  m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
   const std::vector<double> v1 = { 1.0, 20.0 };
   m.def("calculate_fluxes_on_solar_disc", &py11_calc_integrated_flux_up_to_different_radii, "Integrated flux within different radii on the solar disc.", "radii"_a, "s"_a, "output_file_root"_a="", "erg_limits"_a=v1, "process"_a="Primakoff");
@@ -39,38 +39,6 @@ void module_info() {
 void test_module() {
   run_unit_test();
   std::cout << "INFO. "<< LIBRARY_NAME << " unit test was successful!" << std::endl;
-}
-
-void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii) {
-  SolarModel s (solar_model_file, OP);
-  double r_lo = s.get_r_lo();
-  double r_hi = s.get_r_hi();
-  double delta_r = (r_hi - r_lo) / double(n_radii);
-  std::vector<double> radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared, degen_factor;
-  std::vector<double> radii_2, opacities;
-  for (int i = 0; i <= n_radii; i++) {
-    double r = r_lo + i*delta_r;
-    radii_1.push_back(r);
-    temperature.push_back( s.temperature_in_keV(r) );
-    n_e.push_back( s.n_electron(r) );
-    n_bar.push_back( s.z2_n(r) );
-    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
-    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-    degen_factor.push_back( s.avg_degeneracy_factor(r) );
-    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
-      radii_2.push_back(r);
-      opacities.push_back( s.opacity(*erg, r) );
-    }
-  }
-
-  std::string comment_1 = "Axion quantities from solar model "+s.get_solar_model_name()+" calculated by " LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV] | Screening scale kappa_s [keV] | Avg. degeneracy factor";
-  std::vector<std::vector<double>> buffer_1 = { radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared, degen_factor };
-  save_to_file(output_file_root+"_model.dat", buffer_1, comment_1);
-  std::string comment_2 = "Opacites for solar model "+s.get_solar_model_name()+" and opacity code "+s.get_opacitycode_name()+" calculated by" LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
-  std::vector<std::vector<double>> buffer_2 = { radii_2,  opacities };
-  save_to_file(output_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
 void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process, std::string op_code) {

@@ -124,6 +124,7 @@ class SolarModel {
     double apply_opacity_correction_factor(double r);
 
     // Metadata and information from the Solar model
+    void save_solar_model_data(std::string output_file_root, std::vector<double> ergs, int n_radii=1000);
     double get_r_lo();
     double get_r_hi();
     std::vector<double> get_supported_radii(std::vector<double> radii);

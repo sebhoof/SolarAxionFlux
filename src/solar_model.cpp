@@ -12,21 +12,21 @@ const int max_iter = 1e4;
 struct solar_model_params { double ea; double p1; double ks2; double wpl2; double kBT; double n_e; double mu; std::vector<gsl_integration_workspace*> ws_vec; };
 
 double omega_pl_correction_integrand(double k, void * params) {
-    struct solar_model_params * p = (struct solar_model_params *)params;
-    double erg = sqrt(k*k + m_electron*m_electron);
-    double mu_total = p->mu + m_electron;
-    double z = (erg - mu_total)/(p->kBT);
-    double f = 1.0/(1.0 + exp(z));
-    return f*k*(k/erg - gsl_pow_3(k/erg)/3.0);
+  struct solar_model_params * p = (struct solar_model_params *)params;
+  double erg = sqrt(k*k + m_electron*m_electron);
+  double mu_total = p->mu + m_electron;
+  double z = (erg - mu_total)/(p->kBT);
+  double f = 1.0/(1.0 + exp(z));
+  return f*k*(k/erg - gsl_pow_3(k/erg)/3.0);
 }
 
 double kappa_s_correction_integrand(double k, void * params) {
-    struct solar_model_params * p = (struct solar_model_params *)params;
-    double erg = sqrt(k*k + m_electron*m_electron);
-    double mu_total = p->mu + m_electron;
-    double z = (erg - mu_total)/(p->kBT);
-    double f = 1.0/(1.0 + exp(z));
-    return f*k*(k/erg + erg/k);
+  struct solar_model_params * p = (struct solar_model_params *)params;
+  double erg = sqrt(k*k + m_electron*m_electron);
+  double mu_total = p->mu + m_electron;
+  double z = (erg - mu_total)/(p->kBT);
+  double f = 1.0/(1.0 + exp(z));
+  return f*k*(k/erg + erg/k);
 }
 
 double n_e_from_chemical_potential(double mu, void * p) {
@@ -1338,6 +1338,37 @@ SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name)
 }
 
 // Metadata and information
+
+// Save all solar model data relevant for axion computations.
+void SolarModel::save_solar_model_data(std::string output_file_root, std::vector<double> ergs, int n_radii) {
+  double delta_r = (r_hi - r_lo) / double(n_radii);
+  std::vector<double> radii_1, temperature, n_e, n_bar, wpl, ks, degf;
+  std::vector<double> radii_2, opacities;
+  for (int i = 0; i <= n_radii; ++i) {
+    double r = r_lo + i*delta_r;
+    radii_1.push_back(r);
+    temperature.push_back(temperature_in_keV(r));
+    n_e.push_back(n_electron(r));
+    n_bar.push_back(z2_n(r));
+    wpl.push_back(sqrt(omega_pl_squared(r)));
+    ks.push_back(sqrt(kappa_squared(r)));
+    degf.push_back(avg_degeneracy_factor(r));
+    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
+      radii_2.push_back(r);
+      opacities.push_back(opacity(*erg, r));
+    }
+  }
+  std::string comment_1 = "Axion quantities from solar model "+solar_model_name+" calculated by " LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV]"\
+                          " | Screening scale kappa_s [keV] | Avg. degeneracy factor";
+  std::vector<std::vector<double> > buffer_1 = { radii_1, temperature, n_e, n_bar, wpl, ks, degf };
+  save_to_file(output_file_root+"_model.dat", buffer_1, comment_1);
+  std::string comment_2 = "Opacites for solar model "+solar_model_name+" and opacity code "+get_opacitycode_name()+" calculated by" LIBRARY_NAME\
+                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
+  std::vector<std::vector<double> > buffer_2 = { radii_2,  opacities };
+  save_to_file(output_file_root+"_opacities.dat", buffer_2, comment_2);
+}
+
 double SolarModel::get_r_lo() { return r_lo; }
 
 double SolarModel::get_r_hi() { return r_hi; }
