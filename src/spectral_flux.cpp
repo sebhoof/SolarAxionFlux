@@ -9,6 +9,15 @@
 
 // N.B. The solar axion fluxes will be calculated in units of [axions cm^-2 s^-1 keV^-1]
 
+std::string standard_header(SolarModel *s) {
+  double g_ag = s->get_gagg_ref_value_in_inverse_GeV();
+  double g_ae = s->get_gaee_ref_value();
+  std::string timedate = current_time_string();
+  std::stringstream res;
+  res << timedate << " | Calculation performed with " LIBRARY_NAME "; g_agamma = " << std::scientific << g_ag << " GeV^-1, g_ae = " << g_ae << ".\n";
+  return res.str();
+};
+
 // Below are all standard integration routines
 double rho_integrand_1d(double rho, void * params) {
   struct solar_model_integration_parameters_1d * p1 = (struct solar_model_integration_parameters_1d *)params;
@@ -94,7 +103,8 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   gsl_integration_workspace_free(w);
 
   std::vector<std::vector<double> > buffer = { ergs, results };
-  std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
+  std::string comment = standard_header(&s);
+  comment += "Spectral flux over full solar volume.\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return results;
@@ -155,7 +165,8 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double>> buffer = { valid_radii, results, errors };
-  std::string comment = "Total spectral flux for a given radius by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
+  std::string comment = standard_header(&s);
+  comment += "Total spectral flux for a given radius.\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1] |  Axion flux error estimate [cm^-2 s^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
@@ -198,7 +209,8 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
-  std::string comment = "Spectral flux over full solar disc at fixed radius by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
+  std::string comment = standard_header(&s);
+  comment += "Spectral flux over full solar disc at fixed radius.\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
@@ -331,7 +343,8 @@ std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, Sol
   gsl_integration_workspace_free(w);
 
   std::vector<std::vector<double>> buffer = { ergs, results, errors };
-  std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [axions / cm^2 s keV] | axion flux error estimate [axions / cm^2 s keV]";
+  std::string comment = standard_header(&s);
+  comment += "Spectral flux over full solar volume.\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1] | axion flux error estimate [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return results;
