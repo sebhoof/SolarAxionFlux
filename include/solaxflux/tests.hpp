@@ -103,7 +103,7 @@ void run_unit_test() {
 
   auto t9s = time_now();
   std::cout << "\n# Calculating Compton spectrum..." << std::endl;
-  calculate_spectral_flux_Compton(test_ergs, s, output_path + "compton.dat");
+  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_Compton, output_path + "compton.dat");
   auto t9e = time_now();
   std::cout << "# Calculating the Compton spectrum (" << n_erg_values << " energy values) took " << duration_cast<milliseconds>(t9e-t9s).count()/1000.0 << " seconds." << std::endl;
 
@@ -115,7 +115,7 @@ void run_unit_test() {
 
   auto t11s = time_now();
   std::cout << "\n# Computing opacity contribution (only metals in OP case)..." << std::endl;
-  calculate_spectral_flux_opacity(test_ergs, s, output_path + "metals.dat");
+  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_opacity, output_path + "metals.dat");
   auto t11e = time_now();
   std::cout << "# Calculating the opacity spectrum (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t11e-t11s).count() << " seconds." << std::endl;
 

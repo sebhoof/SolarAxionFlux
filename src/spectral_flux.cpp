@@ -252,10 +252,6 @@ std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs
   return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_all_photon, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s,std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_Compton, saveas);
-}
-
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas) {
   return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_all_electron, saveas);
 }
@@ -266,10 +262,6 @@ std::vector<std::vector<double> > calculate_spectral_flux_axionelectron(std::vec
 
 std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
   return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_all_electron, saveas);
-}
-
-std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_opacity, saveas);
 }
 
 
@@ -293,14 +285,7 @@ double integrand_all_ff(double r, void * params) {
 
   return 0.5*gsl_pow_2(r*erg/pi)*(sol->Gamma_ff(erg, r) + sol->Gamma_ee(erg, r));
 }
-// ee contribution as in arXiv:1310.0823
-double integrand_ee(double r, void * params) {
-  struct solar_model_integration_params_custom * p = (struct solar_model_integration_params_custom *)params;
-  double erg = (p->erg);
-  SolarModel* sol = (p->sol);
 
-  return 0.5*gsl_pow_2(r*erg/pi)* sol->Gamma_ee(erg, r);
-}
 // Calculate the flux from opacity for one element only
 double integrand_opacity_element(double r, void * params) {
   struct solar_model_integration_params_custom * p = (struct solar_model_integration_params_custom *)params;
@@ -343,9 +328,6 @@ std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> 
 
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas) {
   return calculate_spectral_flux_custom(ergs, s, &integrand_all_ff,saveas);
-}
-std::vector<double> calculate_spectral_flux_ee(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux_custom(ergs, s, &integrand_ee,saveas);
 }
 
 std::vector<double> calculate_spectral_flux_opacity_element(std::vector<double> ergs, SolarModel &s, std::string element, std::string saveas) {
