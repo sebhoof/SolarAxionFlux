@@ -77,21 +77,15 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
   if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
 
   if (process == "Primakoff") {
-    if (radii.size() == 1) { calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat"); } else { calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
   } else if (process == "ABC") {
-    if (radii.size() == 1) { calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat"); } else { calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
   } else if (process == "plasmon") {
-    if (radii.size() == 1) { calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat"); } else { calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
   } else if (process == "all") {
-    if (radii.size() == 1) {
-      calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat");
-      calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat");
-      calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat");
-    } else {
-      calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
-      calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
-      calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
-    }
+      integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
+      integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
+      integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
   } else {
     std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
     throw XUnsupportedOption(err_msg);
@@ -109,12 +103,12 @@ void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_
                "and B-fields (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
 
   std::string output_file = output_file_root+"_Primakoff.dat";
-  calculate_spectral_flux_Primakoff(ergs, s, output_file);
+  fully_integrate_d2Phi_a_domega_drho_in_rho_Primakoff(ergs, s, output_file);
   output_file = output_file_root+"_ABC.dat";
-  calculate_spectral_flux_axionelectron(ergs, s, output_file);
+  fully_integrate_d2Phi_a_domega_drho_in_rho_axionelectron(ergs, s, output_file);
   if (c[0]+c[1]+c[2] > 0) {
     output_file = output_file_root+"_plasmon.dat";
-    calculate_spectral_flux_plasmon(ergs, s, output_file);
+    fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(ergs, s, output_file);
   }
 }
 

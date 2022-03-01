@@ -140,7 +140,7 @@ class SolarModel {
     // INFO
     const opacitycode opcode;
     bool initialisation_status = false;
-    // Use the approximation by Raffelt (https://wwwth.mpp.mpg.de/members/raffelt/mypapers/198601.pdf) eq. 16 a, default is false
+    // Use the approximation by Raffelt, PRD 33 (1986) 4, Eq. (16a); default is false
     bool raffelt_approx;
     // Solar model file name (derived from path)
     std::string solar_model_name;
@@ -187,8 +187,8 @@ class SolarModel {
 // Typedef of SolarModel member function as 'SolarModelMemberFn'
 typedef double (SolarModel::*SolarModelMemberFn)(double,double);
 const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function {
-  {"Primakoff",&SolarModel::Gamma_Primakoff}, {"Compton",&SolarModel::Gamma_Compton}, {"ee",&SolarModel::Gamma_ee}, {"ff",&SolarModel::Gamma_ff},
-  {"opacity",&SolarModel::Gamma_opacity}, {"all_electron",&SolarModel::Gamma_all_electron}
+  {"Primakoff", &SolarModel::Gamma_Primakoff}, {"Compton", &SolarModel::Gamma_Compton}, {"ee", &SolarModel::Gamma_ee},
+  {"ff", &SolarModel::Gamma_ff}, {"opacity", &SolarModel::Gamma_opacity}, {"all_electron", &SolarModel::Gamma_all_electron}
 };
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
 

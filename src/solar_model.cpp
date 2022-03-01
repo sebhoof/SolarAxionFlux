@@ -933,7 +933,7 @@ std::vector<double> SolarModel::calc_averaged_electron_degeneracy_factor(std::ve
 double SolarModel::avg_degeneracy_factor(double r) { return interp_index(10, r); }
 
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for one isotope
+// Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for one isotope
 double SolarModel::Gamma_ff(double omega, double r, int isotope_index) {
   if (omega == 0) { return 0; }
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -942,11 +942,11 @@ double SolarModel::Gamma_ff(double omega, double r, int isotope_index) {
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation) for on isotope
+// Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for on isotope
 // N.B. Convenience function below (may be slow for many calls!)  (assuming full ionisation)
 double SolarModel::Gamma_ff(double omega, double r, Isotope isotope) { int isotope_index = lookup_isotope_index(isotope); return Gamma_ff(omega, r, isotope_index); }
 
-// Calculate the free-free contribution; from Eq. (2.17) of [arXiv:1310.0823] (assuming full ionisation)
+// Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_ff(double omega, double r) {
   double result = 0;
   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -967,7 +967,7 @@ double SolarModel::Gamma_ff(double omega, double r) {
   return result;
 }
 
-// Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) of [arXiv:1310.0823]
+// Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) in [arXiv:1310.0823]
 double SolarModel::Gamma_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
   const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
@@ -980,7 +980,7 @@ double SolarModel::Gamma_ee(double omega, double r) {
   }
 }
 
-// Calculate the Compton contribution; from Eq. (2.19) of [arXiv:1310.0823]
+// Calculate the Compton contribution; from Eq. (2.19) in [arXiv:1310.0823]
 double SolarModel::Gamma_Compton(double omega, double r) {
   const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
   if (omega > 0) {
@@ -992,7 +992,7 @@ double SolarModel::Gamma_Compton(double omega, double r) {
   }
 }
 
-// Opacity contribution from one isotope; first term of Eq. (2.21) of [arXiv:1310.0823]
+// Opacity contribution from one isotope; first term of Eq. (2.21) in [arXiv:1310.0823]
 double SolarModel::Gamma_opacity(double omega, double r, std::string element) {
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
@@ -1005,7 +1005,7 @@ double SolarModel::Gamma_opacity(double omega, double r, Isotope isotope) {
   return Gamma_opacity(omega, r, element);
 }
 
-// Full opacity contribution; first term of Eq. (2.21) of [arXiv:1310.0823]
+// Full opacity contribution; first term of Eq. (2.21) in [arXiv:1310.0823]
 double SolarModel::Gamma_opacity(double omega, double r) {
   const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
@@ -1036,30 +1036,19 @@ double SolarModel::Gamma_all_electron(double omega, double r) {
 }
 
 double SolarModel::Gamma_Primakoff(double omega, double r) {
-  // const double prefactor6 = g_agg*g_agg/(32.0*pi);
   const double prefactor6 = g_agg*g_agg*alpha_EM*gsl_pow_3(keV2cm)/8.0;
   double w_pl_sq = omega_pl_squared(r);
-  // double ks_sq = kappa_squared(r);
-  // double T_in_keV = temperature_in_keV(r);
   double z = omega/temperature_in_keV(r);
 
   double om2 = omega*omega;
   double x = om2/w_pl_sq;
   if (x > 1.0) {
     double phase_factor = 2.0/(sqrt(1.0 - 1.0/x) * gsl_expm1(z));
-    // double rate = ks_sq*T_in_keV;
     double n_dens = avg_degeneracy_factor(r)*n_electron(r) + z2_n(r);
     double s = 2.0*omega*sqrt(om2 - w_pl_sq);
     double t = kappa_squared(r)/s;
-    // double analytical_integral = 0;
     double u = (2.0*om2 - w_pl_sq)/s;
     double analytical_integral = primakoff_bracket(t, u);
-    // if (u > 1.0) { analytical_integral += (u*u-1.0)*log((u-1.0)/(u+1.0)); }
-    // double v = u + t;
-    // if (v > 1.0) { analytical_integral -= (v*v-1.0)*log((v-1.0)/(v+1.0)); }
-    //analytical_integral *= 0.5/t;
-    // analytical_integral -= 1.0;
-    // return prefactor6*phase_factor*rate*analytical_integral;
     return prefactor6*phase_factor*n_dens*analytical_integral;
   } else {
     return 0;
@@ -1114,7 +1103,7 @@ double aux_Gamma_TP(double omega, double om_pl_sq, double bfield, double tempera
 }
 
 double SolarModel::Gamma_TP(double omega, double r) {
-  const double geom_factor = 1.0; // factor accounting for observers position (1.0 = angular average)
+  const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
   const double photon_polarization = 2.0;
   if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
@@ -1127,7 +1116,7 @@ double SolarModel::Gamma_TP(double omega, double r) {
 }
 
 double SolarModel::Gamma_TP_Rosseland(double omega, double r) {
-  const double geom_factor = 1.0; // factor accounting for observers position (1.0 = angular average)
+  const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
   const double photon_polarization = 2.0;
   if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
@@ -1155,7 +1144,6 @@ double SolarModel::op_grid_interp_erg(double u, int ite, int jne, std::string el
       std::string err_msg = "OP data for element "+element+" does not exist.";
       throw XUnsupportedOption(err_msg);
     } else if (opacity_lin_interp_op.at(element).find(grid_position) == opacity_lin_interp_op.at(element).end()) {
-      // std::cout << "WARNING. OP data for " << element << " at position ite = " << ite << " and jne = " << jne << " does not exist."  << std::endl;
       std::string err_msg = "OP data for "+element+" at position ite = "+std::to_string(ite)+" and jne = "+std::to_string(jne)+" does not exist.";
       throw XSanityCheck(err_msg);
     } else {

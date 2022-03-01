@@ -80,8 +80,8 @@ double erg_integrand_2d(double erg, void * params) {
   return result;
 }
 
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  std::vector<double> results;
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
+  std::vector<double> integrals;
   std::ofstream output;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
   gsl_function f;
@@ -89,23 +89,23 @@ std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel
   solar_model_integration_parameters_1d p { 0.0, &s, integrand, &f, w };
   f.params = &p;
 
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) { results.push_back( distance_factor*erg_integrand_1d(*erg, &p) ); }
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) { integrals.push_back( distance_factor*erg_integrand_1d(*erg, &p) ); }
 
   gsl_integration_workspace_free(w);
 
-  std::vector<std::vector<double> > buffer = { ergs, results };
+  std::vector<std::vector<double> > buffer = { ergs, integrals };
   std::string comment = "Spectral flux over full solar volume by " LIBRARY_NAME ".\nColumns: energy values [keV] | axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
-  return results;
+  return buffer;
 }
 
-std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(double erg_lo, double erg_hi, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(double erg_lo, double erg_hi, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   std::vector<double> results, errors;
-  std::vector<double> valid_radii = s.get_supported_radii(radii);
-  double r_min = valid_radii.front();
-  double r_max = valid_radii.back();
-  int n_r_vals = valid_radii.size();
+  std::vector<double> valid_rhos = s.get_supported_radii(rhos);
+  double r_min = valid_rhos.front();
+  double r_max = valid_rhos.back();
+  int n_r_vals = valid_rhos.size();
   std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_2d);
@@ -127,12 +127,12 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
     double integral, error;
 
     if (i > 0) {
-      p.r_1 = valid_radii[i-1];
+      p.r_1 = valid_rhos[i-1];
     } else {
       p.r_1 = s.get_r_lo();
     }
 
-    p.r_2 = valid_radii[i];
+    p.r_2 = valid_rhos[i];
     if (p.r_2 > p.r_1) {
       //gsl_integration_qagiu(&f, 0.0, 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error); // Alternative integration from 0 -> infinity; too slow.
       gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
@@ -154,23 +154,23 @@ std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
 
-  std::vector<std::vector<double>> buffer = { valid_radii, results, errors };
+  std::vector<std::vector<double>> buffer = { valid_rhos, results, errors };
   std::string comment = "Total spectral flux for a given radius by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol], Axion flux [cm^-2 s^-1 keV^-1] |  Axion flux error estimate [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
 }
 
-std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
   std::vector<double> all_ergs, all_radii, results;
 
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
   gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
 
-  std::vector<double> valid_radii = s.get_supported_radii(radii);
-  double r_min = valid_radii.front();
-  double r_max = valid_radii.back();
-  int n_r_vals = valid_radii.size();
+  std::vector<double> valid_rhos = s.get_supported_radii(rhos);
+  double r_min = valid_rhos.front();
+  double r_max = valid_rhos.back();
+  int n_r_vals = valid_rhos.size();
 
   gsl_function f1;
   f1.function = &rad_integrand_2d;
@@ -186,7 +186,7 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
   }
   for (int i = 1; i < n_r_vals; ++i) {
     p.r_1 = r_min;
-    p.r_2 = valid_radii[i];
+    p.r_2 = valid_rhos[i];
     for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
       all_radii.push_back(p.r_2);
       all_ergs.push_back(*erg);
@@ -204,64 +204,66 @@ std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_ra
   return buffer;
 }
 
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  // Check if r_max >= max. available radius and switch to faster 1D integration if that's the case
-  if (r_max >= s.get_r_hi()) {
-    return calculate_spectral_flux(ergs, s, integrand, saveas, isotope);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::vector<double> ergs, double rho_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
+  // Check if rho_max >= biggest available radius and switch to faster 1D integration if that's the case
+  if (rho_max >= s.get_r_hi()) {
+    std::vector<std::vector<double> > tmp1 = fully_integrate_d2Phi_a_domega_drho_in_rho(ergs, s, integrand, saveas, isotope);
+    std::vector<double> tmp2 (tmp1[0].size(), s.get_r_hi());
+    std::vector<std::vector<double> > all_results = { tmp2, tmp1[0], tmp1[1] };
+    return all_results;
   } else {
-    std::vector<double> radii = { r_max };
-    std::vector<std::vector<double> > all_results = calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, integrand, saveas, isotope);
-    std::vector<double> result (all_results[2].begin()+ergs.size(), all_results[2].end());
-    return result;
+    std::vector<double> rhos = { rho_max };
+    std::vector<std::vector<double> > all_results = integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, integrand, saveas, isotope);
+    return all_results;
   }
 }
 
-std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_Primakoff, saveas);
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return fully_integrate_d2Phi_a_domega_drho_in_rho(ergs, s, &SolarModel::Gamma_Primakoff, saveas);
 }
 
-std::vector<std::vector<double> > calculate_spectral_flux_Primakoff(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, &SolarModel::Gamma_Primakoff, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_Primakoff, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
-  return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_Primakoff, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rho_max, s, &SolarModel::Gamma_Primakoff, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_plasmon(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_plasmon, saveas);
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return fully_integrate_d2Phi_a_domega_drho_in_rho(ergs, s, &SolarModel::Gamma_plasmon, saveas);
 }
 
-std::vector<std::vector<double> > calculate_spectral_flux_plasmon(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, &SolarModel::Gamma_plasmon, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_plasmon, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_plasmon(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
-  return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_plasmon, saveas);
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rho_max, s, &SolarModel::Gamma_plasmon, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_all_photon, saveas);
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axionphoton(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return fully_integrate_d2Phi_a_domega_drho_in_rho(ergs, s, &SolarModel::Gamma_all_photon, saveas);
 }
 
-std::vector<std::vector<double> > calculate_spectral_flux_axionphoton(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, &SolarModel::Gamma_all_photon, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_all_photon, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
-  return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_all_photon, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rho_max, s, &SolarModel::Gamma_all_photon, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux(ergs, s, &SolarModel::Gamma_all_electron, saveas);
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas) {
+  return fully_integrate_d2Phi_a_domega_drho_in_rho(ergs, s, &SolarModel::Gamma_all_electron, saveas);
 }
 
-std::vector<std::vector<double> > calculate_spectral_flux_axionelectron(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas) {
-  return calculate_spectral_flux_solar_disc_at_fixed_radii(ergs, radii, s, &SolarModel::Gamma_all_electron, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_all_electron, saveas);
 }
 
-std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas) {
-  return calculate_spectral_flux_solar_disc(ergs, r_max, s, &SolarModel::Gamma_all_electron, saveas);
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
+  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rho_max, s, &SolarModel::Gamma_all_electron, saveas);
 }
 
 
