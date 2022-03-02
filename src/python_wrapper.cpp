@@ -20,8 +20,8 @@ PYBIND11_MODULE(pyaxionflux, m) {
     .def("n_e", pybind11::vectorize(&SolarModel::n_electron), "Electron density (in keV^3)", "radius"_a)
     .def("z2_n", pybind11::vectorize(&SolarModel::z2_n), "Charge-square-weighted ion density (in keV^3)", "radius"_a)
     .def("degeneracy_factor", pybind11::vectorize(&SolarModel::avg_degeneracy_factor), "Electron degeneracy factor", "radius"_a)
-    .def("primakoff_rate", pybind11::vectorize(&SolarModel::Gamma_P_Primakoff), "Primakoff production rate", "omega"_a, "radius"_a)
-    .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_P_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
+    .def("primakoff_rate", pybind11::vectorize(&SolarModel::Gamma_Primakoff), "Primakoff production rate", "omega"_a, "radius"_a)
+    .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
     .def("save_solar_model_data", &SolarModel::save_solar_model_data, "Save all solar model data relevant for axion computations.", "output_file_root"_a, "ergs"_a, "n_radii"_a=1000)
   ;
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
@@ -92,16 +92,16 @@ std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radi
   std::string saveas_e = (output_file_root != "") ? output_file_root+"_ABC.dat" : "";
   std::string saveas_pl = (output_file_root != "") ? output_file_root+"_plasmon.dat" : "";
   if (process == "Primakoff") {
-    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_Primakoff, saveas_p);
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_Primakoff, saveas_p);
   } else if (process == "ABC") {
-    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_all_electron, saveas_e);
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_all_electron, saveas_e);
   } else if (process == "plasmon") {
-    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_plasmon, saveas_pl);
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_plasmon, saveas_pl);
   } else if (process == "all") {
-    result = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_Primakoff, saveas_p);
-    std::vector<std::vector<double> > temp1 = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_all_electron, saveas_e);
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_Primakoff, saveas_p);
+    std::vector<std::vector<double> > temp1 = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_all_electron, saveas_e);
     result.push_back(temp1[1]);
-    std::vector<std::vector<double> > temp2 = calculate_total_flux_solar_disc_at_fixed_radii(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_P_plasmon, saveas_pl);
+    std::vector<std::vector<double> > temp2 = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_plasmon, saveas_pl);
     result.push_back(temp2[1]);
   } else {
     std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
