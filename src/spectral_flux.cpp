@@ -121,7 +121,8 @@ std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<doub
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
-  std::string comment = "Differential flux on the solar disc by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Differential axion flux [cm^-2 s^-1 keV^-1]";
+  std::string comment = standard_header(&s);
+  comment += "Differential flux on the solar disc by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Differential axion flux [cm^-2 s^-1 keV^-1]";
   save_to_file(saveas, buffer, comment);
 
   return buffer;
