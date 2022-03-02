@@ -5,6 +5,7 @@
 #define __spectral_flux_hpp__
 
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <random>
 #include <algorithm>
