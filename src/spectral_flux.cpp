@@ -19,12 +19,12 @@ std::string standard_header(SolarModel *s) {
 };
 
 // Below are all standard integration routines
-double rho_integrand_1d(double rho, void * params) {
+double r_integrand_1d(double r, void * params) {
   struct solar_model_integration_parameters_1d * p1 = (struct solar_model_integration_parameters_1d *)params;
   double erg = (p1->erg);
   SolarModel *s = p1->s;
 
-  return 2.0 * gsl_pow_2(0.5*erg*rho/pi) * (s->*(p1->integrand))(erg, rho); // N.B. Factor of 2 from integration over theta angle.
+  return 2.0 * gsl_pow_2(0.5*erg*r/pi) * (s->*(p1->integrand))(erg, r); // N.B. Factor of 2 from integration over theta angle.
 }
 
 double erg_integrand_1d(double erg, void * params) {
@@ -37,8 +37,11 @@ double erg_integrand_1d(double erg, void * params) {
       double res = p2->s->r_from_omega_pl(erg);
       double low = p2->s->get_r_lo();
       double high = std::min(p2->s->get_r_hi(), 0.98);  // 0.99 maximum set by hand to avoid missing opacity data
-      if ((res > low) && (res < high)) {radii ={low, res , high};}
-      else {radii ={low, high};}
+      if ((res > low) && (res < high)) {
+        radii = { low, res , high };
+      } else {
+        radii = { low, high };
+      }
       gsl_integration_qagp(p2->f, &radii[0], radii.size(), int_abs_prec_1d, int_rel_prec_1d, int_space_size_1d, p2->w, &result, &error);}
 
   else {
@@ -50,30 +53,30 @@ double erg_integrand_1d(double erg, void * params) {
   return result;
 }
 
-double rho_integrand_2d(double rho, void * params) {
+double r_integrand_2d(double r, void * params) {
   struct solar_model_integration_parameters_2d * p3 = (struct solar_model_integration_parameters_2d *)params;
   double erg = (p3->erg);
-  double rad = (p3->rad);
+  double rho = (p3->rho);
 
-  double cylinder = rho*rho - rad*rad;
-  cylinder = rho/sqrt(cylinder);
+  double cylinder = r*r - rho*rho;
+  cylinder = r/sqrt(cylinder);
 
-  return 2.0 * cylinder * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, rho) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
+  return 2.0 * cylinder * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, r) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
 }
 
-double rad_integrand_2d(double rad, void * params) {
+double rho_integrand_2d(double rho, void * params) {
   struct solar_model_integration_parameters_2d * p2 = (struct solar_model_integration_parameters_2d *)params;
-  p2->rad = rad;
+  p2->rho = rho;
 
   auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
   size_t n_evals;
-  //gsl_integration_qag(&f2, rad, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
-  //gsl_integration_qags(&f2, rad, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
-  gsl_integration_cquad(p2->f2, rad, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
+  //gsl_integration_qag(&f2, rho, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
+  //gsl_integration_qags(&f2, rho, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
+  gsl_integration_cquad(p2->f2, rho, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
   auto t2 = std::chrono::high_resolution_clock::now();
 
-  result *= rad;
+  result *= rho;
   return result;
 }
 
@@ -84,7 +87,7 @@ double erg_integrand_2d(double erg, void * params) {
   double result, error;
   size_t n_evals;
 
-  gsl_integration_cquad(p1->f1, p1->r_1, p1->r_2, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
+  gsl_integration_cquad(p1->f1, p1->rho_0, p1->rho_1, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
   return result;
 }
 
@@ -99,7 +102,7 @@ std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<doub
   int n_rho_vals = valid_rhos.size();
 
   gsl_function f2;
-  f2.function = &rho_integrand_2d;
+  f2.function = &r_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, NULL, NULL, &f2, w2 };
   f2.params = &p;
   for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
@@ -108,12 +111,12 @@ std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<doub
       results.push_back(0);
   }
   for (auto rho = valid_rhos.begin(); rho != valid_rhos.end(); rho++) {
-    p.r_2 = *rho;
+    p.rho_1 = *rho;
     for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
       p.erg = *erg;
-      all_radii.push_back(p.r_2);
+      all_radii.push_back(p.rho_1);
       all_ergs.push_back(p.erg);
-      results.push_back( distance_factor*rad_integrand_2d(p.r_2, &p) );
+      results.push_back( distance_factor*rho_integrand_2d(p.rho_1, &p) );
     }
   }
 
@@ -133,7 +136,8 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho(std
   std::ofstream output;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_1d);
   gsl_function f;
-  f.function = rho_integrand_1d;
+  // N.B. The fully 2D integral in rho and r effectively reduces to the 1D integral in r, Eq. (2.42) in [arXiv:2101.08789]
+  f.function = r_integrand_1d;
   solar_model_integration_parameters_1d p { 0.0, &s, integrand, &f, w };
   f.params = &p;
 
@@ -152,9 +156,9 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho(std
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(double erg_lo, double erg_hi, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   std::vector<double> results, errors;
   std::vector<double> valid_rhos = s.get_supported_radii(rhos);
-  double r_min = valid_rhos.front();
-  double r_max = valid_rhos.back();
-  int n_r_vals = valid_rhos.size();
+  double rho_min = valid_rhos.front();
+  double rho_max = valid_rhos.back();
+  int n_rho_vals = valid_rhos.size();
   std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_2d);
@@ -164,25 +168,25 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   gsl_function f;
   f.function = &erg_integrand_2d;
   gsl_function f1;
-  f1.function = &rad_integrand_2d;
+  f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &rho_integrand_2d;
+  f2.function = &r_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f.params = &p;
   f1.params = &p;
   f2.params = &p;
 
-  for (int i = 0; i < n_r_vals; ++i) {
+  for (int i = 0; i < n_rho_vals; ++i) {
     double integral, error;
 
     if (i > 0) {
-      p.r_1 = valid_rhos[i-1];
+      p.rho_0 = valid_rhos[i-1];
     } else {
-      p.r_1 = s.get_r_lo();
+      p.rho_0 = s.get_r_lo();
     }
 
-    p.r_2 = valid_rhos[i];
-    if (p.r_2 > p.r_1) {
+    p.rho_1 = valid_rhos[i];
+    if (p.rho_1 > p.rho_0) {
       //gsl_integration_qagiu(&f, 0.0, 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error); // Alternative integration from 0 -> infinity; too slow.
       gsl_integration_qagp(&f, &relevant_peaks[0], relevant_peaks.size(), 10.0*int_abs_prec_2d, 10.0*int_rel_prec_2d, int_space_size_2d, w, &integral, &error);
     } else {
@@ -223,9 +227,9 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::v
   int n_r_vals = valid_rhos.size();
 
   gsl_function f1;
-  f1.function = &rad_integrand_2d;
+  f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &rho_integrand_2d;
+  f2.function = &r_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f1.params = &p;
   f2.params = &p;
@@ -235,10 +239,10 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::v
       results.push_back(0);
   }
   for (int i = 1; i < n_r_vals; ++i) {
-    p.r_1 = r_min;
-    p.r_2 = valid_rhos[i];
+    p.rho_0 = r_min;
+    p.rho_1 = valid_rhos[i];
     for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-      all_radii.push_back(p.r_2);
+      all_radii.push_back(p.rho_1);
       all_ergs.push_back(*erg);
       results.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
     }

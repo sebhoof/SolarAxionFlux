@@ -366,7 +366,7 @@ double erg_integrand(double erg, void * params) {
   double exposure = eff_exposure(erg, p3->dataset);
 
   gsl_function f2;
-  f2.function = &rad_integrand_2d;
+  f2.function = &rho_integrand_2d;
   struct solar_model_integration_parameters_2d p2 { erg, 0.0, 0.0, 0.0, s, p3->integrand, &f2, p3->w1, &f2, p3->w1 };
 
   f2.params = &p2;
