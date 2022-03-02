@@ -80,6 +80,45 @@ double erg_integrand_2d(double erg, void * params) {
   return result;
 }
 
+std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
+  std::vector<double> all_ergs, all_radii, results;
+
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+
+  std::vector<double> valid_rhos = s.get_supported_radii(rhos);
+  double rho_min = valid_rhos.front();
+  double rho_max = valid_rhos.back();
+  int n_rho_vals = valid_rhos.size();
+
+  gsl_function f2;
+  f2.function = &rho_integrand_2d;
+  solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, NULL, NULL, &f2, w2 };
+  f2.params = &p;
+  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+      all_radii.push_back(rho_min);
+      all_ergs.push_back(*erg);
+      results.push_back(0);
+  }
+  for (auto rho = valid_rhos.begin(); rho != valid_rhos.end(); rho++) {
+    p.r_2 = *rho;
+    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+      p.erg = *erg;
+      all_radii.push_back(p.r_2);
+      all_ergs.push_back(p.erg);
+      results.push_back( distance_factor*rad_integrand_2d(p.r_2, &p) );
+    }
+  }
+
+  gsl_integration_cquad_workspace_free(w2);
+
+  std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
+  std::string comment = "Differential flux on the solar disc by " LIBRARY_NAME ".\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Differential axion flux [cm^-2 s^-1 keV^-1]";
+  save_to_file(saveas, buffer, comment);
+
+  return buffer;
+}
+
+
 std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
   std::vector<double> integrals;
   std::ofstream output;
