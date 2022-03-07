@@ -5,6 +5,7 @@
 #define __spectral_flux_hpp__
 
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <random>
 #include <algorithm>
@@ -22,59 +23,55 @@ const double distance_factor = pow(radius_sol/(1.0e-2*keV2cm),3) / ( pow(1.0e2*d
 //  Integration routines for the solar axion flux  //
 /////////////////////////////////////////////////////
 
-// Variables and wrapper functions for solar model integration routines
-// Variables to define the behaviour of the GSL integrators.
-// Integration over the full Sun (1D)
-const int int_method_1d = 5, int_space_size_1d = 1e6;
-const double int_abs_prec_1d = 0.0, int_rel_prec_1d = 1.0e-3;
+// Variables that define the behaviour of the GSL integrators and wrapper functions for solar model integration routines
 // 1D-Integration for files
 const int int_method_file = 5, int_space_size_file = 1e6;
 const double int_abs_prec_file = 0.0, int_rel_prec_file = 1.0e-4;
-// Integration over the central Solar disc (2D)
+struct solar_model_integration_params_custom { double erg; SolarModel* sol; Isotope isotope; };
+
+// Integration over the full Sun (1D), see Eq. (2.42) in [arXiv:2101.08789]
+const int int_method_1d = 5, int_space_size_1d = 1e6;
+const double int_abs_prec_1d = 0.0, int_rel_prec_1d = 1.0e-3;
+struct solar_model_integration_parameters_1d { double erg; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_function* f; gsl_integration_workspace* w; };
+double r_integrand_1d(double r, void * params);
+double erg_integrand_1d(double erg, void * params);
+
+// Integration over the central Solar disc (2D), see (2.45) in [arXiv:2101.08789]
 const int int_method_2d = 5, int_space_size_2d = 1e6, int_space_size_2d_cquad = 1e6;
 const double int_abs_prec_2d = 0.0, int_rel_prec_2d = 1.0e-3;
-// Parameter structs for GSL integrators.
-struct solar_model_integration_parameters_1d { double erg; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_function* f; gsl_integration_workspace* w; };
-struct solar_model_integration_parameters_2d { double erg; double rad; double r_1; double r_2; SolarModel* s; double (SolarModel::*integrand)(double, double);
-                                               gsl_function* f1; gsl_integration_cquad_workspace* w1; gsl_function* f2; gsl_integration_cquad_workspace* w2; };
-struct solar_model_integration_params_custom { double erg; SolarModel* sol; Isotope isotope; };
-// Function wrappers for GSL integration over various Solar geometries.
-// Integration over the full Sun (1D)
-double rho_integrand_1d(double rho, void * params);
-double erg_integrand_1d(double erg, void * params);
-// Integration over the central Solar disc (2D)
+struct solar_model_integration_parameters_2d { double erg; double rho; double rho_0; double rho_1; SolarModel* s; double (SolarModel::*integrand)(double, double);
+  gsl_function* f1; gsl_integration_cquad_workspace* w1; gsl_function* f2; gsl_integration_cquad_workspace* w2; };
+double r_integrand_2d(double r, void * params);
 double rho_integrand_2d(double rho, void * params);
-double rad_integrand_2d(double rad, void * params);
+double erg_integrand_2d(double erg, void * params);
 
-// General functions for various integration routines
-std::vector<double> calculate_spectral_flux_solar_disc(std::vector<double> ergs, double r_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="", Isotope isotope={});
-std::vector<std::vector<double> > calculate_total_flux_solar_disc_at_fixed_radii(double erg_lo, double erg_hi, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="");
-std::vector<std::vector<double> > calculate_spectral_flux_solar_disc_at_fixed_radii(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="", Isotope isotope={});
-std::vector<double> calculate_spectral_flux(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas="", Isotope isotope={});
+// General functions for various integration routines; see Eq. (2.42) and (2.45) in [arXiv:2101.08789]
+std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::vector<double> ergs, double rho_max, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas = "", Isotope isotope = {});
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas = "", Isotope isotope = {});
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho(std::vector<double> ergs, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas = "", Isotope isotope = {});
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(double erg_lo, double erg_hi, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas = "");
 
 // Convenience functions for integrating specific processes
-std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<std::vector<double> > calculate_spectral_flux_Primakoff(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_Primakoff(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_plasmon(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<std::vector<double> > calculate_spectral_flux_plasmon(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_plasmon(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<std::vector<double> > calculate_spectral_flux_axionphoton(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_axionphoton(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_Compton(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<std::vector<double> > calculate_spectral_flux_axionelectron(std::vector<double> ergs, std::vector<double> radii, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_axionelectron(std::vector<double> ergs, SolarModel &s, double r_max, std::string saveas= "");
-std::vector<double> calculate_spectral_flux_opacity(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_Primakoff(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axionphoton(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axionelectron(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas = "");
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas= "");
 
 // General functions to allow for custom integration routines of non-SolarModel-type functions
-std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), std::string saveas = "", Isotope isotope={});
+std::vector<double> calculate_spectral_flux_custom(std::vector<double> ergs, SolarModel &s, double (*integrand)(double, void*), std::string saveas = "", Isotope isotope = {});
 
 // Convienience functions for integrating specific custom processes
 std::vector<double> calculate_spectral_flux_weightedCompton(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
 std::vector<double> calculate_spectral_flux_all_ff(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
-std::vector<double> calculate_spectral_flux_ee(std::vector<double> ergs, SolarModel &s, std::string saveas = "");
 std::vector<double> calculate_spectral_flux_opacity_element(std::vector<double> ergs, SolarModel &s, std::string element, std::string saveas = "");
 
 // Function to perform simple integrations from a text file

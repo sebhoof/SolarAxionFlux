@@ -21,7 +21,7 @@ high_resolution_clock::time_point time_now() { return high_resolution_clock::now
 void run_unit_test() {
   auto t_start = time_now();
   std::cout << "\n     ### This is the " LIBRARY_NAME " library ###\n" << std::endl;
-  std::cout << "# Testing the Solar Model routines (this should take about 5-6 mins)...\n" << std::endl;
+  std::cout << "# Testing the Solar Model routines (this should take about 5-10 mins)...\n" << std::endl;
 
   auto t1s = time_now();
   std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
@@ -61,49 +61,49 @@ void run_unit_test() {
 
   auto t2s = time_now();
   std::cout << "\n# Calculating Primakoff spectrum..." << std::endl;
-  calculate_spectral_flux_Primakoff(test_ergs, s, output_path + "primakoff.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho_Primakoff(test_ergs, s, output_path + "primakoff.dat");
   auto t2e = time_now();
   std::cout << "# Calculating the full Primakoff spectrum (" << n_erg_values << " energy values) took " << duration_cast<milliseconds>(t2e-t2s).count()/1000.0 << " seconds." << std::endl;
 
   auto t3s = time_now();
   std::cout << "\n# Calculating non-resonant transversal plasmon spectrum..." << std::endl;
-  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_P_TP, output_path + "TP.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs, s, &SolarModel::Gamma_TP, output_path + "TP.dat");
   auto t3e = time_now();
   std::cout << "# Calculating the full TP spectrum (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t3e-t3s).count() << " seconds." << std::endl;
 
   auto t4s = time_now();
   std::cout << "\n# Calculating non-resonant transversal plasmon spectrum (Rosseland)..." << std::endl;
-  calculate_spectral_flux(test_ergs, s, &SolarModel::Gamma_P_TP_Rosseland, output_path + "TP_Rosseland.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs, s, &SolarModel::Gamma_TP_Rosseland, output_path + "TP_Rosseland.dat");
   auto t4e = time_now();
   std::cout << "# Calculating the full TP spectrum (Rosseland) (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t4e-t4s).count() << " seconds." << std::endl;
 
   auto t5s = time_now();
   std::cout << "\n# Calculating resonant longitudinal plasmon spectrum..." << std::endl;
-  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP, output_path + "LP.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs_LP, s, &SolarModel::Gamma_LP, output_path + "LP.dat");
   auto t5e = time_now();
   std::cout << "# Calculating the LP spectrum (" << n_erg_values_LP << " energy values) took " << duration_cast<seconds>(t5e-t5s).count() << " seconds." << std::endl;
 
   auto t6s = time_now();
   std::cout << "\n# Calculating resonant longitudinal plasmon spectrum (Rosseland)..." << std::endl;
-  calculate_spectral_flux(test_ergs_LP, s, &SolarModel::Gamma_P_LP_Rosseland, output_path + "LP_Rosseland.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs_LP, s, &SolarModel::Gamma_LP_Rosseland, output_path + "LP_Rosseland.dat");
   auto t6e = time_now();
   std::cout << "# Calculating the LP spectrum (Rosseland) (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t6e-t6s).count() << " seconds." << std::endl;
 
   auto t7s = time_now();
   std::cout << "\n# Calculating Primakoff spectrum for " << n_rad_values << " different radii..." << std::endl;
-  calculate_spectral_flux_Primakoff(test_ergs, test_rads, s, output_path + "primakoff_different_radii.dat");
+  integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(test_ergs, test_rads, s, output_path + "primakoff_different_radii.dat");
   auto t7e = time_now();
   std::cout << "# Calculating the Primakoff spectrum (" << n_erg_values << " energy values) for " << n_rad_values << " different radii took " << duration_cast<seconds>(t7e-t7s).count() << " seconds." << std::endl;
 
   auto t8s = time_now();
   std::cout << "\n# Calculating integrated Primakoff flux between [0,50] keV for " << n_rad_values << " different radii..." << std::endl;
-  calculate_total_flux_solar_disc_at_fixed_radii(0.0, 50.0, test_rads, s, &SolarModel::Gamma_P_Primakoff, output_path + "primakoff_integrated_fluxes.dat");
+  integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(0.0, 50.0, test_rads, s, &SolarModel::Gamma_Primakoff, output_path + "primakoff_integrated_fluxes.dat");
   auto t8e = time_now();
   std::cout << "# Calculating integrated Primakoff flux for " << n_rad_values << " different radii took " << duration_cast<seconds>(t8e-t8s).count() << " seconds." << std::endl;
 
   auto t9s = time_now();
   std::cout << "\n# Calculating Compton spectrum..." << std::endl;
-  calculate_spectral_flux_Compton(test_ergs, s, output_path + "compton.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs, s, &SolarModel::Gamma_Compton, output_path + "compton.dat");
   auto t9e = time_now();
   std::cout << "# Calculating the Compton spectrum (" << n_erg_values << " energy values) took " << duration_cast<milliseconds>(t9e-t9s).count()/1000.0 << " seconds." << std::endl;
 
@@ -115,23 +115,23 @@ void run_unit_test() {
 
   auto t11s = time_now();
   std::cout << "\n# Computing opacity contribution (only metals in OP case)..." << std::endl;
-  calculate_spectral_flux_opacity(test_ergs, s, output_path + "metals.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs, s, &SolarModel::Gamma_opacity, output_path + "metals.dat");
   auto t11e = time_now();
   std::cout << "# Calculating the opacity spectrum (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t11e-t11s).count() << " seconds." << std::endl;
 
   auto t12s = time_now();
   std::cout << "\n# Computing full axion-electron spectrum..." << std::endl;
-  calculate_spectral_flux_axionelectron(test_ergs, s, output_path + "all_gaee.dat");
+  fully_integrate_d2Phi_a_domega_drho_in_rho_axionelectron(test_ergs, s, output_path + "all_gaee.dat");
   auto t12e = time_now();
   std::cout << "# Calculating the full axion-electron spectrum (" << n_erg_values << " energy values) took " << duration_cast<seconds>(t12e-t12s).count() << " seconds." << std::endl;
    
   auto t13s = time_now();
   std::cout << "\n# Computing spectrum from Fe57 nuclear transition" << std::endl;
-  std::vector<double> specFeFlux = calculate_spectral_flux(test_ergs_Fe, s, &SolarModel::Gamma_P_Fe57, output_path + "Fe57.dat");
+  std::vector<std::vector<double> > specFeFlux = fully_integrate_d2Phi_a_domega_drho_in_rho(test_ergs_Fe, s, &SolarModel::Gamma_Fe57, output_path + "Fe57.dat");
   auto t13e = time_now();
   std::cout << "# Calculating the spectrum from Fe57 nuclear transition for (" << n_erg_values_Fe57 << " energy values) took " << duration_cast<seconds>(t13e-t13s).count() << " seconds." << std::endl;
   double integratedflux = 0.0;
-  for (std::vector<double>::iterator it=specFeFlux.begin() ; it != specFeFlux.end(); ++it) { integratedflux += *it; }
+  for (std::vector<double>::iterator it=specFeFlux[1].begin() ; it != specFeFlux[1].end(); ++it) { integratedflux += *it; }
   integratedflux *= step;
   std::cout << "The integrated Fe57 flux: " << integratedflux << " g_eff^2 cm^-2 s^-1 (should be 5.0565e+23 g_eff^2 cm^-2 s^-1)." << std::endl;
 

@@ -8,12 +8,27 @@ using namespace pybind11::literals;
 PYBIND11_MODULE(pyaxionflux, m) {
   m.doc() = "Python wrapper for " LIBRARY_NAME " library functions";
 
+  try { pybind11::module_::import("numpy"); } catch (...) { return; }
+
   m.def("module_info", &module_info, "Basic information about the library.");
   m.def("test_module", &test_module, "A few simple unit tests of the library.");
-  m.def("save_solar_model", &py11_save_solar_model, "Export the relevant information from a solar model.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "n_radii"_a=1000);
+  pybind11::class_<SolarModel>(m, "SolarModel", "A simplified reduced implementation of the C++ SolarModel class in Python.")
+    .def(pybind11::init([](std::string file) { return new SolarModel(file); }), "Class constructor using only the path to the solar model file.", "solar_model_file"_a)
+    .def("temperature", pybind11::vectorize(&SolarModel::temperature_in_keV), "Solar model temperature (in keV)", "radius"_a)
+    .def("kappa_squared", pybind11::vectorize(&SolarModel::kappa_squared), "Screening scale squared (in keV^2)", "radius"_a)
+    .def("omega_pl_squared", pybind11::vectorize(&SolarModel::omega_pl_squared), "Plasma frequency squared (in keV^2)", "radius"_a)
+    .def("n_e", pybind11::vectorize(&SolarModel::n_electron), "Electron density (in keV^3)", "radius"_a)
+    .def("z2_n", pybind11::vectorize(&SolarModel::z2_n), "Charge-square-weighted ion density (in keV^3)", "radius"_a)
+    .def("degeneracy_factor", pybind11::vectorize(&SolarModel::avg_degeneracy_factor), "Electron degeneracy factor", "radius"_a)
+    .def("primakoff_rate", pybind11::vectorize(&SolarModel::Gamma_Primakoff), "Primakoff production rate", "omega"_a, "radius"_a)
+    .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
+    .def("save_solar_model_data", &SolarModel::save_solar_model_data, "Save all solar model data relevant for axion computations.", "output_file_root"_a, "ergs"_a, "n_radii"_a=1000)
+  ;
   m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
-  const std::vector<double> cc = { 3.0e3, 50.0, 4.0 };
-  m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=cc);
+  const std::vector<double> v1 = { 1.0, 20.0 };
+  m.def("calculate_fluxes_on_solar_disc", &py11_calc_integrated_flux_up_to_different_radii, "Integrated flux within different radii on the solar disc.", "radii"_a, "s"_a, "output_file_root"_a="", "erg_limits"_a=v1, "process"_a="Primakoff");
+  const std::vector<double> v2 = { 3.0e3, 50.0, 4.0 };
+  m.def("calculate_varied_spectra", &py11_save_varied_spectral_flux, "Integrates fluxes from solar model file and varies the opacities.", "ergs"_a, "solar_model_file"_a, "output_file_root"_a, "a"_a=0, "b"_a=0, "c"_a=v2);
   m.def("calculate_reference_counts", &py11_calculate_reference_counts, "Calculate reference counts for each bin of a known experiment.", "masses"_a, "dataset"_a, "spectrum_file_P"_a, "spectrum_file_ABC"_a="", "output_file_name"_a="");
 }
 
@@ -24,38 +39,6 @@ void module_info() {
 void test_module() {
   run_unit_test();
   std::cout << "INFO. "<< LIBRARY_NAME << " unit test was successful!" << std::endl;
-}
-
-void py11_save_solar_model(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, int n_radii) {
-  SolarModel s (solar_model_file, OP);
-  double r_lo = s.get_r_lo();
-  double r_hi = s.get_r_hi();
-  double delta_r = (r_hi - r_lo) / double(n_radii);
-  std::vector<double> radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared, degen_factor;
-  std::vector<double> radii_2, opacities;
-  for (int i = 0; i <= n_radii; i++) {
-    double r = r_lo + i*delta_r;
-    radii_1.push_back(r);
-    temperature.push_back( s.temperature_in_keV(r) );
-    n_e.push_back( s.n_electron(r) );
-    n_bar.push_back( s.z2_n(r) );
-    omega_pl.push_back( sqrt(s.omega_pl_squared(r)) );
-    kappa_squared.push_back( sqrt(s.kappa_squared(r)) );
-    degen_factor.push_back( s.avg_degeneracy_factor(r) );
-    for (auto erg = ergs.begin(); erg != ergs.end(); ++erg) {
-      radii_2.push_back(r);
-      opacities.push_back( s.opacity(*erg, r) );
-    }
-  }
-
-  std::string comment_1 = "Axion quantities from solar model "+s.get_solar_model_name()+" calculated by " LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Temperature T [keV] | Electron density n_e [cm^-3] | n_bar [cm^-3] | Plasma frequency omega_pl [keV] | Screening scale kappa_s [keV] | Avg. degeneracy factor";
-  std::vector<std::vector<double>> buffer_1 = { radii_1, temperature, n_e, n_bar, omega_pl, kappa_squared, degen_factor };
-  save_to_file(output_file_root+"_model.dat", buffer_1, comment_1);
-  std::string comment_2 = "Opacites for solar model "+s.get_solar_model_name()+" and opacity code "+s.get_opacitycode_name()+" calculated by" LIBRARY_NAME\
-                          ".\nColumns: Radius r [R_sol] | Axion energy [keV] | Opacity [keV]";
-  std::vector<std::vector<double>> buffer_2 = { radii_2,  opacities };
-  save_to_file(output_file_root+"_opacities.dat", buffer_2, comment_2);
 }
 
 void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process, std::string op_code) {
@@ -77,25 +60,55 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
   if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
 
   if (process == "Primakoff") {
-    if (radii.size() == 1) { calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat"); } else { calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
   } else if (process == "ABC") {
-    if (radii.size() == 1) { calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat"); } else { calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
   } else if (process == "plasmon") {
-    if (radii.size() == 1) { calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat"); } else { calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat"); }
+    integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
   } else if (process == "all") {
-    if (radii.size() == 1) {
-      calculate_spectral_flux_Primakoff(ergs, s, radii[0], output_file_root+"_P.dat");
-      calculate_spectral_flux_axionelectron(ergs, s, radii[0], output_file_root+"_ABC.dat");
-      calculate_spectral_flux_plasmon(ergs, s, radii[0], output_file_root+"_plasmon.dat");
-    } else {
-      calculate_spectral_flux_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
-      calculate_spectral_flux_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
-      calculate_spectral_flux_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
-    }
+      integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(ergs, radii, s, output_file_root+"_P.dat");
+      integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(ergs, radii, s, output_file_root+"_ABC.dat");
+      integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(ergs, radii, s, output_file_root+"_plasmon.dat");
   } else {
     std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
     throw XUnsupportedOption(err_msg);
   }
+}
+
+std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radii(std::vector<double> radii, SolarModel *s, std::string output_file_root, std::vector<double> erg_limits, std::string process) {
+  int n_radii = radii.size();
+  double rad_min = *std::min_element(radii.begin(), radii.end());
+  double rad_max = *std::max_element(radii.begin(), radii.end());
+
+  if ( (rad_min < s->get_r_lo()) || (rad_max > s->get_r_hi()) ) { std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl; }
+  // Check min/max and avoid Python roundoff errors
+  rad_min = std::min(std::max(rad_min, 1.000001*s->get_r_lo()), 0.999999*s->get_r_hi());
+  rad_max = std::max(std::min(rad_max, 0.999999*s->get_r_hi()), 1.000001*s->get_r_lo());
+  std::cout << "INFO. Performing calculation for energies in [" << erg_limits[0] << ", " << erg_limits[1] << "] keV and ";
+  if (n_radii > 1) { std::cout << n_radii << " radii in [" << rad_min << ", " << rad_max << "] R_sol." << std::endl; } else { std::cout << "one radius value (" << rad_min << " R_sol)." << std::endl; }
+
+  std::vector<std::vector<double> > result;
+  std::string saveas_p = (output_file_root != "") ? output_file_root+"_P.dat" : "";
+  std::string saveas_e = (output_file_root != "") ? output_file_root+"_ABC.dat" : "";
+  std::string saveas_pl = (output_file_root != "") ? output_file_root+"_plasmon.dat" : "";
+  if (process == "Primakoff") {
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_Primakoff, saveas_p);
+  } else if (process == "ABC") {
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_all_electron, saveas_e);
+  } else if (process == "plasmon") {
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_plasmon, saveas_pl);
+  } else if (process == "all") {
+    result = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_Primakoff, saveas_p);
+    std::vector<std::vector<double> > temp1 = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_all_electron, saveas_e);
+    result.push_back(temp1[1]);
+    std::vector<std::vector<double> > temp2 = integrate_d2Phi_a_domega_drho_up_to_rho_and_for_omega_interval(erg_limits[0], erg_limits[1], radii, *s, &SolarModel::Gamma_plasmon, saveas_pl);
+    result.push_back(temp2[1]);
+  } else {
+    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
+    throw XUnsupportedOption(err_msg);
+  }
+
+  return result;
 }
 
 void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_model_file, std::string output_file_root, double a, double b, std::vector<double> c) {
@@ -109,12 +122,12 @@ void py11_save_varied_spectral_flux(std::vector<double> ergs, std::string solar_
                "and B-fields (" << check_2[0] << ", " << check_2[1] << ", " << check_2[2] << ")." << std::endl;
 
   std::string output_file = output_file_root+"_Primakoff.dat";
-  calculate_spectral_flux_Primakoff(ergs, s, output_file);
+  fully_integrate_d2Phi_a_domega_drho_in_rho_Primakoff(ergs, s, output_file);
   output_file = output_file_root+"_ABC.dat";
-  calculate_spectral_flux_axionelectron(ergs, s, output_file);
+  fully_integrate_d2Phi_a_domega_drho_in_rho_axionelectron(ergs, s, output_file);
   if (c[0]+c[1]+c[2] > 0) {
     output_file = output_file_root+"_plasmon.dat";
-    calculate_spectral_flux_plasmon(ergs, s, output_file);
+    fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(ergs, s, output_file);
   }
 }
 

@@ -37,7 +37,7 @@ if(PYTHON_SUPPORT)
     include(FetchContent)
     FetchContent_Declare(pybind11
                          GIT_REPOSITORY https://github.com/pybind/pybind11.git
-                         GIT_TAG v2.4.3
+                         GIT_TAG v2.9.0
                          GIT_PROGRESS ON
                          GIT_SHALLOW ON
                          GIT_SUBMODULES ""
