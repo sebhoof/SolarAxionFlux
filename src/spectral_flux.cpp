@@ -9,15 +9,6 @@
 
 // N.B. The solar axion fluxes will be calculated in units of [axions cm^-2 s^-1 keV^-1]
 
-std::string standard_header(SolarModel *s) {
-  double g_ag = s->get_gagg_ref_value_in_inverse_GeV();
-  double g_ae = s->get_gaee_ref_value();
-  std::string timedate = current_time_string();
-  std::stringstream res;
-  res << timedate << " | Calculation performed with " LIBRARY_NAME "; g_agamma = " << std::scientific << g_ag << " GeV^-1, g_ae = " << g_ae << ".\n";
-  return res.str();
-};
-
 // Below are all standard integration routines
 double r_integrand_1d(double r, void * params) {
   struct solar_model_integration_parameters_1d * p1 = (struct solar_model_integration_parameters_1d *)params;
@@ -68,13 +59,13 @@ double rho_integrand_2d(double rho, void * params) {
   struct solar_model_integration_parameters_2d * p2 = (struct solar_model_integration_parameters_2d *)params;
   p2->rho = rho;
 
-  auto t1 = std::chrono::high_resolution_clock::now();
+  //auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
   size_t n_evals;
   //gsl_integration_qag(&f2, rho, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
   //gsl_integration_qags(&f2, rho, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
   gsl_integration_cquad(p2->f2, rho, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
-  auto t2 = std::chrono::high_resolution_clock::now();
+  //auto t2 = std::chrono::high_resolution_clock::now();
 
   result *= rho;
   return result;
@@ -207,8 +198,8 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   return buffer;
 }
 
-std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, Isotope isotope) {
-  std::vector<double> all_ergs, all_radii, results;
+std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, bool use_ring_geometry, Isotope isotope) {
+  std::vector<double> all_ergs, all_radii_1, all_radii_2, fluxes;
 
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
   gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
@@ -225,28 +216,41 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::v
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f1.params = &p;
   f2.params = &p;
-  for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-      all_radii.push_back(r_min);
-      all_ergs.push_back(*erg);
-      results.push_back(0);
+
+  if (not(use_ring_geometry)) {
+    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
+        all_radii_2.push_back(r_min);
+        all_ergs.push_back(*erg);
+        fluxes.push_back(0);
+    }
   }
+
+  p.rho_0 = r_min;
   for (int i = 1; i < n_r_vals; ++i) {
-    p.rho_0 = r_min;
+    if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
     p.rho_1 = valid_rhos[i];
     for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-      all_radii.push_back(p.rho_1);
+      all_radii_1.push_back(p.rho_0);
+      all_radii_2.push_back(p.rho_1);
       all_ergs.push_back(*erg);
-      results.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
+      fluxes.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
     }
   }
 
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
 
-  std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
+  std::vector<std::vector<double> > buffer;
   std::string comment = standard_header(&s);
-  comment += "Spectral flux over full solar disc at fixed radius.\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
-  save_to_file(saveas, buffer, comment);
+  if (use_ring_geometry) {
+      buffer = { all_radii_1, all_radii_2, all_ergs, fluxes };
+    comment += "Spectral flux over rings on the solar disc.\nColumns: Inner radius on solar disc [R_sol] | Outer radius [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
+    save_to_file(saveas, buffer, comment);
+  } else {
+    buffer = { all_radii_2, all_ergs, fluxes };
+    comment += "Spectral flux over the solar disc up to a given radius.\nColumns: Radius on solar disc [R_sol] | Energy [keV] | Axion flux [cm^-2 s^-1 keV^-1]";
+    save_to_file(saveas, buffer, comment);
+  }
 
   return buffer;
 }
@@ -260,7 +264,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho(std::v
     return all_results;
   } else {
     std::vector<double> rhos = { rho_max };
-    std::vector<std::vector<double> > all_results = integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, integrand, saveas, isotope);
+    std::vector<std::vector<double> > all_results = integrate_d2Phi_a_domega_drho_between_rhos(ergs, rhos, s, integrand, saveas, false, isotope);
     return all_results;
   }
 }
@@ -270,7 +274,7 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_Pri
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
-  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_Primakoff, saveas);
+  return integrate_d2Phi_a_domega_drho_between_rhos(ergs, rhos, s, &SolarModel::Gamma_Primakoff, saveas);
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
@@ -282,7 +286,7 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_pla
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_plasmon(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
-  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_plasmon, saveas);
+  return integrate_d2Phi_a_domega_drho_between_rhos(ergs, rhos, s, &SolarModel::Gamma_plasmon, saveas);
 }
 
 std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_plasmon(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
@@ -294,7 +298,7 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axi
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
-  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_all_photon, saveas);
+  return integrate_d2Phi_a_domega_drho_between_rhos(ergs, rhos, s, &SolarModel::Gamma_all_photon, saveas);
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionphoton(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {
@@ -306,7 +310,7 @@ std::vector<std::vector<double> > fully_integrate_d2Phi_a_domega_drho_in_rho_axi
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, std::string saveas) {
-  return integrate_d2Phi_a_domega_drho_up_to_rho(ergs, rhos, s, &SolarModel::Gamma_all_electron, saveas);
+  return integrate_d2Phi_a_domega_drho_between_rhos(ergs, rhos, s, &SolarModel::Gamma_all_electron, saveas);
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(std::vector<double> ergs, double rho_max, SolarModel &s, std::string saveas) {

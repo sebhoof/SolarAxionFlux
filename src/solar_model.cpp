@@ -1435,3 +1435,12 @@ std::vector<double> SolarModel::get_opacity_correction() {
 }
 
 bool SolarModel::is_initialised() { return initialisation_status; }
+
+std::string standard_header(SolarModel *s) {
+  double g_ag = s->get_gagg_ref_value_in_inverse_GeV();
+  double g_ae = s->get_gaee_ref_value();
+  std::string timedate = current_time_string();
+  std::stringstream res;
+  res << timedate << " | Calculation performed with " LIBRARY_NAME "; g_agamma = " << std::scientific << g_ag << " GeV^-1, g_ae = " << g_ae << ".\n";
+  return res.str();
+}

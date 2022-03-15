@@ -193,4 +193,6 @@ const std::map<std::string, SolarModelMemberFn> map_interaction_name_to_function
 };
 SolarModelMemberFn get_SolarModel_function_pointer(std::string interaction_name);
 
+std::string standard_header(SolarModel *s);
+
 #endif // defined __solar_model_hpp__

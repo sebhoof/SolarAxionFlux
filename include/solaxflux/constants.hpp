@@ -10,6 +10,7 @@
 
 // Mathematical constants
 const double pi = M_PI;
+const double two_pi = 2.0*pi;
 
 // Physical constants
 const double hbar = 6.582119514e-25; // in [GeV s]
