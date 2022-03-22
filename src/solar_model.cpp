@@ -941,6 +941,16 @@ double SolarModel::Gamma_ff(double omega, double r, int isotope_index) {
   double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
 }
+// Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for several isotopes
+ double SolarModel::Gamma_ff(double omega, double r, std::vector<int> isotope_indices) {
+   if (omega == 0) { return 0; }
+   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
+   double u = omega/temperature_in_keV(r);
+   double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
+   double z2_isotopes = 0;
+   for (auto it = isotope_indices.begin(); it != isotope_indices.end(); ++it) { z2_isotopes += z2_n_iz(r,*it);}
+   return prefactor1 * n_electron(r)*z2_isotopes*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
+ }
 
 // Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for on isotope
 // N.B. Convenience function below (may be slow for many calls!)  (assuming full ionisation)
@@ -1018,7 +1028,7 @@ double SolarModel::Gamma_all_electron(double omega, double r) {
   if (opcode == OP) {
     double element_contrib = 0.0;
     static int iso_ind_1 = lookup_isotope_index({"H",1}), iso_ind_2 = lookup_isotope_index({"He",3}), iso_ind_3 = lookup_isotope_index({"He",4});
-    element_contrib += Gamma_ff(omega, r, iso_ind_1) + Gamma_ff(omega, r, iso_ind_2) + Gamma_ff(omega, r, iso_ind_3);
+    element_contrib += Gamma_ff(omega, r, {iso_ind_1,iso_ind_2,iso_ind_3});
     for (int k = 2; k < num_op_elements; k++) { element_contrib += Gamma_opacity(omega, r, op_element_names[k]); }
     result = element_contrib + Gamma_Compton(omega, r) + Gamma_ee(omega, r);
   } else if ((opcode == LEDCOP) || (opcode == ATOMIC)) {

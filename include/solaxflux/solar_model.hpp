@@ -71,6 +71,7 @@ class SolarModel {
 
     // Production rates for the various axion production channels
     double Gamma_ff(double omega, double r, int isotope_index);
+    double Gamma_ff(double omega, double r, std::vector<int> isotope_indices);
     double Gamma_ff(double omega, double r, Isotope isotope);
     double Gamma_ff(double omega, double r); // sum over all isotopes
     double Gamma_ee(double omega, double r);
