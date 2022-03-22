@@ -13,16 +13,16 @@ int main() {
 #include <vector>
 #include <random>
 
-#include "/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/include/solaxflux/solar_model.hpp"
-#include "/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/include/solaxflux/spectral_flux.hpp"
-#include "/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/include/solaxflux/utils.hpp"
+#include "solar_model.hpp"
+#include "spectral_flux.hpp"
+#include "utils.hpp"
 
 int main () {
   std::vector<double> all_radii, all_ergs;
   for (int i = 0; i < 101; ++i) { all_radii.push_back(0.01*i); }
   for (int i = 0; i < 200; ++i) { all_ergs.push_back(0.01*(i+1)); }
   std::cout << "Setting up solar model..." << std::endl;
-  SolarModel s ("/Users/lennertthormaehlen/Documents/Uni/Promotion/axionflux/SolarAxionFlux/data/solar_models/SolarModel_B16-AGSS09.dat");
+  SolarModel s (SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat");
   std::cout << "Finished." << std::endl;
 //  print_current_time();
 //  calculate_d2Phi_a_domega_drho(all_ergs, all_radii, s, &SolarModel::Gamma_Primakoff, "matrix_P.dat");

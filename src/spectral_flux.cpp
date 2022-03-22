@@ -199,7 +199,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, bool use_ring_geometry, Isotope isotope) {
-  std::vector<double> all_ergs, all_radii_1, all_radii_2, fluxes;
+  const int n_r_interp = 1000;
 
   gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
   gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
@@ -208,6 +208,20 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
   double r_min = valid_rhos.front();
   double r_max = valid_rhos.back();
   int n_r_vals = valid_rhos.size();
+  int n_erg_vals = ergs.size();
+  int n_entries = n_r_vals*n_erg_vals;
+  if (use_ring_geometry) { n_entries -= n_erg_vals; }
+  std::vector<double> all_radii_1(n_entries), all_radii_2(n_entries), all_ergs(n_entries);
+  std::vector<double> fluxes(n_entries);
+
+  // Set up radii range and other functions used for rate interpolation
+  std::vector<double> int_radius_vals;
+  for (int k = 0; k < n_r_interp; ++k) {
+    double rk = s.get_r_lo() + (s.get_r_hi() - s.get_r_lo()) * k / (n_r_interp-1);
+    int_radius_vals.push_back(rk);
+  }
+  s.acc_interp_integrand = gsl_interp_accel_alloc();
+  s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n_r_interp);
 
   gsl_function f1;
   f1.function = &rho_integrand_2d;
@@ -217,44 +231,42 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
   f1.params = &p;
   f2.params = &p;
 
+  int offset = 1;
   if (not(use_ring_geometry)) {
-    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-        all_radii_2.push_back(r_min);
-        all_ergs.push_back(*erg);
-        fluxes.push_back(0);
+    offset = 0;
+    for (int j = 0; j < n_erg_vals; ++j) {
+        all_radii_2[j] = r_min;
+        all_ergs[j] = ergs[j];
+        fluxes[j] = 0;
     }
   }
 
   p.rho_0 = r_min;
-  for (int i = 1; i < n_r_vals; ++i) {
-    if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
-    p.rho_1 = valid_rhos[i];
-    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-      all_radii_1.push_back(p.rho_0);
-      all_radii_2.push_back(p.rho_1);
-      all_ergs.push_back(*erg);
-//      attempt to speed up calculation by interpolating Gamma for fixed energy
-      std::vector<double> integrand_values;
-      std::vector<double> radius_values;
-      int n = 100;
-      for (int k=0; k<n; k++) {
-          double r = s.get_r_lo() + (s.get_r_hi()-s.get_r_lo())*k/(n-1);
-          integrand_values.push_back((p.s->*(p.integrand))(*erg, r));
-          radius_values.push_back(r);
-      }
-      s.acc_interp_integrand = gsl_interp_accel_alloc();
-      s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n);
-      gsl_spline_init(s.interp_integrand, &radius_values[0], &integrand_values[0], n);
-      p.integrand = &SolarModel::interpolated_integrand;
-      fluxes.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
-      //gsl_spline_free(s.interp_integrand);
-      //gsl_interp_accel_free(s.acc_interp_integrand);
+  for (int j = 0; j < n_erg_vals; ++j) {
+    std::vector<double> int_integrand_vals;
+    for (int k = 0; k < n_r_interp; ++k) {
+        int_integrand_vals.push_back((p.s->*(p.integrand))(ergs[j], int_radius_vals[k]));
     }
-    std::cout << i << "/" << n_r_vals-1 << " radii done" << std::endl;
+    for (int i = 1; i < n_r_vals; ++i) {
+      int tindex = (i-offset)*n_erg_vals+j;
+      if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
+      p.rho_1 = valid_rhos[i];
+      all_radii_1[tindex] = p.rho_0;
+      all_radii_2[tindex] = p.rho_1;
+      all_ergs[tindex] = all_ergs[j];
+
+      gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
+      p.integrand = &SolarModel::interpolated_integrand;
+
+      fluxes[tindex] = distance_factor*erg_integrand_2d(ergs[j], &p);
+    }
+    std::cout << j << "/" << n_erg_vals-1 << " erg values done..." << std::endl;
   }
 
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
+  gsl_spline_free(s.interp_integrand);
+  gsl_interp_accel_free(s.acc_interp_integrand);
 
   std::vector<std::vector<double> > buffer;
   std::string comment = standard_header(&s);
