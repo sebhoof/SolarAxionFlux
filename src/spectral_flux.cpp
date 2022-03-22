@@ -220,8 +220,6 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
     double rk = s.get_r_lo() + (s.get_r_hi() - s.get_r_lo()) * k / (n_r_interp-1);
     int_radius_vals.push_back(rk);
   }
-  s.acc_interp_integrand = gsl_interp_accel_alloc();
-  s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n_r_interp);
 
   gsl_function f1;
   f1.function = &rho_integrand_2d;
@@ -245,8 +243,12 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
   for (int j = 0; j < n_erg_vals; ++j) {
     std::vector<double> int_integrand_vals;
     for (int k = 0; k < n_r_interp; ++k) {
-        int_integrand_vals.push_back((p.s->*(p.integrand))(ergs[j], int_radius_vals[k]));
+        int_integrand_vals.push_back((p.s->*(integrand))(ergs[j], int_radius_vals[k]));
     }
+    s.acc_interp_integrand = gsl_interp_accel_alloc();
+    s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n_r_interp);
+    gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
+    p.integrand = &SolarModel::interpolated_integrand;
     for (int i = 1; i < n_r_vals; ++i) {
       int tindex = (i-offset)*n_erg_vals+j;
       if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
@@ -254,19 +256,15 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
       all_radii_1[tindex] = p.rho_0;
       all_radii_2[tindex] = p.rho_1;
       all_ergs[tindex] = ergs[j];
-
-      gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
-      p.integrand = &SolarModel::interpolated_integrand;
-
       fluxes[tindex] = distance_factor*erg_integrand_2d(ergs[j], &p);
     }
-    std::cout << j << "/" << n_erg_vals-1 << " erg values done..." << std::endl;
+    std::cout << j+1 << "/" << n_erg_vals << " erg values done..." << std::endl;
+    gsl_spline_free(s.interp_integrand);
+    gsl_interp_accel_free(s.acc_interp_integrand);
   }
 
   gsl_integration_cquad_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
-  gsl_spline_free(s.interp_integrand);
-  gsl_interp_accel_free(s.acc_interp_integrand);
 
   std::vector<std::vector<double> > buffer;
   std::string comment = standard_header(&s);
