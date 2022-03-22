@@ -253,7 +253,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
       p.rho_1 = valid_rhos[i];
       all_radii_1[tindex] = p.rho_0;
       all_radii_2[tindex] = p.rho_1;
-      all_ergs[tindex] = all_ergs[j];
+      all_ergs[tindex] = ergs[j];
 
       gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
       p.integrand = &SolarModel::interpolated_integrand;
