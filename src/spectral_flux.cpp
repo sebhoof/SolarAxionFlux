@@ -233,8 +233,24 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
       all_radii_1.push_back(p.rho_0);
       all_radii_2.push_back(p.rho_1);
       all_ergs.push_back(*erg);
+//      attempt to speed up calculation by interpolating Gamma for fixed energy
+      std::vector<double> integrand_values;
+      std::vector<double> radius_values;
+      int n = 100;
+      for (int k=0; k<n; k++) {
+          double r = s.get_r_lo() + (s.get_r_hi()-s.get_r_lo())*k/(n-1);
+          integrand_values.push_back((p.s->*(p.integrand))(*erg, r));
+          radius_values.push_back(r);
+      }
+      s.acc_interp_integrand = gsl_interp_accel_alloc();
+      s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n);
+      gsl_spline_init(s.interp_integrand, &radius_values[0], &integrand_values[0], n);
+      p.integrand = &SolarModel::interpolated_integrand;
       fluxes.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
+      //gsl_spline_free(s.interp_integrand);
+      //gsl_interp_accel_free(s.acc_interp_integrand);
     }
+    std::cout << i << "/" << n_r_vals-1 << " radii done" << std::endl;
   }
 
   gsl_integration_cquad_workspace_free(w1);
