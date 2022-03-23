@@ -246,7 +246,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
         int_integrand_vals.push_back((p.s->*(integrand))(ergs[j], int_radius_vals[k]));
     }
     s.acc_interp_integrand = gsl_interp_accel_alloc();
-    s.interp_integrand = gsl_spline_alloc(gsl_interp_linear, n_r_interp);
+    s.interp_integrand = gsl_spline_alloc(gsl_interp_steffen, n_r_interp);
     gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
     p.integrand = &SolarModel::interpolated_integrand;
     for (int i = 1; i < n_r_vals; ++i) {
