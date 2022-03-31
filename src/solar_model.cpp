@@ -1024,6 +1024,8 @@ double SolarModel::Gamma_opacity(double omega, double r) {
 }
 
 double SolarModel::Gamma_all_electron(double omega, double r) {
+  double u = omega/temperature_in_keV(r);
+  if (u>70) {return 0;}
   double result = 0;
   if (opcode == OP) {
     double element_contrib = 0.0;
