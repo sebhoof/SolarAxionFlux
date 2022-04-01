@@ -355,7 +355,9 @@ std::vector<std::vector<double>> axion_reference_counts_from_file(exp_setup *set
 ////////////////////////////
 
 // TODO OUTDATED! Basically the alternative to 'from file integration'?
+
 double erg_integrand(double erg, void * params) {
+   /*
   struct erg_integration_params * p3 = (struct erg_integration_params *)params;
   SolarModel *s = p3->s;
   double r_min = s->get_r_lo(), r_max = std::min(p3->r_max, s->get_r_hi());
@@ -375,7 +377,10 @@ double erg_integrand(double erg, void * params) {
   gsl_integration_qag (&f2, r_min, r_max, 0.1*int_abs_prec_file , 0.1*int_rel_prec_file , int_space_size_file, int_method_file, p3->w2, &spectral_flux, &spectral_flux_error);
 
   return 0.5*gsl_pow_2(erg/pi)*exposure*spectral_flux*sincsq/norm_factor3;
+    */
+  return 0;
 }
+ 
 
 // Functions to calculate the counts in all bins of a helioscope experiment
 std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_setup *setup, std::string spectral_flux_file) {
@@ -437,7 +442,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value, setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
@@ -461,7 +466,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   }
 
   //gsl_integration_workspace_free (w1);
-  gsl_integration_workspace_free(w1);
+  gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 
@@ -517,7 +522,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double norm_factor1 = s->Gamma_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
@@ -542,7 +547,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   }
 
   //gsl_integration_workspace_free (w1);
-  gsl_integration_workspace_free(w1);
+  gsl_integration_cquad_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 

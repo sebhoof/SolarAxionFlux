@@ -80,7 +80,7 @@ const double ref_erg_value = 2.0, ref_r_value = 0.05;
 
 // Data structs to pass variables to functions and integrators.
 //struct erg_integration_params { double mass; double length; double r_max; std::string dataset; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; gsl_integration_workspace* w2; };
-struct erg_integration_params { double mass; double length; double r_max; std::string dataset; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_workspace* w1; gsl_integration_workspace* w2; };
+struct erg_integration_params { double mass; double length; double r_max; std::string dataset; SolarModel* s; double (SolarModel::*integrand)(double, double); gsl_integration_cquad_workspace* w1; gsl_integration_workspace* w2; };
 struct simple_convolution_params { double sigma; double erg0; OneDInterpolator* spectral_flux; };
 struct convolution_params { double erg0; exp_flux_from_file_integration_parameters* p; };
 
