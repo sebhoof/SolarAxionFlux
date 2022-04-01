@@ -437,7 +437,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value, setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
   //gsl_integration_workspace * w1 = gsl_integration_workspace_alloc (int_space_size_file);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
@@ -461,7 +461,7 @@ std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup
   }
 
   //gsl_integration_workspace_free (w1);
-  gsl_integration_cquad_workspace_free(w1);
+  gsl_integration_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 
@@ -517,7 +517,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   double norm_factor1 = s->Gamma_all_electron(ref_erg_value, s->get_r_lo());
   double norm_factor3 = 0.5*gsl_pow_2(ref_erg_value/pi)*eff_exposure(ref_erg_value,setup->dataset)*conversion_prob_correction(mass, ref_erg_value, setup->length);
 
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
   gsl_integration_workspace * w2 = gsl_integration_workspace_alloc (int_space_size_file);
   gsl_integration_workspace * w3 = gsl_integration_workspace_alloc (int_space_size_file);
 
@@ -542,7 +542,7 @@ std::vector<double> axion_electron_counts_full(double mass, double gaee, double 
   }
 
   //gsl_integration_workspace_free (w1);
-  gsl_integration_cquad_workspace_free(w1);
+  gsl_integration_workspace_free(w1);
   gsl_integration_workspace_free (w2);
   gsl_integration_workspace_free (w3);
 

@@ -54,17 +54,23 @@ double r_integrand_2d(double r, void * params) {
 
   return 2.0 * cylinder * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, r) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
 }
+double z_integrand_2d(double z, void * params) {
+  struct solar_model_integration_parameters_2d * p3 = (struct solar_model_integration_parameters_2d *)params;
+  double erg = (p3->erg);
+  double rho = (p3->rho);
+  return 2.0 * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, sqrt(z*z+rho*rho)) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
+}
 
 double rho_integrand_2d(double rho, void * params) {
   struct solar_model_integration_parameters_2d * p2 = (struct solar_model_integration_parameters_2d *)params;
   p2->rho = rho;
-
+  double zmax = sqrt(1.0-rho*rho);
   //auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
   size_t n_evals;
   //gsl_integration_qag(&f2, rho, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
   //gsl_integration_qags(&f2, rho, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
-  gsl_integration_cquad(p2->f2, rho, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
+  gsl_integration_qag(p2->f2, 0, zmax, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w2, &result, &error);
   //auto t2 = std::chrono::high_resolution_clock::now();
 
   result *= rho;
@@ -78,19 +84,19 @@ double erg_integrand_2d(double erg, void * params) {
   double result, error;
   size_t n_evals;
 
-  gsl_integration_cquad(p1->f1, p1->rho_0, p1->rho_1, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
+  gsl_integration_qag(p1->f1, p1->rho_0, p1->rho_1, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, int_method_2d, p1->w1, &result, &error);
   return result;
 }
 
 std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   std::vector<double> all_ergs, all_radii, results;
 
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
 
   std::vector<double> valid_rhos = s.get_supported_radii(rhos);
 
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, NULL, NULL, &f2, w2 };
   f2.params = &p;
   for (auto rho = valid_rhos.begin(); rho != valid_rhos.end(); rho++) {
@@ -103,7 +109,7 @@ std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<doub
     }
   }
 
-  gsl_integration_cquad_workspace_free(w2);
+  gsl_integration_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer = { all_radii, all_ergs, results };
   std::string comment = standard_header(&s);
@@ -145,15 +151,15 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_2d);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
 
   gsl_function f;
   f.function = &erg_integrand_2d;
   gsl_function f1;
   f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f.params = &p;
   f1.params = &p;
@@ -187,8 +193,8 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   }
 
   gsl_integration_workspace_free(w);
-  gsl_integration_cquad_workspace_free(w1);
-  gsl_integration_cquad_workspace_free(w2);
+  gsl_integration_workspace_free(w1);
+  gsl_integration_workspace_free(w2);
 
   std::vector<std::vector<double>> buffer = { valid_rhos, results, errors };
   std::string comment = standard_header(&s);
@@ -201,8 +207,8 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, bool use_ring_geometry, Isotope isotope) {
   const int n_r_interp = 1000;
 
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_workspace * w2 = gsl_integration_workspace_alloc(int_space_size_2d);
 
   std::vector<double> valid_rhos = s.get_supported_radii(rhos);
   double r_min = valid_rhos.front();
@@ -224,7 +230,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
   gsl_function f1;
   f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f1.params = &p;
   f2.params = &p;
@@ -263,8 +269,8 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
     gsl_interp_accel_free(s.acc_interp_integrand);
   }
 
-  gsl_integration_cquad_workspace_free(w1);
-  gsl_integration_cquad_workspace_free(w2);
+  gsl_integration_workspace_free(w1);
+  gsl_integration_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer;
   std::string comment = standard_header(&s);
