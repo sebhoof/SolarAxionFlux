@@ -3,13 +3,15 @@
 <em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
 
 Developers: Sebastian Hoof and Lennert Thormaehlen
-Maintainer: [Sebastian Hoof]](mailto:s.hoof.physics@gmail.com)
+Maintainer: [Sebastian Hoof](mailto:s.hoof.physics@gmail.com)
 
 Information on **how to acknowledge this work** in the literature can be found under [References](#references).
 
 This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
 
-## Example results
+## Results
+
+### Uncertainties of the solar axion flux
 We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The published paper can be found at [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also on the arXiv [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) Calculations of the axion flux from nuclear transitions were added later, in an article published at [EPJC]( 	
 https://doi.org/10.1140/epjc/s10052-022-10061-1), also available on the arXiv [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
 
@@ -24,6 +26,10 @@ The plot above shows the solar axion fluxes from ABC, longitudinal plasmon&nbsp;
   <img width="700" src="results/mc_sample_spectra_relative.png">
 </p>
 We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two representative solar models; the AGSS09 and GS98 models as representative choices for photospheric and helioseismological solar models, respectively. The plot above shows the (normalised) mean values and standard deviations for ABC&nbsp;(right) and Primakoff&nbsp;(P; left) interactions. The grey bands illustrate the MC noise from 100 randomly chosen MC spectra.
+
+### 
+
+Under construction
 
 ## Installation
 
@@ -43,14 +49,15 @@ The `test_library` executable in the `bin/` directory runs a simple test program
 ## References
 
 We re-distribute (in adjusted form) solar models and opacity tables, which should be acknowledged appropriately using the references stated below.
-We also provide the BibTeX file [references.bib](references.bib) in our repo with a collection of all relevant references.
-You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom) developed by one of us.
 
-### The code
+We also provide the BibTeX file [references.bib](references.bib), which includes a collection of all relevant references.
+You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom) to generate the list of references.
 
-When you make use of our code, please **link to this Github project** and cite our accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
+### Our code and results
 
-If you use the flux from nuclear transitions, please also cite the accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
+When you make use of our code, please **link to this Github project** and cite [arXiv:2101.08789](https://arxiv.org/astro-ph/abs/2101.08789) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437), or [references.bib](references.bib)).
+
+* If you use the flux from nuclear transitions, please also cite [arXiv:2111.06407](https://arxiv.org/astro-ph/abs/2111.06407) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation), [INSPIRE](https://inspirehep.net/literature/1967014), or [references.bib](references.bib)).
 
 ### Solar models
 
@@ -63,6 +70,7 @@ If you use the flux from nuclear transitions, please also cite the accompanying 
 * B16-GS98, B16-AGSS09 [arXiv:1611.09867](https://arxiv.org/astro-ph/abs/1611.09867)
 
 ### Opacities
+
 * LEDCOP [APS Conf. Series **75** (1995)](https://ui.adsabs.harvard.edu/abs/1995ASPC...78...51M)
 * OP [arXiv:astro-ph/0410744](https://arxiv.org/astro-ph/abs/astro-ph/0410744), [arXiv:astro-ph/0411010](https://arxiv.org/astro-ph/abs/astro-ph/0411010)
 * OPAS [ApJ **754** 1 (1012)](https://doi.org/10.1088/0004-637X/745/1/10), [ApJ Suppl. Series **220** 1 (1015)](https://doi.org/10.1088/0067-0049/220/1/2)
