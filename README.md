@@ -2,8 +2,8 @@
 
 <em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
 
-Developers: Sebastian Hoof and Lennert Thormaehlen
-Maintainer: [Sebastian Hoof](mailto:s.hoof.physics@gmail.com)
+Developers: Sebastian Hoof & Lennert Thormaehlen
+<br>Maintainer: [Sebastian Hoof](mailto:s.hoof.physics@gmail.com)</br>
 
 Information on **how to acknowledge this work** in the literature can be found under [References](#references).
 
@@ -12,8 +12,7 @@ This code has been published under the BSD 3-clause license. Consult the [LICENS
 ## Results
 
 ### Uncertainties of the solar axion flux
-We use the code for our study on &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; The published paper can be found at [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006) and is also on the arXiv [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) Calculations of the axion flux from nuclear transitions were added later, in an article published at [EPJC]( 	
-https://doi.org/10.1140/epjc/s10052-022-10061-1), also available on the arXiv [arXiv:2111.06407](https://arxiv.org/abs/2111.06407).
+Our study &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; was published in [JCAP](https://doi.org/10.1088/1475-7516/2021/09/006), and is also available on the [arXiv](https://arxiv.org/abs/2101.08789). Here we studied the uncertainties associated with axion-photon and axion-electron interactions.
 
 <p>
 <p align="center">
@@ -27,9 +26,10 @@ The plot above shows the solar axion fluxes from ABC, longitudinal plasmon&nbsp;
 </p>
 We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two representative solar models; the AGSS09 and GS98 models as representative choices for photospheric and helioseismological solar models, respectively. The plot above shows the (normalised) mean values and standard deviations for ABC&nbsp;(right) and Primakoff&nbsp;(P; left) interactions. The grey bands illustrate the MC noise from 100 randomly chosen MC spectra.
 
-### 
+### Revision of solar axion flux from axion-nuclear interactions
 
-Under construction
+Calculations of the axion flux from nuclear transitions were added later, published in the [EPJC]( 	
+https://doi.org/10.1140/epjc/s10052-022-10061-1) and also available on the [arXiv](https://arxiv.org/abs/2111.06407).
 
 ## Installation
 
