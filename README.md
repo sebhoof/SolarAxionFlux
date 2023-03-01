@@ -2,7 +2,8 @@
 
 <em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
 
-Developers: [Sebastian Hoof](mailto:hoof@uni-goettingen.de) and [Lennert Thormaehlen](mailto:l.thormaehlen@thphys.uni-heidelberg.de)
+Developers: Sebastian Hoof and Lennert Thormaehlen
+Maintainer: [Sebastian Hoof]](mailto:s.hoof.physics@gmail.com)
 
 Information on **how to acknowledge this work** in the literature can be found under [References](#references).
 
@@ -42,49 +43,17 @@ The `test_library` executable in the `bin/` directory runs a simple test program
 ## References
 
 We re-distribute (in adjusted form) solar models and opacity tables, which should be acknowledged appropriately using the references stated below.
+We also provide the BibTeX file [references.bib](references.bib) in our repo with a collection of all relevant references.
+You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom) developed by one of us.
 
 ### The code
 
 When you make use of our code, please **link to this Github project** and cite our accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437).
-```
-@ARTICLE{2101.08789,
-       author = {{Hoof}, Sebastian and {Jaeckel}, Joerg and {Thormaehlen}, Lennert J.},
-        title = "{Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters}",
-      journal = {JCAP},
-         year = 2021,
-        month = sep,
-       volume = {2021},
-       number = {9},
-          eid = {006},
-        pages = {006},
-          doi = {10.1088/1475-7516/2021/09/006},
-archivePrefix = {arXiv},
-       eprint = {2101.08789},
- primaryClass = {hep-ph}
-}
-```
 
 If you use the flux from nuclear transitions, please also cite the accompanying study using the BibTeX entry provided below or by getting it directly from [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1967014).
-```
-@ARTICLE{2111.06407,
-       author = {{Di Luzio}, Luca and {Galan}, Javier and {Giannotti}, Maurizio and {Irastorza}, Igor G. and {Jaeckel}, Joerg and {Lindner}, Axel and {Ruz}, Jaime and {Schneekloth}, Uwe and {Sohl}, Lukas and {Thormaehlen}, Lennert J. and {Vogel}, Julia K.},
-        title = "{Probing the axion-nucleon coupling with the next generation of axion helioscopes}",
-      journal = {European Physical Journal C},
-         year = 2022,
-        month = feb,
-       volume = {82},
-       number = {2},
-          eid = {120},
-        pages = {120},
-          doi = {10.1140/epjc/s10052-022-10061-1},
-archivePrefix = {arXiv},
-       eprint = {2111.06407},
- primaryClass = {hep-ph}
-}
-```
-
 
 ### Solar models
+
 * BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
 * BP00 [arXiv:astro-ph/0010346](https://arxiv.org/astro-ph/abs/astro-ph/0010346)
 * BP04 [arXiv:astro-ph/0402114](https://arxiv.org/astro-ph/abs/astro-ph/0402114)
