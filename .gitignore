@@ -1,36 +1,16 @@
-# Prerequisites
-*.d
+#MacOS files
+.DS_Store
 
 # Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
 
 # Compiled Dynamic libraries
 lib/libaxionflux.s*
 *.so
 *.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
 
 # Directories
 bin
+build
+include/pybind11
