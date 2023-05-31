@@ -1,13 +1,14 @@
 # Solar Axion Flux
 
-<em><font size="4">A C++ library to calculate the expected flux from axion-photon and axion-electron interactions inside the Sun.</font></em>
+<em><font size="4">A C++ library with Python frontend for calculating the expected solar axion flux and more.</font></em>
 
-Developers: Sebastian Hoof & Lennert Thormaehlen
+Developers: Sebastian Hoof, Lennert Thormaehlen
 <br>Maintainer: [Sebastian Hoof](mailto:s.hoof.physics@gmail.com)</br>
 
 Information on **how to acknowledge this work** in the literature can be found under [References](#references).
 
-This code has been published under the BSD 3-clause license. Consult the [LICENSE](LICENSE) file for details.
+This code was published under the BSD 3-clause [LICENSE](LICENSE).
+
 
 ## Results
 
@@ -31,17 +32,33 @@ We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two represent
 Calculations of the axion flux from nuclear transitions were added later, published in the [EPJC]( 	
 https://doi.org/10.1140/epjc/s10052-022-10061-1) and also available on the [arXiv](https://arxiv.org/abs/2111.06407).
 
+### Axions as solar thermometers
+
+The folder [python/](python/) contains Python scripts for inverting the observed helioscope &ldquo;axion image&rdquo; to infer the solar temperature and Debye scale at different locations inside the Sun.
+More details to be added in the future, stay tuned...
+
+
 ## Installation
 
-The code is written in C++ and contains Python files for data processing tasks. It only depends on the GSL library (v2.3 or higher) and, optionally, on Python v3.x to build Python wrappers with pybind11 (requires cython). The compiler needs to be compatible with the C++11 standard.
+### Requirements
+The code is written in C++ and requires the GSL library (v2.3 or higher) for compilation. Optionally, if you want to build Python wrappers with pybind11, you also need Python v3.x and cython. The compiler must support the C++11 standard.
 
-A complete guide on how to install and test the code (requires CMAKE v3.12 or higher) is given below:
-* For Mac OS: use e.g. [Homebrew](https://brew.sh) to install CMAKE via `brew install cmake`.
-* For Mac OS: use e.g. [Homebrew](https://brew.sh) to install the GSL library via `brew install gsl`. For Linux: use `sudo apt-get install libgsl-dev` instead. If you do not have admin privileges on either operating system, you need to [install the GSL library from source](https://www.gnu.org/software/gsl/).
-* Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`, where `[foldername]` can be replaced by a folder name of your choice.
-* Use the latest `master` branch (no need to do anything) or checkout the latest tagged version as a new branch (e.g. `git checkout v0.8b -b [some_branch_name]`).
-* Set up a directory via `cd [foldername]`, `mkdir build`, and `cd build/`.
-* In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
+### Steps
+To install and test the code, follow these steps:
+
+1. Install CMAKE (v3.12 or higher) if you don't have it already.
+   - On Mac OS: use e.g. [Homebrew](https://brew.sh) to install CMAKE via `brew install cmake`.
+2. Install the GSL library.
+   - On Mac OS: use e.g. [Homebrew](https://brew.sh) to install the GSL library via `brew install gsl`.
+   - On Linux: use `sudo apt-get install libgsl-dev` instead.
+   - If you don't have admin privileges on either operating system, you need to [install the GSL library from source](https://www.gnu.org/software/gsl/).
+3. Clone this repo via `git clone https://github.com/sebhoof/SolarAxionFlux [foldername]`, where `[foldername]` can be replaced by a folder name of your choice.
+4. Use the latest `master` branch (no need to do anything) or checkout a tagged version as a new branch (e.g. `git checkout v0.8b -b [some_branch_name]`).
+5. Set up a directory via `cd [foldername]`, `mkdir build`, and `cd build/`.
+6. In most cases `cmake ..` and then `make` should build everything. If this fails, consult the [Troubleshooting](#troubleshooting) section.
+
+To validate your installation, you may use the `test_library` executable in the `bin/` folder to run a simple test program.
+If you installed the Python frontend, you can also run this test from a Python 3 terminal or notebook via `from lib import pyaxionflux as afl` (assuming you are in `[foldername]` or added `[foldername]` to your `PYTHONPATH` variable) and `afl.test_module()`. In either case, the output can be found in the `[foldername]/results/` folder.
 
 ## How to get started
 We include the simple Jupyter notebook [examples.ipynb](examples.ipynb), which demonstrates a few of the capabilities available through the Python frontend (needs to be installed).
@@ -51,6 +68,7 @@ Alternatively, the `test_library` executable in the `bin/` directory runs a simp
 ## References
 
 We re-distribute (in adjusted form) solar models and opacity tables, which should be acknowledged appropriately using the references stated below.
+We also include (with permission) a modified version of code by Alex Geringer-Sameth to compute spherically symmetric functions over a grid of square pixels. These routines are contained in `python/grid_integrator/grid_integrator.py`, and you may not re-distribute these routines without contacting us. We will adjust the repo structure and license conditions once these routines are published elswhere under a specific license.
 
 We also provide the BibTeX file [references.bib](references.bib), which includes a collection of all relevant references.
 You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom) to generate the list of references.
@@ -60,6 +78,8 @@ You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom)
 When you make use of our code, please **link to this Github project** and cite [arXiv:2101.08789](https://arxiv.org/astro-ph/abs/2101.08789) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437), or [references.bib](references.bib)).
 
 * If you use the flux from nuclear transitions, please also cite [arXiv:2111.06407](https://arxiv.org/astro-ph/abs/2111.06407) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation), [INSPIRE](https://inspirehep.net/literature/1967014), or [references.bib](references.bib)).
+
+* If you use the Python scripts contained in [python](python/), please also cite our arXiv preprint (TBA).
 
 ### Solar models
 

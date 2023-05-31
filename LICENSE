@@ -1,9 +1,6 @@
-We provide this software under the BSD 3-clause license. Please also read the disclaimer.
-
------------
-  LICENSE
------------
-Copyright 2020 Sebastian Hoof & Lennert J. Thormaehlen
+For all files in this software package, except for "python/grid_integrator/grid_integrator.py", the BSD 3-clause license applies:
+---------------------------------------------
+Copyright (c) 2020 Sebastian Hoof & Lennert J. Thormaehlen
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
   (1) Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -14,9 +11,8 @@ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
 LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-------------
- DISCLAIMER
-------------
+For the file "python/grid_integrator/grid_integrator.py", redistribution is not permitted. Use of the file is permitted under the terms of the BSD 3-clause license, but redistribution of the file is expressly prohibited without prior written permission from Alex Geringer-Sameth or Sebastian Hoof.
+
 The ASCIItableReader, OneDInterpolator, TwoDInterpolator and SolarModel classes are based on classes from the software GAMBIT (https://gambit.hepforge.org), which was published under a BSD license (same as ours).
 As required by the license conditions, these are reproduced below:
 Copyright (c) 2017, The GAMBIT Collaboration All rights reserved.
