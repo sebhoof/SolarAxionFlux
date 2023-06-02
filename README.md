@@ -1,6 +1,6 @@
 # Solar Axion Flux
 
-<em><font size="4">A C++ library with Python frontend for calculating the expected solar axion flux and more.</font></em>
+<em><font size="4">A C++ library and Python frontend for calculating the solar axion flux for different solar models and opacity codes.</font></em>
 
 Developers: Sebastian Hoof, Lennert Thormaehlen
 <br>Maintainer: [Sebastian Hoof](mailto:s.hoof.physics@gmail.com)</br>
@@ -34,8 +34,8 @@ https://doi.org/10.1140/epjc/s10052-022-10061-1) and also available on the [arXi
 
 ### Axions as solar thermometers
 
-The folder [python/](python/) contains Python scripts for inverting the observed helioscope &ldquo;axion image&rdquo; to infer the solar temperature and Debye scale at different locations inside the Sun.
-More details to be added in the future, stay tuned...
+We then studied how to infer the solar temperature (and Debye screening scale) at different locations inside the Sun by inverting the helioscope &ldquo;axion image.&rdquo;
+The folder [python/](python/) contains the Python scripts used in the related preprint, which is available on the [arXiv](https://arxiv.org/abs/2306.00077).
 
 
 ## Installation
