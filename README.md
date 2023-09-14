@@ -75,28 +75,28 @@ You may also consider using the [BibCom tool](https://github.com/sebhoof/bibcom)
 
 ### Our code and results
 
-When you make use of our code, please **link to this Github project** and cite [arXiv:2101.08789](https://arxiv.org/astro-ph/abs/2101.08789) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437), or [references.bib](references.bib)).
+When you make use of our code, please **link to this Github project** and cite [arXiv:2101.08789](https://arxiv.org/abs/2101.08789) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2021JCAP...09..006H/exportcitation) or [INSPIRE](https://inspirehep.net/literature/1842437), or [references.bib](references.bib)).
 
-* If you use the flux from nuclear transitions, please also cite [arXiv:2111.06407](https://arxiv.org/astro-ph/abs/2111.06407) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation), [INSPIRE](https://inspirehep.net/literature/1967014), or [references.bib](references.bib)).
+* If you use the flux from nuclear transitions, please also cite [arXiv:2111.06407](https://arxiv.org/abs/2111.06407) (BibTeX entries available from e.g. [ADS](https://ui.adsabs.harvard.edu/abs/2022EPJC...82..120D/exportcitation), [INSPIRE](https://inspirehep.net/literature/1967014), or [references.bib](references.bib)).
 
 * If you use the Python scripts contained in [python](python/), please also cite our arXiv preprint (TBA).
 
 ### Solar models
 
-* BP98 [arXiv:astro-ph/9805135](https://arxiv.org/astro-ph/abs/astro-ph/9805135)
-* BP00 [arXiv:astro-ph/0010346](https://arxiv.org/astro-ph/abs/astro-ph/0010346)
-* BP04 [arXiv:astro-ph/0402114](https://arxiv.org/astro-ph/abs/astro-ph/0402114)
-* BS05-OP, BS05-AGSOP [arXiv:astro-ph/0412440](https://arxiv.org/astro-ph/abs/astro-ph/0412440)
-* AGS05 [arXiv:0909.2668](https://arxiv.org/astro-ph/abs/0909.2668)
-* GS98, AGSS09(met), AGSS09ph [arXiv:0909.2668](https://arxiv.org/astro-ph/abs/0909.2668), [arXiv:0910.3690](https://arxiv.org/astro-ph/abs/0910.3690)
-* B16-GS98, B16-AGSS09 [arXiv:1611.09867](https://arxiv.org/astro-ph/abs/1611.09867)
+* BP98 [arXiv:astro-ph/9805135](https://arxiv.org/abs/astro-ph/9805135)
+* BP00 [arXiv:astro-ph/0010346](https://arxiv.org/abs/astro-ph/0010346)
+* BP04 [arXiv:astro-ph/0402114](https://arxiv.org/abs/astro-ph/0402114)
+* BS05-OP, BS05-AGSOP [arXiv:astro-ph/0412440](https://arxiv.org/abs/astro-ph/0412440)
+* AGS05 [arXiv:0909.2668](https://arxiv.org/abs/0909.2668)
+* GS98, AGSS09(met), AGSS09ph [arXiv:0909.2668](https://arxiv.org/abs/0909.2668), [arXiv:0910.3690](https://arxiv.org/abs/0910.3690)
+* B16-GS98, B16-AGSS09 [arXiv:1611.09867](https://arxiv.org/abs/1611.09867)
 
 ### Opacities
 
 * LEDCOP [APS Conf. Series **75** (1995)](https://ui.adsabs.harvard.edu/abs/1995ASPC...78...51M)
-* OP [arXiv:astro-ph/0410744](https://arxiv.org/astro-ph/abs/astro-ph/0410744), [arXiv:astro-ph/0411010](https://arxiv.org/astro-ph/abs/astro-ph/0411010)
+* OP [arXiv:astro-ph/0410744](https://arxiv.org/abs/astro-ph/0410744), [arXiv:astro-ph/0411010](https://arxiv.org/abs/astro-ph/0411010)
 * OPAS [ApJ **754** 1 (1012)](https://doi.org/10.1088/0004-637X/745/1/10), [ApJ Suppl. Series **220** 1 (1015)](https://doi.org/10.1088/0067-0049/220/1/2)
-* ATOMIC [arXiv:1601.01005](https://arxiv.org/astro-ph/abs/1601.01005)
+* ATOMIC [arXiv:1601.01005](https://arxiv.org/abs/1601.01005)
 
 ## Troubleshooting
 Note that some fixes require running `make clean` or deleting the contents of your `build/` directory in order to take effect/be recognised by the CMAKE system.
