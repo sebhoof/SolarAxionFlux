@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use SolarAxionFlux in your work, please cite it as below."
+authors:
+- family-names: "Hoof"
+  given-names: "Sebastian"
+  affiliation: Institut für Astrophysik, Georg-August-Universität Göttingen
+- family-names: "Thormaehlen"
+  given-names: "Lennert"
+  affiliation: Institut für theoretische Physik, Universität Heidelberg
+title: "SolarAxionFlux"
+abstract: "Library for calculating the solar axion flux for different solar models and opacity codes."
+version: v0.8b
+date-released: 2021-04-29
+url: "https://github.com/sebhoof/SolarAxionFlux"
