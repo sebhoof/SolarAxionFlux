@@ -7,9 +7,10 @@ lib/libaxionflux.s*
 *.dylib
 
 # Directories
+.vscode
 bin
 build
-include/pybind11
+external
 
 # Mac-specific files
 .DS_Store
