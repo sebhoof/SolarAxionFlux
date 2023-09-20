@@ -21,16 +21,16 @@ License: Mostly BSD 3-clause license, see [LICENSE](LICENSE) for details.
 
 In &ldquo;Quantifying uncertainties in the solar axion flux and their impact on determining axion model parameters.&rdquo; we study uncertainties associated with axion-photon and axion-electron interactions.
 
-<p>
 <p align="center">
   <img width="600" src="results/website/comp_solar_models_all.png">
 </p>
+
 The plot above shows the solar axion fluxes from ABC, longitudinal plasmon&nbsp;(LP), Primakoff&nbsp;(P), and transverse plasmon&nbsp;(TP) interactions as a function of energy, using Opacity Project data and the various solar models available in the code.
-</p>
 
 <p align="center">
   <img width="700" src="results/website/mc_sample_spectra_relative.png">
 </p>
+
 We used Monte Carlo&nbsp;(MC) simulation to calculate the flux for two representative solar models; the AGSS09 and GS98 models as representative choices for photospheric and helioseismological solar models, respectively. The plot above shows the (normalised) mean values and standard deviations for ABC&nbsp;(right) and Primakoff&nbsp;(P; left) interactions. The grey bands illustrate the MC noise from 100 randomly chosen MC spectra.
 
 ### Revision of solar axion flux from axion-nucleon interactions
@@ -41,29 +41,33 @@ Calculations of the axion flux from nuclear transitions were added later.
 
 ### Axions as solar thermometers
 [![arxiv](https://img.shields.io/badge/arXiv-2306.00077_[hep--ph]-B31B1B.svg?style=flat&logo=arxiv&logoColor=B31B1B)](https://arxiv.org/abs/2306.00077)
-[![jcap](https://img.shields.io/badge/JCAP-doi:10.1088/1475--7516/2023/09/045-0389C6)](https://doi.org/10.1088/1475-7516/2023/09/045)
+[![jcap](https://img.shields.io/badge/JCAP-accepted-0389C6)]()
 
-<p>
 <p align="center">
   <img width="600" src="results/website/temp_and_kappa_reconstruction.png">
 </p>
+
 We then studied how to infer the solar temperature (and Debye screening scale) at different locations inside the Sun by inverting the helioscope &ldquo;axion image.&rdquo;
-The folder [python/](python/) contains the Python scripts.
+The [python/](python/) folder contains the related Python scripts.
 
 
 ## Installation
 
 ### Requirements
-The code is written in C++ (your compiler must support the C++11 standard) and requires the GSL library v2.3 (or higher).
-Optionally, if you want to build Python wrappers with pybind11 (v2.10.4 will be automatically downloaded), you also need Python v3.9 (or higher) and cython.
 
+-  C++11 compliant compiler
+-  CMake v3.12 (or higher)
+-  GSL library v2.3 (or higher)
+-  Optional dependencies:
+   - Python interpreter v3.9 (or higher)
+   - pybind11 v2.10.4 (will be automatically downloaded during CMake install)
+   - Python packages: cython, iminuit, matplotlib, mpi4py, numpy, scipy
 
-### Steps
-To install and test the code, follow these steps:
+### Step-by-step guide
 
-1. If necessary: install CMAKE v3.12 (or higher).
+1. Install CMake (if necessary)
    - On Mac OS: use e.g. [Homebrew](https://brew.sh) to install CMAKE via `brew install cmake`.
-2. Install the GSL library.
+2. Install the GSL library (if necessary)
    - On Mac OS: use e.g. [Homebrew](https://brew.sh) to install the GSL library via `brew install gsl`.
    - On Linux: use `sudo apt-get install libgsl-dev` instead.
    - If you don't have admin privileges on either operating system, you need to [install the GSL library from source](https://www.gnu.org/software/gsl/).
