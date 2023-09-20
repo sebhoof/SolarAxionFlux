@@ -24,7 +24,8 @@ PYBIND11_MODULE(pyaxionflux, m) {
     .def("abc_rate", pybind11::vectorize(&SolarModel::Gamma_all_electron), "Production rate for ABC processes", "omega"_a, "radius"_a)
     .def("save_solar_model_data", &SolarModel::save_solar_model_data, "Save all solar model data relevant for axion computations.", "output_file_root"_a, "ergs"_a, "n_radii"_a=1000)
   ;
-  m.def("calculate_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
+  m.def("calculate_spectra", &py11_calc_spectral_flux_up_to_rmax, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file up to radius rmax.",  "ergs"_a, "rmax"_a, "solar_model"_a, "output_file_root"_a="", "process"_a="Primakoff");
+  m.def("save_spectra", &py11_save_spectral_flux_for_different_radii, "Integrates 'Primakoff' and/or 'ABC' flux from solar model file for different radii and saves the results as a text file.",  "ergs"_a, "radii"_a, "solar_model_file"_a, "output_file_root"_a, "process"_a="Primakoff", "op_code"_a="OP");
   const std::vector<double> v1 = { 1.0, 20.0 };
   m.def("calculate_fluxes_on_solar_disc", &py11_calc_integrated_flux_up_to_different_radii, "Integrated flux within different radii on the solar disc.", "radii"_a, "s"_a, "output_file_root"_a="", "erg_limits"_a=v1, "process"_a="Primakoff");
   const std::vector<double> v2 = { 3.0e3, 50.0, 4.0 };
@@ -73,6 +74,37 @@ void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::
     std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC', 'plasmon', 'Primakoff', or 'all'.";
     throw XUnsupportedOption(err_msg);
   }
+}
+
+std::vector<std::vector<double> > py11_calc_spectral_flux_up_to_rmax(std::vector<double> ergs, double rmax, SolarModel *s, std::string output_file_root, std::string process) {
+  int n_ergs = ergs.size();
+  double erg_min = *std::min_element(ergs.begin(), ergs.end());
+  double erg_max = *std::max_element(ergs.begin(), ergs.end());
+
+  if ( (rmax < s->get_r_lo()) || (rmax > s->get_r_hi()) ) { std::cout << "WARNING! Changing min. and/or max. radius to min./max. radius available in the selected Solar model." << std::endl; }
+  // Check min/max and avoid Python roundoff errors
+  rmax = std::max(std::min(rmax, 0.999999*s->get_r_hi()), 1.000001*s->get_r_lo());
+
+  std::cout << "INFO. Performing calculation for ";
+  if (n_ergs > 1) { std::cout << n_ergs << " energies in [" << erg_min << ", " << erg_max << "] keV and "; } else { std::cout << "one energy value (" << erg_min << " keV) and "; }
+  std::cout << "up to rmax = " << rmax << " R_sol." << std::endl;
+
+  std::vector<std::vector<double> > res;
+  if (process == "Primakoff") {
+    res = integrate_d2Phi_a_domega_drho_up_to_rho_Primakoff(ergs, rmax, *s, output_file_root+"_P.dat");
+  } else if (process == "ABC") {
+    res = integrate_d2Phi_a_domega_drho_up_to_rho_axionelectron(ergs, rmax, *s, output_file_root+"_ABC.dat");
+  } else {
+    std::string err_msg = "The process '"+process+"' is not a valid option. Choose 'ABC' or 'Primakoff'.";
+    throw XUnsupportedOption(err_msg);
+  }
+  // Remove the zero entries and rvals column
+  // TODO. This should be removed from the library itself.
+  res.erase(res.begin());
+  int n_half = res[0].size()/2;
+  res[0].erase(res[0].begin(), res[0].begin()+n_half);
+  res[1].erase(res[1].begin(), res[1].begin()+n_half);
+  return res;
 }
 
 std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radii(std::vector<double> radii, SolarModel *s, std::string output_file_root, std::vector<double> erg_limits, std::string process) {

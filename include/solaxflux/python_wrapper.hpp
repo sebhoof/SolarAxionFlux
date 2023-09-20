@@ -22,6 +22,7 @@ void module_info();
 // A simple unit test for the Python wrapper
 void test_module();
 // Calculate the spectral flux for different energies and radii
+std::vector<std::vector<double> > py11_calc_spectral_flux_up_to_rmax(std::vector<double> ergs, double rmax, SolarModel *s, std::string output_file_root, std::string process) ;
 void py11_save_spectral_flux_for_different_radii(std::vector<double> ergs, std::vector<double> radii, std::string solar_model_file, std::string output_file_root, std::string process = "Primakoff", std::string op_code = "OP");
 // Calculate the integrated flux up to given radii
 std::vector<std::vector<double> > py11_calc_integrated_flux_up_to_different_radii(std::vector<double> radii, SolarModel *s, std::string output_file_root = "", std::vector<double> erg_limits = {1.0, 20.0}, std::string process = "Primakoff");
