@@ -205,7 +205,8 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, bool use_ring_geometry, Isotope isotope) {
-  const int n_r_interp = 1000;
+  // TODO: Maybe remove interpolation again if we can gain some speed elsewhere.
+  static const int n_r_interp = 1000;
 
   gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
   gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
