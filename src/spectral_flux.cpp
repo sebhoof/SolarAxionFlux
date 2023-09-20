@@ -239,18 +239,16 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
   if (not(use_ring_geometry)) {
     offset = 0;
     for (int j = 0; j < n_erg_vals; ++j) {
-        all_radii_2[j] = r_min;
-        all_ergs[j] = ergs[j];
-        fluxes[j] = 0;
+      all_radii_2[j] = r_min;
+      all_ergs[j] = ergs[j];
+      fluxes[j] = 0;
     }
   }
 
   p.rho_0 = r_min;
   for (int j = 0; j < n_erg_vals; ++j) {
     std::vector<double> int_integrand_vals;
-    for (int k = 0; k < n_r_interp; ++k) {
-        int_integrand_vals.push_back((p.s->*(integrand))(ergs[j], int_radius_vals[k]));
-    }
+    for (int k = 0; k < n_r_interp; ++k) { int_integrand_vals.push_back((p.s->*(integrand))(ergs[j], int_radius_vals[k])); }
     s.acc_interp_integrand = gsl_interp_accel_alloc();
     s.interp_integrand = gsl_spline_alloc(gsl_interp_steffen, n_r_interp);
     gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);

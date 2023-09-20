@@ -1455,8 +1455,6 @@ std::string standard_header(SolarModel *s) {
   return res.str();
 }
 
-
-
-double SolarModel::interpolated_integrand(double omega, double r){
-    return gsl_spline_eval(interp_integrand, r, acc_interp_integrand);
+double SolarModel::interpolated_integrand(double omega, double r) {
+  return gsl_spline_eval(interp_integrand, r, acc_interp_integrand);
 }
