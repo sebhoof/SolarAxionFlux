@@ -3,7 +3,7 @@
 
 #include "tests.hpp"
 
-int main () {
+int main() {
   run_unit_test();
   return 0;
 }
