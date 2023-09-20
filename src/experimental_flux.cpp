@@ -85,28 +85,28 @@ double eff_exposure_cast2017_l(double erg) {
 
 // Baseline IAXO exposure from [arXiv:1904.09155]
 double eff_exposure_iaxo(double erg) {
-  const double eff = 0.7*0.8;
-  const double time = 3.0 * 0.5 * 365.0*24.0*60.0*60.0;
-  const double area = 2.3e4;
-  const double eff_exp = eff*time*area;
+  static const double eff = 0.7*0.8;
+  static const double time = 3.0 * 0.5 * 365.0*24.0*60.0*60.0;
+  static const double area = 2.3e4;
+  static const double eff_exp = eff*time*area;
   return eff_exp;
 }
 
 // babyIAXO exposure from [arXiv:1904.09155]
 double eff_exposure_babyiaxo(double erg) {
-  const double eff = 0.35*0.7;
-  const double time = 1.5 * 0.5 * 365.0*24.0*60.0*60.0;
-  const double area = 0.77e4;
-  const double eff_exp = eff*time*area;
+  static const double eff = 0.35*0.7;
+  static const double time = 1.5 * 0.5 * 365.0*24.0*60.0*60.0;
+  static const double area = 0.77e4;
+  static const double eff_exp = eff*time*area;
   return eff_exp;
 }
 
 // IAXO+ exposure from [arXiv:1904.09155]
 double eff_exposure_iaxoplus(double erg) {
-  const double eff = 0.7*0.8;
-  const double time = 5.0 * 0.5 * 365.0*24.0*60.0*60.0;
-  const double area = 3.9e4;
-  const double eff_exp = eff*time*area;
+  static const double eff = 0.7*0.8;
+  static const double time = 5.0 * 0.5 * 365.0*24.0*60.0*60.0;
+  static const double area = 3.9e4;
+  static const double eff_exp = eff*time*area;
   return eff_exp;
 }
 
@@ -432,8 +432,8 @@ std::vector<double> axion_photon_counts_from_file(double mass, double gagg, exp_
 std::vector<double> axion_photon_counts_full(double mass, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
 
-  const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double factor = distance_factor*conversion_prob_factor;
+  static const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
+  static const double factor = distance_factor*conversion_prob_factor;
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;
@@ -511,8 +511,8 @@ std::vector<double> axion_electron_counts(double mass, double gaee, double gagg,
 // TODO check for overlap/outdated?
 std::vector<double> axion_electron_counts_full(double mass, double gaee, double gagg, exp_setup *setup, SolarModel *s) {
   std::vector<double> result;
-  const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
-  const double factor = distance_factor*conversion_prob_factor;
+  static const double distance_factor = 1.0e-4*gsl_pow_3(radius_sol/(1.0e-2*keV2cm)) / (gsl_pow_2(distance_sol) * (1.0e6*hbar));
+  static const double factor = distance_factor*conversion_prob_factor;
 
   int n_bins = setup->n_bins;
   double bin_lo = setup->bin_lo;

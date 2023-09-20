@@ -87,7 +87,7 @@ SolarModel::SolarModel(std::string path_to_model_file, opacitycode opcode_tag, b
   std::vector<std::vector<double>> z2_n_isotope (num_tracked_isotopes);
   std::vector<std::vector<double>> n_op_element (num_op_elements);
   // Multiplicative factor: (4 pi alpha_EM / atomic_mass_unit) x (1 g/cm^3) in units of keV^3
-  const double factor = 4.0*pi*alpha_EM*gsl_pow_3(keV2cm)/((1.0E+9*eV2g)*atomic_mass_unit);
+  static const double factor = 4.0*pi*alpha_EM*gsl_pow_3(keV2cm)/((1.0E+9*eV2g)*atomic_mass_unit);
   // Linearly extrapolate the data in the solar model file to r = 0 if necessary.
   if (r_lo > 0) {
     double r0 = data["radius"][0], r1 = data["radius"][1];
@@ -449,7 +449,7 @@ int SolarModel::lookup_isotope_index(Isotope isotope) { return isotope_index_map
 double SolarModel::temperature_in_keV(double r) { return interp_index(0, r); }
 double SolarModel::density(double r) { return interp_index(3, r); }
 double SolarModel::kappa_squared(double r) {
-  const double prefactor = 4.0*pi*alpha_EM;
+  static const double prefactor = 4.0*pi*alpha_EM;
   double e_contrib = interp_index(9, r)/(pi*pi);
   double z_contrib = z2_n(r)*gsl_pow_3(keV2cm)/temperature_in_keV(r);
   double total = z_contrib + e_contrib;
@@ -489,7 +489,7 @@ double SolarModel::n_electron(double r) {
 double SolarModel::metallicity(double r){ return 1.0 - mass_fraction(r, "H") - mass_fraction(r, "He"); }
 // Routine to return the plasma freqeuency squared (in keV^2) of the zone around the distance r from the centre of the Sun.
 double SolarModel::omega_pl_squared(double r) {
-  const double prefactor = 4.0*alpha_EM/pi;
+  static const double prefactor = 4.0*alpha_EM/pi;
   return prefactor*interp_index(8, r);
 }
 
@@ -541,8 +541,8 @@ double SolarModel::r_from_omega_pl(double omega_pl) {
 // Opacity correction factor
 double SolarModel::apply_opacity_correction_factor(double r) {
   static double temp_0 = temperature_in_keV(r_lo);
-  const double r_cz_theo = radius_cz;
-  const double temp_cz = temperature_in_keV(r_cz_theo);
+  static const double r_cz_theo = radius_cz;
+  static const double temp_cz = temperature_in_keV(r_cz_theo);
   double result = 1.0;
   if (r < r_cz_theo) {
     result *= ( 1.0 + opacity_correction_a + opacity_correction_b * log10(temp_0/temperature_in_keV(r)) / log10(temp_0/temp_cz) );
@@ -553,7 +553,7 @@ double SolarModel::apply_opacity_correction_factor(double r) {
 
 // Opacity for individual isotope (only possible for OP)
 double SolarModel::opacity_element(double omega, double r, std::string element) {
-  const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
+  static const double prefactor4 = a_Bohr*a_Bohr*(keV2cm);
 
   gsl_error_handler_t* old_handler = gsl_set_error_handler(&my_gsl_handler); // GSL error handler modified to avoid boundary error (fill value = 0)
   //terminate_with_error_if(opcode != OP, "ERROR! Chosen opacity code does not provide opacities for indivdual elements.");
@@ -587,8 +587,8 @@ double SolarModel::opacity(double omega, double r) {
 }
 
 double SolarModel::bfield(double r) {
-  const double lambda = 10.0*radius_cz + 1.0;
-  const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1.0/lambda, lambda);
+  static const double lambda = 10.0*radius_cz + 1.0;
+  static const double lambda_factor = (1.0 + lambda)*pow(1.0 + 1.0/lambda, lambda);
 
   double result = 0.0;
   if (r < radius_cz+size_tach) {
@@ -639,7 +639,7 @@ double aux_function(double u, double y) {
 struct integrand_params_rosseland { SolarModel* s; double r; };
 
 double rosseland_integrand(double omega, void * params){
-    const double prefactor = 15.0/(4.0*gsl_pow_4(pi));
+    static const double prefactor = 15.0/(4.0*gsl_pow_4(pi));
     struct integrand_params_rosseland * p = (struct integrand_params_rosseland *)params;
     double r = (p->r);
     double opac = p->s->opacity(omega, r);
@@ -680,7 +680,7 @@ double SolarModel::interpolate_rosseland_opacity(double r) {
 
 // Electron degeneracy-related functions
 double SolarModel::calc_electron_chemical_potential(double r) {
-  const double density_conversion = gsl_pow_3(keV2cm);
+  static const double density_conversion = gsl_pow_3(keV2cm);
   double kBT = temperature_in_keV(r);
   struct solar_model_params params;
   params.kBT = kBT;
@@ -745,7 +745,7 @@ double degen_wrapper_denom_1(double omega, void * p) {
 
 double degen_wrapper_denom_2(double p1, void * p) {
   const int n = 1e4;
-  const double me2 = m_electron*m_electron;
+  static const double me2 = m_electron*m_electron;
   double result, error;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
@@ -764,7 +764,7 @@ double degen_wrapper_denom_2(double p1, void * p) {
 }
 
 double degen_wrapper_denom_3(double p1, void * p) {
-  const double me2 = m_electron*m_electron;
+  static const double me2 = m_electron*m_electron;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
   double omega_lo = sqrt(fp->wpl2);
@@ -776,7 +776,7 @@ double degen_wrapper_denom_3(double p1, void * p) {
 }
 
 double degen_wrapper_num_1(double cth, void * p) {
-  const double me2 = m_electron*m_electron;
+  static const double me2 = m_electron*m_electron;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
   double ea = fp->ea, ks2 = fp->ks2, kBT = fp->kBT, wpl2 = fp->wpl2, p1 = fp->p1;
@@ -829,7 +829,7 @@ double degen_wrapper_num_2(double omega, void * p) {
 
 double degen_wrapper_num_3(double p1, void * p) {
   const int n = 1e4;
-  const double me2 = m_electron*m_electron;
+  static const double me2 = m_electron*m_electron;
 
   struct solar_model_params * fp = (struct solar_model_params *)p;
   fp->p1 = p1;
@@ -936,7 +936,7 @@ double SolarModel::avg_degeneracy_factor(double r) { return interp_index(10, r);
 // Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for one isotope
 double SolarModel::Gamma_ff(double omega, double r, int isotope_index) {
   if (omega == 0) { return 0; }
-  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
+  static const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   double u = omega/temperature_in_keV(r);
   double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
   return prefactor1 * n_electron(r)*z2_n_iz(r,isotope_index)*exp(-u)*aux_function(u,y_red) / (omega*sqrt(temperature_in_keV(r))*pow(m_electron,3.5));
@@ -944,7 +944,7 @@ double SolarModel::Gamma_ff(double omega, double r, int isotope_index) {
 // Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation) for several isotopes
  double SolarModel::Gamma_ff(double omega, double r, std::vector<int> isotope_indices) {
    if (omega == 0) { return 0; }
-   const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
+   static const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
    double u = omega/temperature_in_keV(r);
    double y_red = sqrt(kappa_squared(r)/(2.0*m_electron*temperature_in_keV(r)));
    double z2_isotopes = 0;
@@ -959,7 +959,7 @@ double SolarModel::Gamma_ff(double omega, double r, Isotope isotope) { int isoto
 // Calculate the free-free contribution; from Eq. (2.17) in [arXiv:1310.0823] (assuming full ionisation)
 double SolarModel::Gamma_ff(double omega, double r) {
   double result = 0;
-  const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
+  static const double prefactor1 = (8.0*sqrt(pi)/(3.0*sqrt(2.0))) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
 
   if (omega > 0) {
     if (raffelt_approx == false) {
@@ -980,7 +980,7 @@ double SolarModel::Gamma_ff(double omega, double r) {
 // Calculate the e-e bremsstrahlung contribution; from Eq. (2.18) in [arXiv:1310.0823]
 double SolarModel::Gamma_ee(double omega, double r) {
   // N.B. "y" and "prefactor2" are different from the "y_red" and "prefactor1" above.
-  const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
+  static const double prefactor2 = (4.0*sqrt(pi)/3.0) * gsl_pow_2(alpha_EM*g_aee) * gsl_pow_6(keV2cm);
   if (omega > 0) {
     double u = omega/temperature_in_keV(r);
     double y = sqrt(kappa_squared(r)/(m_electron*temperature_in_keV(r)));
@@ -992,7 +992,7 @@ double SolarModel::Gamma_ee(double omega, double r) {
 
 // Calculate the Compton contribution; from Eq. (2.19) in [arXiv:1310.0823]
 double SolarModel::Gamma_Compton(double omega, double r) {
-  const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
+  static const double prefactor3 = (alpha_EM/3.0) * pow(g_aee/(m_electron),2) * pow(keV2cm,3);
   if (omega > 0) {
     double u = omega/temperature_in_keV(r);
     double v = omega/m_electron;
@@ -1004,7 +1004,7 @@ double SolarModel::Gamma_Compton(double omega, double r) {
 
 // Opacity contribution from one isotope; first term of Eq. (2.21) in [arXiv:1310.0823]
 double SolarModel::Gamma_opacity(double omega, double r, std::string element) {
-  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
+  static const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
   return prefactor5*v*v*opacity_element(omega,r,element)/gsl_expm1(u);
@@ -1017,7 +1017,7 @@ double SolarModel::Gamma_opacity(double omega, double r, Isotope isotope) {
 
 // Full opacity contribution; first term of Eq. (2.21) in [arXiv:1310.0823]
 double SolarModel::Gamma_opacity(double omega, double r) {
-  const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
+  static const double prefactor5 = 0.5*g_aee*g_aee/(4.0*pi*alpha_EM);
   double u = omega/temperature_in_keV(r);
   double v = omega/m_electron;
   return prefactor5*v*v*opacity(omega,r)/gsl_expm1(u);
@@ -1046,7 +1046,7 @@ double SolarModel::Gamma_all_electron(double omega, double r) {
 }
 
 double SolarModel::Gamma_Primakoff(double omega, double r) {
-  const double prefactor6 = g_agg*g_agg*alpha_EM*gsl_pow_3(keV2cm)/8.0;
+  static const double prefactor6 = g_agg*g_agg*alpha_EM*gsl_pow_3(keV2cm)/8.0;
   double w_pl_sq = omega_pl_squared(r);
   double z = omega/temperature_in_keV(r);
 
@@ -1100,7 +1100,7 @@ double SolarModel::Gamma_LP_Rosseland(double omega, double r) {
 }
 
 double aux_Gamma_TP(double omega, double om_pl_sq, double bfield, double temperature, double opacity) {
-  const double photon_polarization = 2.0;
+  static const double photon_polarization = 2.0;
   double om2 = omega*omega;
   if (om_pl_sq > om2) { return 0; }
   double z = omega/temperature;
@@ -1113,8 +1113,8 @@ double aux_Gamma_TP(double omega, double om_pl_sq, double bfield, double tempera
 }
 
 double SolarModel::Gamma_TP(double omega, double r) {
-  const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
-  const double photon_polarization = 2.0;
+  static const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
+  static const double photon_polarization = 2.0;
   if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*opacity(omega, r);
@@ -1126,8 +1126,8 @@ double SolarModel::Gamma_TP(double omega, double r) {
 }
 
 double SolarModel::Gamma_TP_Rosseland(double omega, double r) {
-  const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
-  const double photon_polarization = 2.0;
+  static const double geom_factor = 1.0; // factor accounting for observer's position (1.0 = angular average)
+  static const double photon_polarization = 2.0;
   if (omega_pl_squared(r) > omega*omega) { return 0; } // energy can't be lower than plasma frequency
   double u = omega/temperature_in_keV(r);
   double gamma = -gsl_expm1(-u)*interpolate_rosseland_opacity(r);
