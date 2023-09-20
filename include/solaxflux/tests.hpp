@@ -21,7 +21,7 @@ high_resolution_clock::time_point time_now() { return high_resolution_clock::now
 void run_unit_test() {
   auto t_start = time_now();
   std::cout << "\n     ### This is the " LIBRARY_NAME " library ###\n" << std::endl;
-  std::cout << "# Testing the Solar Model routines (this should take about 5-10 mins)...\n" << std::endl;
+  std::cout << "# Testing the Solar Model routines (this should take about 10-15 mins)...\n" << std::endl;
 
   auto t1s = time_now();
   std::string solar_model_name = SOLAXFLUX_DIR "/data/solar_models/SolarModel_B16-AGSS09.dat";
@@ -134,6 +134,18 @@ void run_unit_test() {
   for (std::vector<double>::iterator it=specFeFlux[1].begin() ; it != specFeFlux[1].end(); ++it) { integratedflux += *it; }
   integratedflux *= step;
   std::cout << "The integrated Fe57 flux: " << integratedflux << " g_eff^2 cm^-2 s^-1 (should be 5.0565e+23 g_eff^2 cm^-2 s^-1)." << std::endl;
+
+  // New routines for faster z integration
+  const int n_erg_values_between = 200;
+  const int n_rad_values_between = 51;
+  std::vector<double> all_radii, all_ergs;
+  for (int i = 0; i < n_rad_values_between; ++i) { all_radii.push_back(0.01*i); }
+  for (int i = 0; i < n_erg_values_between; ++i) { all_ergs.push_back(0.01*(i+1)); }
+  auto t14s = time_now();
+  integrate_d2Phi_a_domega_drho_between_rhos(all_ergs, all_radii, s, &SolarModel::Gamma_Primakoff, "matrix_P_true_rings.dat", true);
+  integrate_d2Phi_a_domega_drho_between_rhos(all_ergs, all_radii, s, &SolarModel::Gamma_all_electron, "matrix_gaee_true_rings.dat", true);
+  auto t14e = time_now();
+  std::cout << "The integration between " << n_rad_values_between-1 << " rho rings and " << n_erg_values_between << " ergs for P and ABC fluxes took " << duration_cast<minutes>(t14e-t14s).count() << " mins." << std::endl;
 
   auto t_end = time_now();
   std::cout << "\n# Finished testing! Total runtime: " << duration_cast<minutes>(t_end-t_start).count() << " mins." << std::endl;

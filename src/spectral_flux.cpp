@@ -27,7 +27,7 @@ double erg_integrand_1d(double erg, void * params) {
       std::vector<double> radii;
       double res = p2->s->r_from_omega_pl(erg);
       double low = p2->s->get_r_lo();
-      double high = std::min(p2->s->get_r_hi(), 0.98);  // 0.99 maximum set by hand to avoid missing opacity data
+      double high = std::min(p2->s->get_r_hi(), 0.98);  // r = 0.98 maximum set by hand to avoid missing opacity data
       if ((res > low) && (res < high)) {
         radii = { low, res , high };
       } else {
@@ -264,7 +264,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std
       all_ergs[tindex] = ergs[j];
       fluxes[tindex] = distance_factor*erg_integrand_2d(ergs[j], &p);
     }
-    std::cout << j+1 << "/" << n_erg_vals << " erg values done..." << std::endl;
+    // std::cout << j+1 << "/" << n_erg_vals << " erg values done..." << std::endl;
     gsl_spline_free(s.interp_integrand);
     gsl_interp_accel_free(s.acc_interp_integrand);
   }
