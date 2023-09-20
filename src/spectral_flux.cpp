@@ -27,7 +27,7 @@ double erg_integrand_1d(double erg, void * params) {
       std::vector<double> radii;
       double res = p2->s->r_from_omega_pl(erg);
       double low = p2->s->get_r_lo();
-      double high = std::min(p2->s->get_r_hi(), 0.98);  // 0.99 maximum set by hand to avoid missing opacity data
+      double high = std::min(p2->s->get_r_hi(), 0.98);  // r = 0.98 maximum set by hand to avoid missing opacity data
       if ((res > low) && (res < high)) {
         radii = { low, res , high };
       } else {
@@ -54,17 +54,23 @@ double r_integrand_2d(double r, void * params) {
 
   return 2.0 * cylinder * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, r) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
 }
+double z_integrand_2d(double z, void * params) {
+  struct solar_model_integration_parameters_2d * p3 = (struct solar_model_integration_parameters_2d *)params;
+  double erg = (p3->erg);
+  double rho = (p3->rho);
+  return 2.0 * gsl_pow_2(0.5*erg/pi)*( (p3->s->*(p3->integrand))(erg, sqrt(z*z+rho*rho)) ); // N.B. Factor of 2 from Z_2 symmtery in z-axis.
+}
 
 double rho_integrand_2d(double rho, void * params) {
   struct solar_model_integration_parameters_2d * p2 = (struct solar_model_integration_parameters_2d *)params;
   p2->rho = rho;
-
+  double zmax = sqrt(1.0-rho*rho);
   //auto t1 = std::chrono::high_resolution_clock::now();
   double result, error;
   size_t n_evals;
   //gsl_integration_qag(&f2, rho, p2->s->get_r_hi(), 0.01*int_abs_prec_2d, 0.01*int_rel_prec_2d, int_space_size_2d, int_method_2d, p2->w1, &result, &error);
   //gsl_integration_qags(&f2, rho, p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, int_space_size_2d, p2->w1, &result, &error);
-  gsl_integration_cquad(p2->f2, rho, 0.999999999*p2->s->get_r_hi(), 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
+  gsl_integration_cquad(p2->f2, 0, zmax, 0.1*int_abs_prec_2d, 0.1*int_rel_prec_2d, p2->w2, &result, &error, &n_evals);
   //auto t2 = std::chrono::high_resolution_clock::now();
 
   result *= rho;
@@ -78,19 +84,19 @@ double erg_integrand_2d(double erg, void * params) {
   double result, error;
   size_t n_evals;
 
-  gsl_integration_cquad(p1->f1, p1->rho_0, p1->rho_1, int_abs_prec_2d, int_rel_prec_2d, p1->w1, &result, &error, &n_evals);
+  gsl_integration_qag(p1->f1, p1->rho_0, p1->rho_1, int_abs_prec_2d, int_rel_prec_2d, int_space_size_2d, int_method_2d, p1->w1, &result, &error);
   return result;
 }
 
 std::vector<std::vector<double> > calculate_d2Phi_a_domega_drho(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas) {
   std::vector<double> all_ergs, all_radii, results;
 
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
 
   std::vector<double> valid_rhos = s.get_supported_radii(rhos);
 
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, NULL, NULL, &f2, w2 };
   f2.params = &p;
   for (auto rho = valid_rhos.begin(); rho != valid_rhos.end(); rho++) {
@@ -145,15 +151,15 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   std::vector<double> relevant_peaks = get_relevant_peaks(erg_lo, erg_hi);
 
   gsl_integration_workspace * w = gsl_integration_workspace_alloc(int_space_size_2d);
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
 
   gsl_function f;
   f.function = &erg_integrand_2d;
   gsl_function f1;
   f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f.params = &p;
   f1.params = &p;
@@ -187,7 +193,7 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
   }
 
   gsl_integration_workspace_free(w);
-  gsl_integration_cquad_workspace_free(w1);
+  gsl_integration_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double>> buffer = { valid_rhos, results, errors };
@@ -199,45 +205,70 @@ std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_up_to_rho_and_fo
 }
 
 std::vector<std::vector<double> > integrate_d2Phi_a_domega_drho_between_rhos(std::vector<double> ergs, std::vector<double> rhos, SolarModel &s, double (SolarModel::*integrand)(double, double), std::string saveas, bool use_ring_geometry, Isotope isotope) {
-  std::vector<double> all_ergs, all_radii_1, all_radii_2, fluxes;
+  // TODO: Maybe remove interpolation again if we can gain some speed elsewhere.
+  static const int n_r_interp = 1000;
 
-  gsl_integration_cquad_workspace * w1 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
-  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d_cquad);
+  gsl_integration_workspace * w1 = gsl_integration_workspace_alloc(int_space_size_2d);
+  gsl_integration_cquad_workspace * w2 = gsl_integration_cquad_workspace_alloc(int_space_size_2d);
 
   std::vector<double> valid_rhos = s.get_supported_radii(rhos);
   double r_min = valid_rhos.front();
   double r_max = valid_rhos.back();
   int n_r_vals = valid_rhos.size();
+  int n_erg_vals = ergs.size();
+  int n_entries = n_r_vals*n_erg_vals;
+  if (use_ring_geometry) { n_entries -= n_erg_vals; }
+  std::vector<double> all_radii_1(n_entries), all_radii_2(n_entries), all_ergs(n_entries);
+  std::vector<double> fluxes(n_entries);
+
+  // Set up radii range and other functions used for rate interpolation
+  std::vector<double> int_radius_vals;
+  for (int k = 0; k < n_r_interp; ++k) {
+    double rk = s.get_r_lo() + (s.get_r_hi() - s.get_r_lo()) * k / (n_r_interp-1);
+    int_radius_vals.push_back(rk);
+  }
 
   gsl_function f1;
   f1.function = &rho_integrand_2d;
   gsl_function f2;
-  f2.function = &r_integrand_2d;
+  f2.function = &z_integrand_2d;
   solar_model_integration_parameters_2d p { 0.0, 0.0, 0.0, 0.0, &s, integrand, &f1, w1, &f2, w2 };
   f1.params = &p;
   f2.params = &p;
 
+  int offset = 1;
   if (not(use_ring_geometry)) {
-    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-        all_radii_2.push_back(r_min);
-        all_ergs.push_back(*erg);
-        fluxes.push_back(0);
+    offset = 0;
+    for (int j = 0; j < n_erg_vals; ++j) {
+      all_radii_2[j] = r_min;
+      all_ergs[j] = ergs[j];
+      fluxes[j] = 0;
     }
   }
 
   p.rho_0 = r_min;
-  for (int i = 1; i < n_r_vals; ++i) {
-    if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
-    p.rho_1 = valid_rhos[i];
-    for (auto erg = ergs.begin(); erg != ergs.end(); erg++) {
-      all_radii_1.push_back(p.rho_0);
-      all_radii_2.push_back(p.rho_1);
-      all_ergs.push_back(*erg);
-      fluxes.push_back( distance_factor*erg_integrand_2d(*erg, &p) );
+  for (int j = 0; j < n_erg_vals; ++j) {
+    std::vector<double> int_integrand_vals;
+    for (int k = 0; k < n_r_interp; ++k) { int_integrand_vals.push_back((p.s->*(integrand))(ergs[j], int_radius_vals[k])); }
+    s.acc_interp_integrand = gsl_interp_accel_alloc();
+    s.interp_integrand = gsl_spline_alloc(gsl_interp_steffen, n_r_interp);
+    gsl_spline_init(s.interp_integrand, &int_radius_vals[0], &int_integrand_vals[0], n_r_interp);
+    p.integrand = &SolarModel::interpolated_integrand;
+    for (int i = 1; i < n_r_vals; ++i) {
+      int tindex = (i-offset)*n_erg_vals+j;
+      if (use_ring_geometry) { p.rho_0 = valid_rhos[i-1]; }
+      p.rho_1 = valid_rhos[i];
+      all_radii_1[tindex] = p.rho_0;
+      all_radii_2[tindex] = p.rho_1;
+      all_ergs[tindex] = ergs[j];
+      fluxes[tindex] = distance_factor*erg_integrand_2d(ergs[j], &p);
     }
+    // std::cout << j+1 << "/" << n_erg_vals << " erg values done..." << std::endl;
+    gsl_spline_free(s.interp_integrand);
+    gsl_interp_accel_free(s.acc_interp_integrand);
   }
 
-  gsl_integration_cquad_workspace_free(w1);
+  gsl_integration_workspace_free(w1);
   gsl_integration_cquad_workspace_free(w2);
 
   std::vector<std::vector<double> > buffer;

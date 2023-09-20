@@ -1454,3 +1454,7 @@ std::string standard_header(SolarModel *s) {
   res << timedate << " | Calculation performed with " LIBRARY_NAME "; g_agamma = " << std::scientific << g_ag << " GeV^-1, g_ae = " << g_ae << ".\n";
   return res.str();
 }
+
+double SolarModel::interpolated_integrand(double omega, double r) {
+  return gsl_spline_eval(interp_integrand, r, acc_interp_integrand);
+}

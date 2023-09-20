@@ -24,7 +24,7 @@ set(LIBRARIES ${LIBRARIES} ${GSL_LIBRARIES})
 option(PYTHON_SUPPORT "Adds a Python module library using the PYBIND11 headers." ON)
 
 # Check for Python 3 and PYBIND11 (if desired)
-set(INTERNAL_PYBIND11_DIR "${PROJECT_SOURCE_DIR}/include/pybind11")
+set(INTERNAL_PYBIND11_DIR "${PROJECT_SOURCE_DIR}/external/pybind11")
 if(PYTHON_SUPPORT)
   find_package(Python3 COMPONENTS Interpreter Development QUIET)
   if(Python3_FOUND)

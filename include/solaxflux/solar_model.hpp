@@ -137,7 +137,10 @@ class SolarModel {
     std::string get_solar_model_name();
     std::string get_opacitycode_name();
     bool is_initialised();
-
+    double interpolated_integrand(double omega, double r);
+    gsl_interp_accel* acc_interp_integrand;
+    gsl_spline* interp_integrand;
+    
   private:
     // INFO
     const opacitycode opcode;

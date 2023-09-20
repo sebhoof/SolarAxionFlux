@@ -37,11 +37,12 @@ double r_integrand_1d(double r, void * params);
 double erg_integrand_1d(double erg, void * params);
 
 // Integration over the central Solar disc (2D), see (2.45) in [arXiv:2101.08789]
-const int int_method_2d = 5, int_space_size_2d = 1e6, int_space_size_2d_cquad = 1e6;
+const int int_method_2d = 5, int_space_size_2d = 1e6;
 const double int_abs_prec_2d = 0.0, int_rel_prec_2d = 1.0e-3;
 struct solar_model_integration_parameters_2d { double erg; double rho; double rho_0; double rho_1; SolarModel* s; double (SolarModel::*integrand)(double, double);
-  gsl_function* f1; gsl_integration_cquad_workspace* w1; gsl_function* f2; gsl_integration_cquad_workspace* w2; };
+  gsl_function* f1; gsl_integration_workspace* w1; gsl_function* f2; gsl_integration_cquad_workspace* w2; };
 double r_integrand_2d(double r, void * params);
+double z_integrand_2d(double r, void * params);
 double rho_integrand_2d(double rho, void * params);
 double erg_integrand_2d(double erg, void * params);
 
