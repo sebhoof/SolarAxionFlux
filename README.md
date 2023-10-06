@@ -41,7 +41,7 @@ Calculations of the axion flux from nuclear transitions were added later.
 
 ### Axions as solar thermometers
 [![arxiv](https://img.shields.io/badge/arXiv-2306.00077_[hep--ph]-B31B1B.svg?style=flat&logo=arxiv&logoColor=B31B1B)](https://arxiv.org/abs/2306.00077)
-[![jcap](https://img.shields.io/badge/JCAP-accepted-0389C6)]()
+[![jcap](https://img.shields.io/badge/JCAP-doi:10.1088/1475-7516/2023/10/024-0389C6)](https://doi.org/10.1088/1475-7516/2023/10/024)
 
 <p align="center">
   <img width="600" src="results/website/temp_and_kappa_reconstruction.png">
